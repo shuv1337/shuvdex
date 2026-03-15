@@ -18,6 +18,7 @@ import {
   PushRejected,
   AuthError,
   TimeoutError,
+  InvalidRefError,
 } from "./errors.js";
 
 /**
@@ -32,6 +33,23 @@ import {
  */
 const shellQuote = (value: string): string =>
   `'${value.replace(/'/g, "'\\''")}'`;
+
+/**
+ * Validate that a ref does not start with a dash character.
+ *
+ * Git refs cannot begin with '-', so values like `--detach` or `-b` are
+ * semantically invalid. Rejecting them early also prevents flag-injection
+ * attacks against the git CLI (e.g., `git checkout --detach`).
+ */
+const assertValidRef = (ref: string): Effect.Effect<void, InvalidRefError> =>
+  ref.startsWith("-")
+    ? Effect.fail(
+        new InvalidRefError({
+          ref,
+          reason: "ref must not start with '-'",
+        }),
+      )
+    : Effect.void;
 
 /**
  * Check whether the stderr indicates the directory is not a git repository.
@@ -321,6 +339,12 @@ export const GitOpsLive: Layer.Layer<GitOps, never, SshExecutor> = Layer.effect(
           attributes: { host: host.hostname, operation: "createTag", repoPath, "git.tagName": name },
         })(
           Effect.gen(function* () {
+            // Reject refs starting with '-' — they are invalid git refs and
+            // could be misinterpreted as CLI flags.
+            yield* assertValidRef(name);
+            if (ref) {
+              yield* assertValidRef(ref);
+            }
             // Use -- separator to prevent flag injection from leading dashes,
             // and shellQuote to prevent shell metacharacter injection.
             const command = ref
@@ -339,6 +363,9 @@ export const GitOpsLive: Layer.Layer<GitOps, never, SshExecutor> = Layer.effect(
           attributes: { host: host.hostname, operation: "checkoutRef", repoPath, "git.ref": ref },
         })(
           Effect.gen(function* () {
+            // Reject refs starting with '-' — they are invalid git refs and
+            // could be misinterpreted as CLI flags.
+            yield* assertValidRef(ref);
             // shellQuote wraps the ref in single quotes which prevents both
             // shell metacharacter injection AND flag injection (leading dashes
             // inside single quotes are literal, not flags).

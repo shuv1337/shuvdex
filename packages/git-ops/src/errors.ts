@@ -121,6 +121,22 @@ export const NetworkTimeout = TimeoutError;
 export type NetworkTimeout = TimeoutError;
 
 /**
+ * Error returned when a ref (branch, tag, or SHA) argument is invalid.
+ *
+ * Git refs cannot start with a dash character ('-'), so values like
+ * `--detach` or `-b` are rejected early to prevent flag-injection
+ * attacks against the git CLI.
+ */
+export class InvalidRefError extends Data.TaggedError("InvalidRefError")<{
+  readonly ref: string;
+  readonly reason: string;
+}> {
+  get message(): string {
+    return `Invalid ref '${this.ref}': ${this.reason}`;
+  }
+}
+
+/**
  * Union of all git operation error types.
  */
 export type GitOpsError =
@@ -129,4 +145,5 @@ export type GitOpsError =
   | MergeConflict
   | PushRejected
   | AuthError
-  | TimeoutError;
+  | TimeoutError
+  | InvalidRefError;

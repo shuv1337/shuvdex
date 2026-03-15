@@ -5,6 +5,7 @@ import {
   GitOps,
   GitOpsLive,
   AuthError,
+  InvalidRefError,
 } from "../src/index.js";
 import {
   SshExecutorTest,
@@ -104,22 +105,20 @@ describe("createTag shell injection prevention", () => {
       }),
     );
 
-    it.effect("handles leading dash in tag name (flag injection)", () =>
+    it.effect("rejects leading dash in tag name with InvalidRefError", () =>
       Effect.gen(function* () {
-        const callsRef = yield* RecordedSshCalls;
-        const callsBefore = yield* Ref.get(callsRef);
-        const countBefore = callsBefore.length;
-
         const gitOps = yield* GitOps;
-        yield* gitOps.createTag(testHost, testRepoPath, "--delete");
+        const result = yield* gitOps
+          .createTag(testHost, testRepoPath, "--delete")
+          .pipe(Effect.either);
 
-        const callsAfter = yield* Ref.get(callsRef);
-        const lastCall = callsAfter[countBefore];
-        const cmd = lastCall.command;
-        // Leading dash must be handled with -- separator so git doesn't
-        // treat it as a flag, AND it should be quoted
-        expect(cmd).toContain("git tag --");
-        expect(cmd).toContain("'--delete'");
+        expect(result._tag).toBe("Left");
+        if (result._tag === "Left") {
+          expect(result.left).toBeInstanceOf(InvalidRefError);
+          const err = result.left as InvalidRefError;
+          expect(err.ref).toBe("--delete");
+          expect(err.reason).toContain("must not start with '-'");
+        }
       }),
     );
 
@@ -211,21 +210,20 @@ describe("createTag shell injection prevention", () => {
       }),
     );
 
-    it.effect("handles leading dash in ref (flag injection)", () =>
+    it.effect("rejects leading dash in ref argument with InvalidRefError", () =>
       Effect.gen(function* () {
-        const callsRef = yield* RecordedSshCalls;
-        const callsBefore = yield* Ref.get(callsRef);
-        const countBefore = callsBefore.length;
-
         const gitOps = yield* GitOps;
-        yield* gitOps.createTag(testHost, testRepoPath, "v1.0", "--amend");
+        const result = yield* gitOps
+          .createTag(testHost, testRepoPath, "v1.0", "--amend")
+          .pipe(Effect.either);
 
-        const callsAfter = yield* Ref.get(callsRef);
-        const lastCall = callsAfter[countBefore];
-        const cmd = lastCall.command;
-        // Leading dash in ref must use -- separator AND be quoted
-        expect(cmd).toContain("git tag --");
-        expect(cmd).toContain("'--amend'");
+        expect(result._tag).toBe("Left");
+        if (result._tag === "Left") {
+          expect(result.left).toBeInstanceOf(InvalidRefError);
+          const err = result.left as InvalidRefError;
+          expect(err.ref).toBe("--amend");
+          expect(err.reason).toContain("must not start with '-'");
+        }
       }),
     );
 
@@ -321,24 +319,20 @@ describe("checkoutRef shell injection prevention", () => {
       }),
     );
 
-    it.effect("handles leading dash in ref (flag injection)", () =>
+    it.effect("rejects leading dash in ref with InvalidRefError", () =>
       Effect.gen(function* () {
-        const callsRef = yield* RecordedSshCalls;
-        const callsBefore = yield* Ref.get(callsRef);
-        const countBefore = callsBefore.length;
-
         const gitOps = yield* GitOps;
-        yield* gitOps.checkoutRef(testHost, testRepoPath, "--force");
+        const result = yield* gitOps
+          .checkoutRef(testHost, testRepoPath, "--force")
+          .pipe(Effect.either);
 
-        const callsAfter = yield* Ref.get(callsRef);
-        const lastCall = callsAfter[countBefore];
-        const cmd = lastCall.command;
-        // shellQuote wraps the value in single quotes, which prevents the
-        // shell from interpreting '--force' as a flag — it becomes a literal
-        // string argument to git checkout.
-        expect(cmd).toContain("git checkout '--force'");
-        // Must NOT use pathspec separator '--' which breaks branch/tag/SHA checkout
-        expect(cmd).not.toContain("git checkout -- ");
+        expect(result._tag).toBe("Left");
+        if (result._tag === "Left") {
+          expect(result.left).toBeInstanceOf(InvalidRefError);
+          const err = result.left as InvalidRefError;
+          expect(err.ref).toBe("--force");
+          expect(err.reason).toContain("must not start with '-'");
+        }
       }),
     );
 

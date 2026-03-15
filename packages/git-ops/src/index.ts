@@ -22,6 +22,7 @@ export {
   PushRejected,
   AuthError,
   TimeoutError,
+  InvalidRefError,
   /** @deprecated Use `TimeoutError` instead. */
   NetworkTimeout,
 } from "./errors.js";

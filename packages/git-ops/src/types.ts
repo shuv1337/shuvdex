@@ -11,6 +11,7 @@ import type {
   PushRejected,
   AuthError,
   TimeoutError,
+  InvalidRefError,
 } from "./errors.js";
 
 /**
@@ -133,7 +134,7 @@ export interface GitOpsService {
     repoPath: string,
     name: string,
     ref?: string,
-  ) => Effect.Effect<void, SshError | GitCommandFailed | NotARepository | AuthError | TimeoutError>;
+  ) => Effect.Effect<void, SshError | GitCommandFailed | NotARepository | AuthError | TimeoutError | InvalidRefError>;
 
   /**
    * Checkout a specific branch, tag, or SHA.
@@ -149,7 +150,7 @@ export interface GitOpsService {
     host: HostConfig,
     repoPath: string,
     ref: string,
-  ) => Effect.Effect<void, SshError | GitCommandFailed | NotARepository | AuthError | TimeoutError>;
+  ) => Effect.Effect<void, SshError | GitCommandFailed | NotARepository | AuthError | TimeoutError | InvalidRefError>;
 }
 
 /**
