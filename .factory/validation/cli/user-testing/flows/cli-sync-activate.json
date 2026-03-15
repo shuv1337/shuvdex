@@ -1,0 +1,352 @@
+{
+  "groupId": "cli-sync-activate",
+  "testedAt": "2026-03-15T23:37:56.608505+00:00",
+  "isolation": {
+    "repoRoot": "/home/shuv/repos/codex-fleet",
+    "config": "/home/shuv/repos/codex-fleet/fleet.yaml",
+    "localSkillRoot": "/tmp/codex-fleet-user-testing-cli/skillops/local-skills",
+    "remoteRepoPath": "/tmp/codex-fleet-user-testing-cli-skillops/repo",
+    "remoteActiveDir": "/tmp/codex-fleet-user-testing-cli-skillops/active",
+    "hosts": [
+      "shuvtest",
+      "shuvbot"
+    ],
+    "skillName": "demo-skill",
+    "missionDir": "/home/shuv/.factory/missions/53d67669-5ba8-4745-9fd5-71906b40773d"
+  },
+  "toolsUsed": [
+    "shell",
+    "ssh"
+  ],
+  "assertions": [
+    {
+      "id": "VAL-CLI-005",
+      "title": "Fleet Sync - Skill Transfer",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "node /home/shuv/repos/codex-fleet/apps/cli/bin/fleet.js sync demo-skill --config /home/shuv/repos/codex-fleet/fleet.yaml --local-skill-path /tmp/codex-fleet-user-testing-cli/skillops/local-skills --repo /tmp/codex-fleet-user-testing-cli-skillops/repo",
+          "expected": "Sync demo-skill to both configured hosts with exit code 0.",
+          "observed": "exit 0; stdout reported synced on shuvtest and shuvbot."
+        },
+        {
+          "action": "Direct SSH verification on shuvtest and shuvbot",
+          "expected": "/tmp/codex-fleet-user-testing-cli-skillops/repo/demo-skill exists on each host with SKILL.md and run.sh matching local checksums.",
+          "observed": "Both hosts exposed the synced files at the assigned repo path and their SHA-256 checksums matched the local skill files."
+        }
+      ],
+      "evidence": {
+        "command": "node /home/shuv/repos/codex-fleet/apps/cli/bin/fleet.js sync demo-skill --config /home/shuv/repos/codex-fleet/fleet.yaml --local-skill-path /tmp/codex-fleet-user-testing-cli/skillops/local-skills --repo /tmp/codex-fleet-user-testing-cli-skillops/repo",
+        "exitCode": 0,
+        "stdoutPath": "cli/cli-sync-activate/VAL-CLI-005-sync.stdout.txt",
+        "stderrPath": "cli/cli-sync-activate/VAL-CLI-005-sync.stderr.txt",
+        "exitCodePath": "cli/cli-sync-activate/VAL-CLI-005-sync.exit.txt",
+        "terminalSnapshots": [
+          "cli/cli-sync-activate/VAL-CLI-005-sync.terminal.txt"
+        ],
+        "localChecksums": {
+          "SKILL.md": "da0561b3460c4294e7c40137689f0e1e6827d49f184db5eabeb8b759febad7c9",
+          "run.sh": "aac1e43848a8877c3ebe35356da9d60b2eabc5c29887c88df2216d0be65509e9"
+        },
+        "sshVerification": [
+          {
+            "host": "shuvtest",
+            "command": "ssh shuvtest 'sh -lc '\"'\"'skill_dir=/tmp/codex-fleet-user-testing-cli-skillops/repo/demo-skill\nprintf '\"'\"'\"'\"'\"'\"'\"'\"'host=%s\n'\"'\"'\"'\"'\"'\"'\"'\"' \"$(hostname)\"\nprintf '\"'\"'\"'\"'\"'\"'\"'\"'skill_dir=%s\n'\"'\"'\"'\"'\"'\"'\"'\"' \"$skill_dir\"\nls -la \"$skill_dir\"\nprintf -- '\"'\"'\"'\"'\"'\"'\"'\"'--- SKILL.md ---\n'\"'\"'\"'\"'\"'\"'\"'\"'\ncat \"$skill_dir/SKILL.md\"\nprintf -- '\"'\"'\"'\"'\"'\"'\"'\"'\n--- run.sh ---\n'\"'\"'\"'\"'\"'\"'\"'\"'\ncat \"$skill_dir/run.sh\"\nprintf -- '\"'\"'\"'\"'\"'\"'\"'\"'\n--- checksums ---\n'\"'\"'\"'\"'\"'\"'\"'\"'\nif command -v sha256sum >/dev/null 2>&1; then\n  sha256sum \"$skill_dir/SKILL.md\" \"$skill_dir/run.sh\"\nelse\n  shasum -a 256 \"$skill_dir/SKILL.md\" \"$skill_dir/run.sh\"\nfi\n'\"'\"''",
+            "exitCode": 0,
+            "stdoutPath": "cli/cli-sync-activate/VAL-CLI-005-verify-shuvtest.stdout.txt",
+            "stderrPath": "cli/cli-sync-activate/VAL-CLI-005-verify-shuvtest.stderr.txt",
+            "exitCodePath": "cli/cli-sync-activate/VAL-CLI-005-verify-shuvtest.exit.txt",
+            "terminalSnapshots": [
+              "cli/cli-sync-activate/VAL-CLI-005-verify-shuvtest.terminal.txt"
+            ]
+          },
+          {
+            "host": "shuvbot",
+            "command": "ssh shuvbot 'sh -lc '\"'\"'skill_dir=/tmp/codex-fleet-user-testing-cli-skillops/repo/demo-skill\nprintf '\"'\"'\"'\"'\"'\"'\"'\"'host=%s\n'\"'\"'\"'\"'\"'\"'\"'\"' \"$(hostname)\"\nprintf '\"'\"'\"'\"'\"'\"'\"'\"'skill_dir=%s\n'\"'\"'\"'\"'\"'\"'\"'\"' \"$skill_dir\"\nls -la \"$skill_dir\"\nprintf -- '\"'\"'\"'\"'\"'\"'\"'\"'--- SKILL.md ---\n'\"'\"'\"'\"'\"'\"'\"'\"'\ncat \"$skill_dir/SKILL.md\"\nprintf -- '\"'\"'\"'\"'\"'\"'\"'\"'\n--- run.sh ---\n'\"'\"'\"'\"'\"'\"'\"'\"'\ncat \"$skill_dir/run.sh\"\nprintf -- '\"'\"'\"'\"'\"'\"'\"'\"'\n--- checksums ---\n'\"'\"'\"'\"'\"'\"'\"'\"'\nif command -v sha256sum >/dev/null 2>&1; then\n  sha256sum \"$skill_dir/SKILL.md\" \"$skill_dir/run.sh\"\nelse\n  shasum -a 256 \"$skill_dir/SKILL.md\" \"$skill_dir/run.sh\"\nfi\n'\"'\"''",
+            "exitCode": 0,
+            "stdoutPath": "cli/cli-sync-activate/VAL-CLI-005-verify-shuvbot.stdout.txt",
+            "stderrPath": "cli/cli-sync-activate/VAL-CLI-005-verify-shuvbot.stderr.txt",
+            "exitCodePath": "cli/cli-sync-activate/VAL-CLI-005-verify-shuvbot.exit.txt",
+            "terminalSnapshots": [
+              "cli/cli-sync-activate/VAL-CLI-005-verify-shuvbot.terminal.txt"
+            ]
+          }
+        ]
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-CLI-006",
+      "title": "Fleet Sync - Missing Skill Error",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "node /home/shuv/repos/codex-fleet/apps/cli/bin/fleet.js sync missing-skill --config /home/shuv/repos/codex-fleet/fleet.yaml --local-skill-path /tmp/codex-fleet-user-testing-cli/skillops/local-skills --repo /tmp/codex-fleet-user-testing-cli-skillops/repo",
+          "expected": "Fail locally with a clear missing-skill error before any SSH work.",
+          "observed": "exit 1; stdout was 'Error: Skill \"missing-skill\" not found at /tmp/codex-fleet-user-testing-cli/skillops/local-skills/missing-skill'."
+        },
+        {
+          "action": "Inspect CLI output and re-verify remote repo contents over SSH",
+          "expected": "No host-level output or SSH warning from the CLI command, and remote repo state remains unchanged.",
+          "observed": "The CLI output contained only the missing-skill error (no host rows or SSH warning), and direct SSH verification showed unchanged repo checksums on both hosts."
+        }
+      ],
+      "evidence": {
+        "command": "node /home/shuv/repos/codex-fleet/apps/cli/bin/fleet.js sync missing-skill --config /home/shuv/repos/codex-fleet/fleet.yaml --local-skill-path /tmp/codex-fleet-user-testing-cli/skillops/local-skills --repo /tmp/codex-fleet-user-testing-cli-skillops/repo",
+        "exitCode": 1,
+        "stdoutPath": "cli/cli-sync-activate/VAL-CLI-006-missing-skill.stdout.txt",
+        "stderrPath": "cli/cli-sync-activate/VAL-CLI-006-missing-skill.stderr.txt",
+        "exitCodePath": "cli/cli-sync-activate/VAL-CLI-006-missing-skill.exit.txt",
+        "terminalSnapshots": [
+          "cli/cli-sync-activate/VAL-CLI-006-missing-skill.terminal.txt"
+        ],
+        "sshVerification": [
+          {
+            "host": "shuvtest",
+            "command": "ssh shuvtest 'sh -lc '\"'\"'skill_dir=/tmp/codex-fleet-user-testing-cli-skillops/repo/demo-skill\nprintf '\"'\"'\"'\"'\"'\"'\"'\"'host=%s\n'\"'\"'\"'\"'\"'\"'\"'\"' \"$(hostname)\"\nprintf '\"'\"'\"'\"'\"'\"'\"'\"'skill_dir=%s\n'\"'\"'\"'\"'\"'\"'\"'\"' \"$skill_dir\"\nls -la \"$skill_dir\"\nprintf -- '\"'\"'\"'\"'\"'\"'\"'\"'--- SKILL.md ---\n'\"'\"'\"'\"'\"'\"'\"'\"'\ncat \"$skill_dir/SKILL.md\"\nprintf -- '\"'\"'\"'\"'\"'\"'\"'\"'\n--- run.sh ---\n'\"'\"'\"'\"'\"'\"'\"'\"'\ncat \"$skill_dir/run.sh\"\nprintf -- '\"'\"'\"'\"'\"'\"'\"'\"'\n--- checksums ---\n'\"'\"'\"'\"'\"'\"'\"'\"'\nif command -v sha256sum >/dev/null 2>&1; then\n  sha256sum \"$skill_dir/SKILL.md\" \"$skill_dir/run.sh\"\nelse\n  shasum -a 256 \"$skill_dir/SKILL.md\" \"$skill_dir/run.sh\"\nfi\n'\"'\"''",
+            "exitCode": 0,
+            "stdoutPath": "cli/cli-sync-activate/VAL-CLI-006-verify-shuvtest.stdout.txt",
+            "stderrPath": "cli/cli-sync-activate/VAL-CLI-006-verify-shuvtest.stderr.txt",
+            "exitCodePath": "cli/cli-sync-activate/VAL-CLI-006-verify-shuvtest.exit.txt",
+            "terminalSnapshots": [
+              "cli/cli-sync-activate/VAL-CLI-006-verify-shuvtest.terminal.txt"
+            ]
+          },
+          {
+            "host": "shuvbot",
+            "command": "ssh shuvbot 'sh -lc '\"'\"'skill_dir=/tmp/codex-fleet-user-testing-cli-skillops/repo/demo-skill\nprintf '\"'\"'\"'\"'\"'\"'\"'\"'host=%s\n'\"'\"'\"'\"'\"'\"'\"'\"' \"$(hostname)\"\nprintf '\"'\"'\"'\"'\"'\"'\"'\"'skill_dir=%s\n'\"'\"'\"'\"'\"'\"'\"'\"' \"$skill_dir\"\nls -la \"$skill_dir\"\nprintf -- '\"'\"'\"'\"'\"'\"'\"'\"'--- SKILL.md ---\n'\"'\"'\"'\"'\"'\"'\"'\"'\ncat \"$skill_dir/SKILL.md\"\nprintf -- '\"'\"'\"'\"'\"'\"'\"'\"'\n--- run.sh ---\n'\"'\"'\"'\"'\"'\"'\"'\"'\ncat \"$skill_dir/run.sh\"\nprintf -- '\"'\"'\"'\"'\"'\"'\"'\"'\n--- checksums ---\n'\"'\"'\"'\"'\"'\"'\"'\"'\nif command -v sha256sum >/dev/null 2>&1; then\n  sha256sum \"$skill_dir/SKILL.md\" \"$skill_dir/run.sh\"\nelse\n  shasum -a 256 \"$skill_dir/SKILL.md\" \"$skill_dir/run.sh\"\nfi\n'\"'\"''",
+            "exitCode": 0,
+            "stdoutPath": "cli/cli-sync-activate/VAL-CLI-006-verify-shuvbot.stdout.txt",
+            "stderrPath": "cli/cli-sync-activate/VAL-CLI-006-verify-shuvbot.stderr.txt",
+            "exitCodePath": "cli/cli-sync-activate/VAL-CLI-006-verify-shuvbot.exit.txt",
+            "terminalSnapshots": [
+              "cli/cli-sync-activate/VAL-CLI-006-verify-shuvbot.terminal.txt"
+            ]
+          }
+        ],
+        "postErrorChecksums": {
+          "shuvtest": {
+            "SKILL.md": "da0561b3460c4294e7c40137689f0e1e6827d49f184db5eabeb8b759febad7c9",
+            "run.sh": "aac1e43848a8877c3ebe35356da9d60b2eabc5c29887c88df2216d0be65509e9"
+          },
+          "shuvbot": {
+            "SKILL.md": "da0561b3460c4294e7c40137689f0e1e6827d49f184db5eabeb8b759febad7c9",
+            "run.sh": "aac1e43848a8877c3ebe35356da9d60b2eabc5c29887c88df2216d0be65509e9"
+          }
+        }
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-CLI-007",
+      "title": "Fleet Activate - Symlink Creation",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "node /home/shuv/repos/codex-fleet/apps/cli/bin/fleet.js activate demo-skill --config /home/shuv/repos/codex-fleet/fleet.yaml --repo /tmp/codex-fleet-user-testing-cli-skillops/repo --active-dir /tmp/codex-fleet-user-testing-cli-skillops/active",
+          "expected": "Create the active skill symlink on both hosts with exit code 0.",
+          "observed": "exit 0; stdout reported activated for shuvtest and shuvbot."
+        },
+        {
+          "action": "Direct SSH symlink verification",
+          "expected": "/tmp/codex-fleet-user-testing-cli-skillops/active/demo-skill is a symlink to /tmp/codex-fleet-user-testing-cli-skillops/repo/demo-skill on both hosts.",
+          "observed": "`readlink` resolved `/tmp/codex-fleet-user-testing-cli-skillops/active/demo-skill` to `/tmp/codex-fleet-user-testing-cli-skillops/repo/demo-skill` on both hosts."
+        }
+      ],
+      "evidence": {
+        "command": "node /home/shuv/repos/codex-fleet/apps/cli/bin/fleet.js activate demo-skill --config /home/shuv/repos/codex-fleet/fleet.yaml --repo /tmp/codex-fleet-user-testing-cli-skillops/repo --active-dir /tmp/codex-fleet-user-testing-cli-skillops/active",
+        "exitCode": 0,
+        "stdoutPath": "cli/cli-sync-activate/VAL-CLI-007-activate.stdout.txt",
+        "stderrPath": "cli/cli-sync-activate/VAL-CLI-007-activate.stderr.txt",
+        "exitCodePath": "cli/cli-sync-activate/VAL-CLI-007-activate.exit.txt",
+        "terminalSnapshots": [
+          "cli/cli-sync-activate/VAL-CLI-007-activate.terminal.txt"
+        ],
+        "sshVerification": [
+          {
+            "host": "shuvtest",
+            "command": "ssh shuvtest 'sh -lc '\"'\"'link=/tmp/codex-fleet-user-testing-cli-skillops/active/demo-skill\nprintf '\"'\"'\"'\"'\"'\"'\"'\"'host=%s\n'\"'\"'\"'\"'\"'\"'\"'\"' \"$(hostname)\"\nprintf '\"'\"'\"'\"'\"'\"'\"'\"'link=%s\n'\"'\"'\"'\"'\"'\"'\"'\"' \"$link\"\nls -la \"$(dirname \"$link\")\"\nprintf '\"'\"'\"'\"'\"'\"'\"'\"'target=%s\n'\"'\"'\"'\"'\"'\"'\"'\"' \"$(readlink \"$link\")\"\ntest -L \"$link\"\n'\"'\"''",
+            "exitCode": 0,
+            "stdoutPath": "cli/cli-sync-activate/VAL-CLI-007-verify-shuvtest.stdout.txt",
+            "stderrPath": "cli/cli-sync-activate/VAL-CLI-007-verify-shuvtest.stderr.txt",
+            "exitCodePath": "cli/cli-sync-activate/VAL-CLI-007-verify-shuvtest.exit.txt",
+            "terminalSnapshots": [
+              "cli/cli-sync-activate/VAL-CLI-007-verify-shuvtest.terminal.txt"
+            ]
+          },
+          {
+            "host": "shuvbot",
+            "command": "ssh shuvbot 'sh -lc '\"'\"'link=/tmp/codex-fleet-user-testing-cli-skillops/active/demo-skill\nprintf '\"'\"'\"'\"'\"'\"'\"'\"'host=%s\n'\"'\"'\"'\"'\"'\"'\"'\"' \"$(hostname)\"\nprintf '\"'\"'\"'\"'\"'\"'\"'\"'link=%s\n'\"'\"'\"'\"'\"'\"'\"'\"' \"$link\"\nls -la \"$(dirname \"$link\")\"\nprintf '\"'\"'\"'\"'\"'\"'\"'\"'target=%s\n'\"'\"'\"'\"'\"'\"'\"'\"' \"$(readlink \"$link\")\"\ntest -L \"$link\"\n'\"'\"''",
+            "exitCode": 0,
+            "stdoutPath": "cli/cli-sync-activate/VAL-CLI-007-verify-shuvbot.stdout.txt",
+            "stderrPath": "cli/cli-sync-activate/VAL-CLI-007-verify-shuvbot.stderr.txt",
+            "exitCodePath": "cli/cli-sync-activate/VAL-CLI-007-verify-shuvbot.exit.txt",
+            "terminalSnapshots": [
+              "cli/cli-sync-activate/VAL-CLI-007-verify-shuvbot.terminal.txt"
+            ]
+          }
+        ]
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-CLI-008",
+      "title": "Fleet Activate - Already Active",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "node /home/shuv/repos/codex-fleet/apps/cli/bin/fleet.js activate demo-skill --config /home/shuv/repos/codex-fleet/fleet.yaml --repo /tmp/codex-fleet-user-testing-cli-skillops/repo --active-dir /tmp/codex-fleet-user-testing-cli-skillops/active",
+          "expected": "Return exit code 0 and report already-active behavior on both hosts.",
+          "observed": "exit 0; stdout reported already active for shuvtest and shuvbot."
+        },
+        {
+          "action": "Direct SSH symlink verification after rerun",
+          "expected": "The active symlink remains present and still points at the remote repo skill path.",
+          "observed": "Both hosts still had `/tmp/codex-fleet-user-testing-cli-skillops/active/demo-skill` pointing to `/tmp/codex-fleet-user-testing-cli-skillops/repo/demo-skill`."
+        }
+      ],
+      "evidence": {
+        "command": "node /home/shuv/repos/codex-fleet/apps/cli/bin/fleet.js activate demo-skill --config /home/shuv/repos/codex-fleet/fleet.yaml --repo /tmp/codex-fleet-user-testing-cli-skillops/repo --active-dir /tmp/codex-fleet-user-testing-cli-skillops/active",
+        "exitCode": 0,
+        "stdoutPath": "cli/cli-sync-activate/VAL-CLI-008-activate-again.stdout.txt",
+        "stderrPath": "cli/cli-sync-activate/VAL-CLI-008-activate-again.stderr.txt",
+        "exitCodePath": "cli/cli-sync-activate/VAL-CLI-008-activate-again.exit.txt",
+        "terminalSnapshots": [
+          "cli/cli-sync-activate/VAL-CLI-008-activate-again.terminal.txt"
+        ],
+        "sshVerification": [
+          {
+            "host": "shuvtest",
+            "command": "ssh shuvtest 'sh -lc '\"'\"'link=/tmp/codex-fleet-user-testing-cli-skillops/active/demo-skill\nprintf '\"'\"'\"'\"'\"'\"'\"'\"'host=%s\n'\"'\"'\"'\"'\"'\"'\"'\"' \"$(hostname)\"\nprintf '\"'\"'\"'\"'\"'\"'\"'\"'link=%s\n'\"'\"'\"'\"'\"'\"'\"'\"' \"$link\"\nls -la \"$(dirname \"$link\")\"\nprintf '\"'\"'\"'\"'\"'\"'\"'\"'target=%s\n'\"'\"'\"'\"'\"'\"'\"'\"' \"$(readlink \"$link\")\"\ntest -L \"$link\"\n'\"'\"''",
+            "exitCode": 0,
+            "stdoutPath": "cli/cli-sync-activate/VAL-CLI-008-verify-shuvtest.stdout.txt",
+            "stderrPath": "cli/cli-sync-activate/VAL-CLI-008-verify-shuvtest.stderr.txt",
+            "exitCodePath": "cli/cli-sync-activate/VAL-CLI-008-verify-shuvtest.exit.txt",
+            "terminalSnapshots": [
+              "cli/cli-sync-activate/VAL-CLI-008-verify-shuvtest.terminal.txt"
+            ]
+          },
+          {
+            "host": "shuvbot",
+            "command": "ssh shuvbot 'sh -lc '\"'\"'link=/tmp/codex-fleet-user-testing-cli-skillops/active/demo-skill\nprintf '\"'\"'\"'\"'\"'\"'\"'\"'host=%s\n'\"'\"'\"'\"'\"'\"'\"'\"' \"$(hostname)\"\nprintf '\"'\"'\"'\"'\"'\"'\"'\"'link=%s\n'\"'\"'\"'\"'\"'\"'\"'\"' \"$link\"\nls -la \"$(dirname \"$link\")\"\nprintf '\"'\"'\"'\"'\"'\"'\"'\"'target=%s\n'\"'\"'\"'\"'\"'\"'\"'\"' \"$(readlink \"$link\")\"\ntest -L \"$link\"\n'\"'\"''",
+            "exitCode": 0,
+            "stdoutPath": "cli/cli-sync-activate/VAL-CLI-008-verify-shuvbot.stdout.txt",
+            "stderrPath": "cli/cli-sync-activate/VAL-CLI-008-verify-shuvbot.stderr.txt",
+            "exitCodePath": "cli/cli-sync-activate/VAL-CLI-008-verify-shuvbot.exit.txt",
+            "terminalSnapshots": [
+              "cli/cli-sync-activate/VAL-CLI-008-verify-shuvbot.terminal.txt"
+            ]
+          }
+        ]
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-CLI-009",
+      "title": "Fleet Deactivate - Symlink Removal",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "node /home/shuv/repos/codex-fleet/apps/cli/bin/fleet.js deactivate demo-skill --config /home/shuv/repos/codex-fleet/fleet.yaml --active-dir /tmp/codex-fleet-user-testing-cli-skillops/active",
+          "expected": "Remove the active symlink on both hosts with exit code 0.",
+          "observed": "exit 0; stdout reported deactivated for shuvtest and shuvbot."
+        },
+        {
+          "action": "Direct SSH verification of link removal and repo preservation",
+          "expected": "/tmp/codex-fleet-user-testing-cli-skillops/active/demo-skill is absent while /tmp/codex-fleet-user-testing-cli-skillops/repo/demo-skill still exists on both hosts.",
+          "observed": "Both hosts reported link_exists=no and repo_exists=yes."
+        }
+      ],
+      "evidence": {
+        "command": "node /home/shuv/repos/codex-fleet/apps/cli/bin/fleet.js deactivate demo-skill --config /home/shuv/repos/codex-fleet/fleet.yaml --active-dir /tmp/codex-fleet-user-testing-cli-skillops/active",
+        "exitCode": 0,
+        "stdoutPath": "cli/cli-sync-activate/VAL-CLI-009-deactivate.stdout.txt",
+        "stderrPath": "cli/cli-sync-activate/VAL-CLI-009-deactivate.stderr.txt",
+        "exitCodePath": "cli/cli-sync-activate/VAL-CLI-009-deactivate.exit.txt",
+        "terminalSnapshots": [
+          "cli/cli-sync-activate/VAL-CLI-009-deactivate.terminal.txt"
+        ],
+        "sshVerification": [
+          {
+            "host": "shuvtest",
+            "command": "ssh shuvtest 'sh -lc '\"'\"'link=/tmp/codex-fleet-user-testing-cli-skillops/active/demo-skill\nrepo_dir=/tmp/codex-fleet-user-testing-cli-skillops/repo/demo-skill\nprintf '\"'\"'\"'\"'\"'\"'\"'\"'host=%s\n'\"'\"'\"'\"'\"'\"'\"'\"' \"$(hostname)\"\nprintf '\"'\"'\"'\"'\"'\"'\"'\"'link_exists=%s\n'\"'\"'\"'\"'\"'\"'\"'\"' \"$(if [ -L \"$link\" ]; then echo yes; else echo no; fi)\"\nprintf '\"'\"'\"'\"'\"'\"'\"'\"'repo_exists=%s\n'\"'\"'\"'\"'\"'\"'\"'\"' \"$(if [ -d \"$repo_dir\" ]; then echo yes; else echo no; fi)\"\nls -la \"$(dirname \"$link\")\"\nprintf -- '\"'\"'\"'\"'\"'\"'\"'\"'--- repo listing ---\n'\"'\"'\"'\"'\"'\"'\"'\"'\nls -la \"$repo_dir\"\ntest ! -e \"$link\"\n'\"'\"''",
+            "exitCode": 0,
+            "stdoutPath": "cli/cli-sync-activate/VAL-CLI-009-verify-shuvtest.stdout.txt",
+            "stderrPath": "cli/cli-sync-activate/VAL-CLI-009-verify-shuvtest.stderr.txt",
+            "exitCodePath": "cli/cli-sync-activate/VAL-CLI-009-verify-shuvtest.exit.txt",
+            "terminalSnapshots": [
+              "cli/cli-sync-activate/VAL-CLI-009-verify-shuvtest.terminal.txt"
+            ]
+          },
+          {
+            "host": "shuvbot",
+            "command": "ssh shuvbot 'sh -lc '\"'\"'link=/tmp/codex-fleet-user-testing-cli-skillops/active/demo-skill\nrepo_dir=/tmp/codex-fleet-user-testing-cli-skillops/repo/demo-skill\nprintf '\"'\"'\"'\"'\"'\"'\"'\"'host=%s\n'\"'\"'\"'\"'\"'\"'\"'\"' \"$(hostname)\"\nprintf '\"'\"'\"'\"'\"'\"'\"'\"'link_exists=%s\n'\"'\"'\"'\"'\"'\"'\"'\"' \"$(if [ -L \"$link\" ]; then echo yes; else echo no; fi)\"\nprintf '\"'\"'\"'\"'\"'\"'\"'\"'repo_exists=%s\n'\"'\"'\"'\"'\"'\"'\"'\"' \"$(if [ -d \"$repo_dir\" ]; then echo yes; else echo no; fi)\"\nls -la \"$(dirname \"$link\")\"\nprintf -- '\"'\"'\"'\"'\"'\"'\"'\"'--- repo listing ---\n'\"'\"'\"'\"'\"'\"'\"'\"'\nls -la \"$repo_dir\"\ntest ! -e \"$link\"\n'\"'\"''",
+            "exitCode": 0,
+            "stdoutPath": "cli/cli-sync-activate/VAL-CLI-009-verify-shuvbot.stdout.txt",
+            "stderrPath": "cli/cli-sync-activate/VAL-CLI-009-verify-shuvbot.stderr.txt",
+            "exitCodePath": "cli/cli-sync-activate/VAL-CLI-009-verify-shuvbot.exit.txt",
+            "terminalSnapshots": [
+              "cli/cli-sync-activate/VAL-CLI-009-verify-shuvbot.terminal.txt"
+            ]
+          }
+        ]
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-CLI-010",
+      "title": "Fleet Deactivate - Not Active",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "node /home/shuv/repos/codex-fleet/apps/cli/bin/fleet.js deactivate demo-skill --config /home/shuv/repos/codex-fleet/fleet.yaml --active-dir /tmp/codex-fleet-user-testing-cli-skillops/active",
+          "expected": "Return exit code 0 and report not-active behavior on both hosts.",
+          "observed": "exit 0; stdout reported not active for shuvtest and shuvbot."
+        },
+        {
+          "action": "Direct SSH verification after rerun",
+          "expected": "The symlink remains absent and the repo files remain intact on both hosts.",
+          "observed": "Both hosts still reported link_exists=no and repo_exists=yes."
+        }
+      ],
+      "evidence": {
+        "command": "node /home/shuv/repos/codex-fleet/apps/cli/bin/fleet.js deactivate demo-skill --config /home/shuv/repos/codex-fleet/fleet.yaml --active-dir /tmp/codex-fleet-user-testing-cli-skillops/active",
+        "exitCode": 0,
+        "stdoutPath": "cli/cli-sync-activate/VAL-CLI-010-deactivate-again.stdout.txt",
+        "stderrPath": "cli/cli-sync-activate/VAL-CLI-010-deactivate-again.stderr.txt",
+        "exitCodePath": "cli/cli-sync-activate/VAL-CLI-010-deactivate-again.exit.txt",
+        "terminalSnapshots": [
+          "cli/cli-sync-activate/VAL-CLI-010-deactivate-again.terminal.txt"
+        ],
+        "sshVerification": [
+          {
+            "host": "shuvtest",
+            "command": "ssh shuvtest 'sh -lc '\"'\"'link=/tmp/codex-fleet-user-testing-cli-skillops/active/demo-skill\nrepo_dir=/tmp/codex-fleet-user-testing-cli-skillops/repo/demo-skill\nprintf '\"'\"'\"'\"'\"'\"'\"'\"'host=%s\n'\"'\"'\"'\"'\"'\"'\"'\"' \"$(hostname)\"\nprintf '\"'\"'\"'\"'\"'\"'\"'\"'link_exists=%s\n'\"'\"'\"'\"'\"'\"'\"'\"' \"$(if [ -L \"$link\" ]; then echo yes; else echo no; fi)\"\nprintf '\"'\"'\"'\"'\"'\"'\"'\"'repo_exists=%s\n'\"'\"'\"'\"'\"'\"'\"'\"' \"$(if [ -d \"$repo_dir\" ]; then echo yes; else echo no; fi)\"\nls -la \"$(dirname \"$link\")\"\nprintf -- '\"'\"'\"'\"'\"'\"'\"'\"'--- repo listing ---\n'\"'\"'\"'\"'\"'\"'\"'\"'\nls -la \"$repo_dir\"\ntest ! -e \"$link\"\n'\"'\"''",
+            "exitCode": 0,
+            "stdoutPath": "cli/cli-sync-activate/VAL-CLI-010-verify-shuvtest.stdout.txt",
+            "stderrPath": "cli/cli-sync-activate/VAL-CLI-010-verify-shuvtest.stderr.txt",
+            "exitCodePath": "cli/cli-sync-activate/VAL-CLI-010-verify-shuvtest.exit.txt",
+            "terminalSnapshots": [
+              "cli/cli-sync-activate/VAL-CLI-010-verify-shuvtest.terminal.txt"
+            ]
+          },
+          {
+            "host": "shuvbot",
+            "command": "ssh shuvbot 'sh -lc '\"'\"'link=/tmp/codex-fleet-user-testing-cli-skillops/active/demo-skill\nrepo_dir=/tmp/codex-fleet-user-testing-cli-skillops/repo/demo-skill\nprintf '\"'\"'\"'\"'\"'\"'\"'\"'host=%s\n'\"'\"'\"'\"'\"'\"'\"'\"' \"$(hostname)\"\nprintf '\"'\"'\"'\"'\"'\"'\"'\"'link_exists=%s\n'\"'\"'\"'\"'\"'\"'\"'\"' \"$(if [ -L \"$link\" ]; then echo yes; else echo no; fi)\"\nprintf '\"'\"'\"'\"'\"'\"'\"'\"'repo_exists=%s\n'\"'\"'\"'\"'\"'\"'\"'\"' \"$(if [ -d \"$repo_dir\" ]; then echo yes; else echo no; fi)\"\nls -la \"$(dirname \"$link\")\"\nprintf -- '\"'\"'\"'\"'\"'\"'\"'\"'--- repo listing ---\n'\"'\"'\"'\"'\"'\"'\"'\"'\nls -la \"$repo_dir\"\ntest ! -e \"$link\"\n'\"'\"''",
+            "exitCode": 0,
+            "stdoutPath": "cli/cli-sync-activate/VAL-CLI-010-verify-shuvbot.stdout.txt",
+            "stderrPath": "cli/cli-sync-activate/VAL-CLI-010-verify-shuvbot.stderr.txt",
+            "exitCodePath": "cli/cli-sync-activate/VAL-CLI-010-verify-shuvbot.exit.txt",
+            "terminalSnapshots": [
+              "cli/cli-sync-activate/VAL-CLI-010-verify-shuvbot.terminal.txt"
+            ]
+          }
+        ]
+      },
+      "issues": null
+    }
+  ],
+  "frictions": [],
+  "blockers": [],
+  "summary": "Tested 6 assertions: 6 passed, 0 failed, 0 blocked."
+}

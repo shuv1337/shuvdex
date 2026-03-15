@@ -73,3 +73,15 @@ Testing surface, resource cost classification, and validation approach.
 - For `skill.checkDrift` validation in the current environment, prefer SSH-reachable hosts (for example `shuvbot` + `shuvtest`) over `localhost`; the shipped live executor still routes through SSH, so localhost validation requires working localhost key auth.
 - Never read from or modify `~/repos/shuvbot-skills`; use validator-owned sandboxes for all write-path assertions.
 - Save evidence into the assigned mission evidence directory and write the flow report JSON exactly to the assigned path.
+
+## Flow Validator Guidance: cli-terminal
+
+- Work from `/home/shuv/repos/codex-fleet` and invoke the real CLI via `node apps/cli/bin/fleet.js ...` so validation exercises the shipped user surface.
+- Keep every write-path assertion inside its assigned local and remote `/tmp/codex-fleet-user-testing-cli-*` sandbox; never mutate `~/repos/shuvbot-skills` or `~/.codex/skills`.
+- Use the exact config files, remote repo paths, local skill roots, and active-dir paths assigned by the validator orchestrator for your group.
+- For git-backed CLI flows, verify user-visible output first, then confirm resulting remote state with direct `ssh` + `git`/`ls` commands against the same sandbox paths.
+- For `sync`, `activate`, and `deactivate`, keep remote skill repos and active directories isolated per group and treat repeated `activate`/`deactivate` calls as idempotency checks rather than setup failures.
+- For mixed-host timeout scenarios, reuse the dedicated config that pairs a healthy `shuvtest` entry with the reserved timeout target `192.0.2.1`; expect the healthy host to finish while the timeout host fails.
+- SSH to `shuvtest` may emit the known post-quantum warning on stderr; treat that warning as benign unless stdout, exit code, or repo state contradict expected behavior.
+- If `tuistory` is unavailable in `PATH`, capture terminal transcripts with `script` (or equivalent) and still save separate raw stdout/stderr/exit-code artifacts.
+- Save raw stdout/stderr/exit-code evidence into the assigned mission evidence directory and write the flow report JSON exactly to the assigned path.

@@ -1,0 +1,157 @@
+{
+  "groupId": "cli-partial-timeout",
+  "testedAt": "2026-03-15T23:35:53Z",
+  "isolation": {
+    "repoRoot": "/home/shuv/repos/codex-fleet",
+    "missionDir": "/home/shuv/.factory/missions/53d67669-5ba8-4745-9fd5-71906b40773d",
+    "configPath": "/tmp/codex-fleet-user-testing-cli/mixed-fleet.yaml",
+    "goodHost": "shuvtest",
+    "goodHostRepoPath": "/tmp/codex-fleet-user-testing-cli-partial-gitops/repo",
+    "goodHostOriginPath": "/tmp/codex-fleet-user-testing-cli-partial-gitops/origin.git",
+    "goodHostPeerPath": "/tmp/codex-fleet-user-testing-cli-partial-gitops/peer",
+    "timeoutHost": "192.0.2.1",
+    "timeoutHostAlias": "timeoutbox",
+    "timeoutHostConfigSeconds": 1,
+    "mutationBoundary": "Only /tmp/codex-fleet-user-testing-cli-partial-gitops/* on shuvtest was mutated; timeoutbox was untouched."
+  },
+  "toolsUsed": [
+    "node",
+    "ssh",
+    "git",
+    "python3"
+  ],
+  "assertions": [
+    {
+      "id": "VAL-CLI-019",
+      "title": "Partial Success - Mixed Host Results",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Advance origin on shuvtest via the isolated peer clone so repo becomes behind origin.",
+          "expected": "repo HEAD differs from origin HEAD before running fleet pull.",
+          "observed": "Before text run repo HEAD b973e197d596db0a5225af3d499973cb80318717 was behind origin HEAD 5b87f3a8862fdce58341721cfbccbe5ebca001e0."
+        },
+        {
+          "action": "Run fleet pull against the mixed-host config.",
+          "expected": "Healthy host succeeds, timeout host fails, and the CLI reports partial success.",
+          "observed": "`fleet pull --config /tmp/codex-fleet-user-testing-cli/mixed-fleet.yaml --repo /tmp/codex-fleet-user-testing-cli-partial-gitops/repo` exited 2 in 1319.1 ms; stdout showed `shuvtest` as `[OK]`, `timeoutbox` as `[FAIL]`, and summary `1 succeeded, 1 failed`."
+        },
+        {
+          "action": "Verify shuvtest repo state after the command.",
+          "expected": "The healthy host repository updates to origin despite the timeout host failure.",
+          "observed": "After the text run repo HEAD changed to 5b87f3a8862fdce58341721cfbccbe5ebca001e0 and matched origin HEAD 5b87f3a8862fdce58341721cfbccbe5ebca001e0."
+        }
+      ],
+      "evidence": {
+        "terminalSnapshots": [
+          "cli/cli-partial-timeout/pull-text-command.terminal.txt"
+        ],
+        "stdout": "cli/cli-partial-timeout/pull-text-command.stdout.txt",
+        "stderr": "cli/cli-partial-timeout/pull-text-command.stderr.txt",
+        "metadata": "cli/cli-partial-timeout/pull-text-command.meta.json",
+        "sshVerification": [
+          "cli/cli-partial-timeout/prep1-new-origin.terminal.txt",
+          "cli/cli-partial-timeout/pull-text-pre-state.terminal.txt",
+          "cli/cli-partial-timeout/pull-text-post-state.terminal.txt"
+        ]
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-CLI-020",
+      "title": "Partial Success - Output Format",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Advance origin again so the healthy repo has work to pull before the JSON run.",
+          "expected": "repo HEAD differs from origin HEAD before rerunning the CLI.",
+          "observed": "Before JSON run repo HEAD 5b87f3a8862fdce58341721cfbccbe5ebca001e0 was behind origin HEAD 98001fcdaba83bfbdcf24f785dcc1002f5112ace."
+        },
+        {
+          "action": "Run fleet pull with --json using the mixed-host config.",
+          "expected": "CLI emits valid JSON describing both host outcomes and exits with the partial-success code.",
+          "observed": "`fleet pull --json --config /tmp/codex-fleet-user-testing-cli/mixed-fleet.yaml --repo /tmp/codex-fleet-user-testing-cli-partial-gitops/repo` exited 2 in 1321.8 ms and stdout parsed successfully as JSON with 2 host entries."
+        },
+        {
+          "action": "Inspect JSON fields for each host result.",
+          "expected": "Each entry includes host/status details; failing host also includes an error.",
+          "observed": "JSON contained `shuvtest` => status `ok`, hostname `shuvtest`, updated `True` and `timeoutbox` => status `fail`, hostname `192.0.2.1`, error `Network timeout during git pull origin on 192.0.2.1`."
+        }
+      ],
+      "evidence": {
+        "terminalSnapshots": [
+          "cli/cli-partial-timeout/pull-json-command.terminal.txt"
+        ],
+        "stdout": "cli/cli-partial-timeout/pull-json-command.stdout.txt",
+        "stderr": "cli/cli-partial-timeout/pull-json-command.stderr.txt",
+        "metadata": "cli/cli-partial-timeout/pull-json-command.meta.json",
+        "parsedJson": "cli/cli-partial-timeout/pull-json-command.parsed.json",
+        "sshVerification": [
+          "cli/cli-partial-timeout/prep2-new-origin.terminal.txt",
+          "cli/cli-partial-timeout/pull-json-pre-state.terminal.txt",
+          "cli/cli-partial-timeout/pull-json-post-state.terminal.txt"
+        ]
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-CLI-022",
+      "title": "SSH Connection - Timeout Handling",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Run the mixed-host pull while timeoutbox is configured with a 1s timeout.",
+          "expected": "The timeout host reports a timeout-related failure rather than blocking all processing.",
+          "observed": "Text run finished in 1319.1 ms and JSON run finished in 1321.8 ms; the failure output referenced timeout behavior (`Network timeout during git pull origin on 192.0.2.1`)."
+        },
+        {
+          "action": "Check that shuvtest still completes its pull during the same mixed run.",
+          "expected": "Healthy host repo advances even though timeoutbox fails.",
+          "observed": "Text run advanced shuvtest repo from b973e197d596db0a5225af3d499973cb80318717 to 5b87f3a8862fdce58341721cfbccbe5ebca001e0; JSON run advanced it again from 5b87f3a8862fdce58341721cfbccbe5ebca001e0 to 98001fcdaba83bfbdcf24f785dcc1002f5112ace."
+        },
+        {
+          "action": "Confirm final remote state on the healthy host.",
+          "expected": "repo HEAD matches origin HEAD after each run and working tree remains clean.",
+          "observed": "After each run shuvtest repo HEAD matched origin (5b87f3a8862fdce58341721cfbccbe5ebca001e0 then 98001fcdaba83bfbdcf24f785dcc1002f5112ace) and `git status --short` remained empty."
+        }
+      ],
+      "evidence": {
+        "terminalSnapshots": [
+          "cli/cli-partial-timeout/pull-text-command.terminal.txt",
+          "cli/cli-partial-timeout/pull-json-command.terminal.txt"
+        ],
+        "stdout": [
+          "cli/cli-partial-timeout/pull-text-command.stdout.txt",
+          "cli/cli-partial-timeout/pull-json-command.stdout.txt"
+        ],
+        "stderr": [
+          "cli/cli-partial-timeout/pull-text-command.stderr.txt",
+          "cli/cli-partial-timeout/pull-json-command.stderr.txt"
+        ],
+        "metadata": [
+          "cli/cli-partial-timeout/pull-text-command.meta.json",
+          "cli/cli-partial-timeout/pull-json-command.meta.json"
+        ],
+        "sshVerification": [
+          "cli/cli-partial-timeout/pull-text-post-state.terminal.txt",
+          "cli/cli-partial-timeout/pull-json-post-state.terminal.txt"
+        ]
+      },
+      "issues": null
+    }
+  ],
+  "frictions": [
+    {
+      "description": "`tuistory` was not installed in PATH, so terminal evidence was captured as raw stdout/stderr/exit metadata plus combined command transcripts in the assigned evidence directory.",
+      "resolved": true,
+      "resolution": "Saved per-command terminal transcript files alongside raw stdout/stderr and metadata artifacts.",
+      "affectedAssertions": [
+        "VAL-CLI-019",
+        "VAL-CLI-020",
+        "VAL-CLI-022"
+      ]
+    }
+  ],
+  "blockers": [],
+  "summary": "Tested 3 assertions: 3 passed. Text pull and JSON pull both returned exit code 2 with shuvtest succeeding and timeoutbox timing out; shuvtest repo advanced from b973e197d596db0a5225af3d499973cb80318717 -> 5b87f3a8862fdce58341721cfbccbe5ebca001e0 -> 98001fcdaba83bfbdcf24f785dcc1002f5112ace."
+}

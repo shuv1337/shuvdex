@@ -1,0 +1,234 @@
+{
+  "groupId": "cli-help-usage",
+  "testedAt": "2026-03-15T23:36:26.739929+00:00",
+  "surface": "cli-terminal",
+  "isolation": {
+    "repoRoot": "/home/shuv/repos/codex-fleet",
+    "cliEntrypoint": "node apps/cli/bin/fleet.js",
+    "mode": "local-only",
+    "evidenceDir": "/home/shuv/.factory/missions/53d67669-5ba8-4745-9fd5-71906b40773d/evidence/cli/cli-help-usage",
+    "remoteMutation": "none"
+  },
+  "toolsUsed": [
+    "node",
+    "script",
+    "python3"
+  ],
+  "assertions": [
+    {
+      "id": "VAL-CLI-015",
+      "title": "Help Text - Main Command",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Run `node apps/cli/bin/fleet.js --help` from the repo root",
+          "expected": "Main help prints usage text to stdout and exits 0.",
+          "observed": "exitCode=0; stderr='empty'; stdout begins with `Usage: fleet <command> [options]`=True"
+        },
+        {
+          "action": "Inspect the commands section in the main help output",
+          "expected": "All supported subcommands are listed for users.",
+          "observed": "Listed commands: ['status', 'pull', 'sync', 'activate', 'deactivate', 'rollback', 'tag']"
+        }
+      ],
+      "reason": "The real CLI printed main usage help to stdout with exit code 0 and listed every shipped subcommand.",
+      "evidence": {
+        "files": [
+          "cli/cli-help-usage/VAL-CLI-015-main-help.stdout.txt",
+          "cli/cli-help-usage/VAL-CLI-015-main-help.stderr.txt",
+          "cli/cli-help-usage/VAL-CLI-015-main-help.exitcode.txt",
+          "cli/cli-help-usage/VAL-CLI-015-main-help.terminal.txt",
+          "cli/cli-help-usage/command-results.json"
+        ],
+        "consoleErrors": "n/a",
+        "network": "n/a"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-CLI-016",
+      "title": "Help Text - Subcommand Help",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Run `node apps/cli/bin/fleet.js status --help`",
+          "expected": "Command-specific help prints usage, arguments, and relevant options to stdout with exit code 0.",
+          "observed": "exitCode=0; stderr='empty'; confirmed markers=['Usage: fleet status [options]', '--json', '--config, -c <path>']"
+        },
+        {
+          "action": "Run `node apps/cli/bin/fleet.js pull --help`",
+          "expected": "Command-specific help prints usage, arguments, and relevant options to stdout with exit code 0.",
+          "observed": "exitCode=0; stderr='empty'; confirmed markers=['Usage: fleet pull [hosts...] [options]', 'Arguments:', '--repo, -r <path>']"
+        },
+        {
+          "action": "Run `node apps/cli/bin/fleet.js sync --help`",
+          "expected": "Command-specific help prints usage, arguments, and relevant options to stdout with exit code 0.",
+          "observed": "exitCode=0; stderr='empty'; confirmed markers=['Usage: fleet sync <skill> [hosts...] [options]', 'Arguments:', '--local-skill-path, -l <path>']"
+        },
+        {
+          "action": "Run `node apps/cli/bin/fleet.js activate --help`",
+          "expected": "Command-specific help prints usage, arguments, and relevant options to stdout with exit code 0.",
+          "observed": "exitCode=0; stderr='empty'; confirmed markers=['Usage: fleet activate <skill> [hosts...] [options]', 'Arguments:', '--active-dir, -a <path>']"
+        },
+        {
+          "action": "Run `node apps/cli/bin/fleet.js deactivate --help`",
+          "expected": "Command-specific help prints usage, arguments, and relevant options to stdout with exit code 0.",
+          "observed": "exitCode=0; stderr='empty'; confirmed markers=['Usage: fleet deactivate <skill> [hosts...] [options]', 'Arguments:', '--active-dir, -a <path>']"
+        },
+        {
+          "action": "Run `node apps/cli/bin/fleet.js rollback --help`",
+          "expected": "Command-specific help prints usage, arguments, and relevant options to stdout with exit code 0.",
+          "observed": "exitCode=0; stderr='empty'; confirmed markers=['Usage: fleet rollback <ref> [hosts...] [options]', 'Arguments:', '--repo, -r <path>']"
+        },
+        {
+          "action": "Run `node apps/cli/bin/fleet.js tag --help`",
+          "expected": "Command-specific help prints usage, arguments, and relevant options to stdout with exit code 0.",
+          "observed": "exitCode=0; stderr='empty'; confirmed markers=['Usage: fleet tag <name> [hosts...] [options]', 'Arguments:', '--repo, -r <path>']"
+        }
+      ],
+      "reason": "Representative subcommand help invocations across all shipped commands each returned exit code 0 and documented command-specific usage, arguments, and relevant options.",
+      "evidence": {
+        "files": [
+          "cli/cli-help-usage/command-results.json",
+          "cli/cli-help-usage/VAL-CLI-016-status-help.stdout.txt",
+          "cli/cli-help-usage/VAL-CLI-016-status-help.stderr.txt",
+          "cli/cli-help-usage/VAL-CLI-016-status-help.exitcode.txt",
+          "cli/cli-help-usage/VAL-CLI-016-status-help.terminal.txt",
+          "cli/cli-help-usage/VAL-CLI-016-pull-help.stdout.txt",
+          "cli/cli-help-usage/VAL-CLI-016-pull-help.stderr.txt",
+          "cli/cli-help-usage/VAL-CLI-016-pull-help.exitcode.txt",
+          "cli/cli-help-usage/VAL-CLI-016-pull-help.terminal.txt",
+          "cli/cli-help-usage/VAL-CLI-016-sync-help.stdout.txt",
+          "cli/cli-help-usage/VAL-CLI-016-sync-help.stderr.txt",
+          "cli/cli-help-usage/VAL-CLI-016-sync-help.exitcode.txt",
+          "cli/cli-help-usage/VAL-CLI-016-sync-help.terminal.txt",
+          "cli/cli-help-usage/VAL-CLI-016-activate-help.stdout.txt",
+          "cli/cli-help-usage/VAL-CLI-016-activate-help.stderr.txt",
+          "cli/cli-help-usage/VAL-CLI-016-activate-help.exitcode.txt",
+          "cli/cli-help-usage/VAL-CLI-016-activate-help.terminal.txt",
+          "cli/cli-help-usage/VAL-CLI-016-deactivate-help.stdout.txt",
+          "cli/cli-help-usage/VAL-CLI-016-deactivate-help.stderr.txt",
+          "cli/cli-help-usage/VAL-CLI-016-deactivate-help.exitcode.txt",
+          "cli/cli-help-usage/VAL-CLI-016-deactivate-help.terminal.txt",
+          "cli/cli-help-usage/VAL-CLI-016-rollback-help.stdout.txt",
+          "cli/cli-help-usage/VAL-CLI-016-rollback-help.stderr.txt",
+          "cli/cli-help-usage/VAL-CLI-016-rollback-help.exitcode.txt",
+          "cli/cli-help-usage/VAL-CLI-016-rollback-help.terminal.txt",
+          "cli/cli-help-usage/VAL-CLI-016-tag-help.stdout.txt",
+          "cli/cli-help-usage/VAL-CLI-016-tag-help.stderr.txt",
+          "cli/cli-help-usage/VAL-CLI-016-tag-help.exitcode.txt",
+          "cli/cli-help-usage/VAL-CLI-016-tag-help.terminal.txt"
+        ],
+        "consoleErrors": "n/a",
+        "network": "n/a"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-CLI-017",
+      "title": "Usage Error - Missing Required Argument",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Run `node apps/cli/bin/fleet.js sync` without its required positional argument",
+          "expected": "CLI exits non-zero and prints an error plus the relevant usage syntax to stderr.",
+          "observed": "exitCode=1; stdout='empty'; stderr includes placeholder '<skill>'=True and usage hint=True"
+        },
+        {
+          "action": "Run `node apps/cli/bin/fleet.js activate` without its required positional argument",
+          "expected": "CLI exits non-zero and prints an error plus the relevant usage syntax to stderr.",
+          "observed": "exitCode=1; stdout='empty'; stderr includes placeholder '<skill>'=True and usage hint=True"
+        },
+        {
+          "action": "Run `node apps/cli/bin/fleet.js deactivate` without its required positional argument",
+          "expected": "CLI exits non-zero and prints an error plus the relevant usage syntax to stderr.",
+          "observed": "exitCode=1; stdout='empty'; stderr includes placeholder '<skill>'=True and usage hint=True"
+        },
+        {
+          "action": "Run `node apps/cli/bin/fleet.js rollback` without its required positional argument",
+          "expected": "CLI exits non-zero and prints an error plus the relevant usage syntax to stderr.",
+          "observed": "exitCode=1; stdout='empty'; stderr includes placeholder '<ref>'=True and usage hint=True"
+        },
+        {
+          "action": "Run `node apps/cli/bin/fleet.js tag` without its required positional argument",
+          "expected": "CLI exits non-zero and prints an error plus the relevant usage syntax to stderr.",
+          "observed": "exitCode=1; stdout='empty'; stderr includes placeholder '<name>'=True and usage hint=True"
+        }
+      ],
+      "reason": "Each required-argument command returned exit code 1, kept stdout empty, and printed a missing-argument error together with the relevant usage hint on stderr.",
+      "evidence": {
+        "files": [
+          "cli/cli-help-usage/command-results.json",
+          "cli/cli-help-usage/VAL-CLI-017-sync-missing-arg.stdout.txt",
+          "cli/cli-help-usage/VAL-CLI-017-sync-missing-arg.stderr.txt",
+          "cli/cli-help-usage/VAL-CLI-017-sync-missing-arg.exitcode.txt",
+          "cli/cli-help-usage/VAL-CLI-017-sync-missing-arg.terminal.txt",
+          "cli/cli-help-usage/VAL-CLI-017-activate-missing-arg.stdout.txt",
+          "cli/cli-help-usage/VAL-CLI-017-activate-missing-arg.stderr.txt",
+          "cli/cli-help-usage/VAL-CLI-017-activate-missing-arg.exitcode.txt",
+          "cli/cli-help-usage/VAL-CLI-017-activate-missing-arg.terminal.txt",
+          "cli/cli-help-usage/VAL-CLI-017-deactivate-missing-arg.stdout.txt",
+          "cli/cli-help-usage/VAL-CLI-017-deactivate-missing-arg.stderr.txt",
+          "cli/cli-help-usage/VAL-CLI-017-deactivate-missing-arg.exitcode.txt",
+          "cli/cli-help-usage/VAL-CLI-017-deactivate-missing-arg.terminal.txt",
+          "cli/cli-help-usage/VAL-CLI-017-rollback-missing-arg.stdout.txt",
+          "cli/cli-help-usage/VAL-CLI-017-rollback-missing-arg.stderr.txt",
+          "cli/cli-help-usage/VAL-CLI-017-rollback-missing-arg.exitcode.txt",
+          "cli/cli-help-usage/VAL-CLI-017-rollback-missing-arg.terminal.txt",
+          "cli/cli-help-usage/VAL-CLI-017-tag-missing-arg.stdout.txt",
+          "cli/cli-help-usage/VAL-CLI-017-tag-missing-arg.stderr.txt",
+          "cli/cli-help-usage/VAL-CLI-017-tag-missing-arg.exitcode.txt",
+          "cli/cli-help-usage/VAL-CLI-017-tag-missing-arg.terminal.txt"
+        ],
+        "consoleErrors": "n/a",
+        "network": "n/a"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-CLI-018",
+      "title": "Usage Error - Unknown Command",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Run `node apps/cli/bin/fleet.js frobnicate`",
+          "expected": "CLI exits non-zero and reports the unknown subcommand on stderr.",
+          "observed": "exitCode=1; stdout='empty'; stderr contains `Unknown command: frobnicate`=True"
+        },
+        {
+          "action": "Inspect the follow-on help text in stderr",
+          "expected": "The error output includes the valid command list or suggestions.",
+          "observed": "Commands listed after the error: ['status', 'pull', 'sync', 'activate', 'deactivate', 'rollback', 'tag']"
+        }
+      ],
+      "reason": "The CLI rejected an unknown subcommand with exit code 1, named the bad command, and included the valid command list in stderr.",
+      "evidence": {
+        "files": [
+          "cli/cli-help-usage/VAL-CLI-018-unknown-command.stdout.txt",
+          "cli/cli-help-usage/VAL-CLI-018-unknown-command.stderr.txt",
+          "cli/cli-help-usage/VAL-CLI-018-unknown-command.exitcode.txt",
+          "cli/cli-help-usage/VAL-CLI-018-unknown-command.terminal.txt",
+          "cli/cli-help-usage/command-results.json"
+        ],
+        "consoleErrors": "n/a",
+        "network": "n/a"
+      },
+      "issues": null
+    }
+  ],
+  "frictions": [
+    {
+      "description": "The tuistory tool was not installed in PATH on this worker, so terminal snapshots could not be captured with that helper.",
+      "resolved": true,
+      "resolution": "Captured pseudo-terminal transcripts with util-linux `script` instead, while separately saving raw stdout, stderr, and exit-code files for every CLI invocation.",
+      "affectedAssertions": [
+        "VAL-CLI-015",
+        "VAL-CLI-016",
+        "VAL-CLI-017",
+        "VAL-CLI-018"
+      ]
+    }
+  ],
+  "blockers": [],
+  "summary": "Tested 4 assertions on the real CLI surface: 4 passed, 0 failed, 0 blocked, 0 skipped."
+}
