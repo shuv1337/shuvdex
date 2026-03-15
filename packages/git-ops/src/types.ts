@@ -4,12 +4,30 @@
 import { Context, Effect } from "effect";
 import type { HostConfig } from "@codex-fleet/core";
 import type { SshError } from "@codex-fleet/ssh";
-import type { GitCommandFailed } from "./errors.js";
+import type { GitCommandFailed, MergeConflict, PushRejected } from "./errors.js";
+
+/**
+ * Result of a pull operation.
+ */
+export interface PullResult {
+  /** Whether any new changes were pulled */
+  readonly updated: boolean;
+  /** Summary message from git pull (e.g., "Already up to date." or file list) */
+  readonly summary: string;
+}
+
+/**
+ * Result of a push operation.
+ */
+export interface PushResult {
+  /** Summary message from git push */
+  readonly summary: string;
+}
 
 /**
  * Git operations service interface.
  *
- * Provides read-only git operations that can be executed on remote hosts
+ * Provides read and write git operations that can be executed on remote hosts
  * via SSH. All operations return Effect values with typed errors and
  * are traced with OTEL spans.
  */
@@ -62,6 +80,67 @@ export interface GitOpsService {
     host: HostConfig,
     repoPath: string,
   ) => Effect.Effect<Array<string>, SshError | GitCommandFailed>;
+
+  /**
+   * Fetch and merge changes from the remote origin.
+   *
+   * Detects merge conflicts and returns them as a typed MergeConflict error
+   * with the list of conflicted files.
+   *
+   * @param host - The host configuration to connect to
+   * @param repoPath - Absolute path to the git repository on the remote host
+   * @returns Effect yielding PullResult or failing with MergeConflict
+   */
+  readonly pull: (
+    host: HostConfig,
+    repoPath: string,
+  ) => Effect.Effect<PullResult, SshError | GitCommandFailed | MergeConflict>;
+
+  /**
+   * Push local commits to the remote origin.
+   *
+   * Detects push rejections and returns them as a typed PushRejected error.
+   *
+   * @param host - The host configuration to connect to
+   * @param repoPath - Absolute path to the git repository on the remote host
+   * @returns Effect yielding PushResult or failing with PushRejected
+   */
+  readonly push: (
+    host: HostConfig,
+    repoPath: string,
+  ) => Effect.Effect<PushResult, SshError | GitCommandFailed | PushRejected>;
+
+  /**
+   * Create a lightweight tag at the specified ref (defaults to HEAD).
+   *
+   * @param host - The host configuration to connect to
+   * @param repoPath - Absolute path to the git repository on the remote host
+   * @param name - The tag name to create
+   * @param ref - Optional ref to tag (defaults to HEAD)
+   * @returns Effect yielding void or failing with GitCommandFailed
+   */
+  readonly createTag: (
+    host: HostConfig,
+    repoPath: string,
+    name: string,
+    ref?: string,
+  ) => Effect.Effect<void, SshError | GitCommandFailed>;
+
+  /**
+   * Checkout a specific branch, tag, or SHA.
+   *
+   * Updates the working tree and attaches HEAD for branches.
+   *
+   * @param host - The host configuration to connect to
+   * @param repoPath - Absolute path to the git repository on the remote host
+   * @param ref - The branch, tag, or SHA to checkout
+   * @returns Effect yielding void or failing with GitCommandFailed
+   */
+  readonly checkoutRef: (
+    host: HostConfig,
+    repoPath: string,
+    ref: string,
+  ) => Effect.Effect<void, SshError | GitCommandFailed>;
 }
 
 /**

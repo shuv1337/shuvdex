@@ -207,5 +207,186 @@ describe("GitOps OTEL Tracing", () => {
         expect(typeof span!.attributes["durationMs"]).toBe("number");
       }),
     );
+
+    it.effect("creates span for pull", () =>
+      Effect.gen(function* () {
+        const spansRef = yield* CollectedSpans;
+        const spansBefore = yield* Ref.get(spansRef);
+        const countBefore = spansBefore.length;
+
+        const gitOps = yield* GitOps;
+        yield* gitOps.pull(testHost, testRepoPath);
+
+        const spansAfter = yield* Ref.get(spansRef);
+        const newSpans = spansAfter.slice(countBefore);
+        const span = newSpans.find((s) => s.name === "git.pull");
+
+        expect(span).toBeDefined();
+        expect(span!.status).toBe("ok");
+        expect(span!.attributes["host"]).toBe("testhost");
+        expect(span!.attributes["operation"]).toBe("pull");
+        expect(span!.attributes["repoPath"]).toBe(testRepoPath);
+      }),
+    );
+
+    it.effect("records updated attribute on pull span", () =>
+      Effect.gen(function* () {
+        const responsesRef = yield* MockSshResponses;
+        yield* Ref.set(responsesRef, [
+          {
+            _tag: "result" as const,
+            value: {
+              stdout: "Already up to date.\n",
+              stderr: "",
+              exitCode: 0,
+            },
+          },
+        ]);
+
+        const spansRef = yield* CollectedSpans;
+        const spansBefore = yield* Ref.get(spansRef);
+        const countBefore = spansBefore.length;
+
+        const gitOps = yield* GitOps;
+        yield* gitOps.pull(testHost, testRepoPath);
+
+        const spansAfter = yield* Ref.get(spansRef);
+        const newSpans = spansAfter.slice(countBefore);
+        const span = newSpans.find((s) => s.name === "git.pull");
+
+        expect(span).toBeDefined();
+        expect(span!.attributes["git.updated"]).toBe(false);
+      }),
+    );
+
+    it.effect("creates span for push", () =>
+      Effect.gen(function* () {
+        const spansRef = yield* CollectedSpans;
+        const spansBefore = yield* Ref.get(spansRef);
+        const countBefore = spansBefore.length;
+
+        const gitOps = yield* GitOps;
+        yield* gitOps.push(testHost, testRepoPath);
+
+        const spansAfter = yield* Ref.get(spansRef);
+        const newSpans = spansAfter.slice(countBefore);
+        const span = newSpans.find((s) => s.name === "git.push");
+
+        expect(span).toBeDefined();
+        expect(span!.status).toBe("ok");
+        expect(span!.attributes["host"]).toBe("testhost");
+        expect(span!.attributes["operation"]).toBe("push");
+      }),
+    );
+
+    it.effect("creates span for createTag", () =>
+      Effect.gen(function* () {
+        const spansRef = yield* CollectedSpans;
+        const spansBefore = yield* Ref.get(spansRef);
+        const countBefore = spansBefore.length;
+
+        const gitOps = yield* GitOps;
+        yield* gitOps.createTag(testHost, testRepoPath, "v1.0.0");
+
+        const spansAfter = yield* Ref.get(spansRef);
+        const newSpans = spansAfter.slice(countBefore);
+        const span = newSpans.find((s) => s.name === "git.createTag");
+
+        expect(span).toBeDefined();
+        expect(span!.status).toBe("ok");
+        expect(span!.attributes["host"]).toBe("testhost");
+        expect(span!.attributes["operation"]).toBe("createTag");
+        expect(span!.attributes["git.tagName"]).toBe("v1.0.0");
+      }),
+    );
+
+    it.effect("creates span for checkoutRef", () =>
+      Effect.gen(function* () {
+        const spansRef = yield* CollectedSpans;
+        const spansBefore = yield* Ref.get(spansRef);
+        const countBefore = spansBefore.length;
+
+        const gitOps = yield* GitOps;
+        yield* gitOps.checkoutRef(testHost, testRepoPath, "main");
+
+        const spansAfter = yield* Ref.get(spansRef);
+        const newSpans = spansAfter.slice(countBefore);
+        const span = newSpans.find((s) => s.name === "git.checkoutRef");
+
+        expect(span).toBeDefined();
+        expect(span!.status).toBe("ok");
+        expect(span!.attributes["host"]).toBe("testhost");
+        expect(span!.attributes["operation"]).toBe("checkoutRef");
+        expect(span!.attributes["git.ref"]).toBe("main");
+      }),
+    );
+
+    it.effect("records error status when pull has merge conflict", () =>
+      Effect.gen(function* () {
+        const responsesRef = yield* MockSshResponses;
+        yield* Ref.set(responsesRef, [
+          {
+            _tag: "error" as const,
+            value: new CommandFailed({
+              host: "testhost",
+              command: "cd ~/repos/test-repo && git pull origin",
+              exitCode: 1,
+              stdout: "",
+              stderr: "CONFLICT (content): Merge conflict in src/index.ts\nAutomatic merge failed\n",
+            }),
+          },
+        ]);
+
+        const spansRef = yield* CollectedSpans;
+        const spansBefore = yield* Ref.get(spansRef);
+        const countBefore = spansBefore.length;
+
+        const gitOps = yield* GitOps;
+        yield* gitOps
+          .pull(testHost, testRepoPath)
+          .pipe(Effect.either);
+
+        const spansAfter = yield* Ref.get(spansRef);
+        const newSpans = spansAfter.slice(countBefore);
+        const span = newSpans.find((s) => s.name === "git.pull");
+
+        expect(span).toBeDefined();
+        expect(span!.status).toBe("error");
+      }),
+    );
+
+    it.effect("records error status when push is rejected", () =>
+      Effect.gen(function* () {
+        const responsesRef = yield* MockSshResponses;
+        yield* Ref.set(responsesRef, [
+          {
+            _tag: "error" as const,
+            value: new CommandFailed({
+              host: "testhost",
+              command: "cd ~/repos/test-repo && git push origin",
+              exitCode: 1,
+              stdout: "",
+              stderr: "! [rejected] main -> main (non-fast-forward)\nerror: failed to push some refs\n",
+            }),
+          },
+        ]);
+
+        const spansRef = yield* CollectedSpans;
+        const spansBefore = yield* Ref.get(spansRef);
+        const countBefore = spansBefore.length;
+
+        const gitOps = yield* GitOps;
+        yield* gitOps
+          .push(testHost, testRepoPath)
+          .pipe(Effect.either);
+
+        const spansAfter = yield* Ref.get(spansRef);
+        const newSpans = spansAfter.slice(countBefore);
+        const span = newSpans.find((s) => s.name === "git.push");
+
+        expect(span).toBeDefined();
+        expect(span!.status).toBe("error");
+      }),
+    );
   });
 });
