@@ -13,12 +13,13 @@
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "dependencies": {
-    "effect": "^3.19.0",
     "@codex-fleet/core": "*",
-    "@codex-fleet/ssh": "*",
     "@codex-fleet/git-ops": "*",
     "@codex-fleet/skill-ops": "*",
-    "@codex-fleet/telemetry": "*"
+    "@codex-fleet/ssh": "*",
+    "@codex-fleet/telemetry": "*",
+    "@modelcontextprotocol/sdk": "^1.27.1",
+    "effect": "^3.19.0"
   },
   "devDependencies": {
     "@effect/vitest": "^0.27.0",
