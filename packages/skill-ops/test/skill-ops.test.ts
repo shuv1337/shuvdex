@@ -1264,6 +1264,39 @@ describe("SkillOps activateSkill", () => {
       }),
     );
 
+    it.effect("treats tilde-expanded readlink target as matching tilde repoPath (idempotent)", () =>
+      Effect.gen(function* () {
+        const responsesRef = yield* MockSshResponses;
+        yield* Ref.set(responsesRef, [
+          // checkSymlink: already active
+          {
+            _tag: "result" as const,
+            value: { stdout: "active\n", stderr: "", exitCode: 0 },
+          },
+          // readSymlinkTarget: returns EXPANDED path (e.g. /home/user/repos/...)
+          // while repoPath is ~/repos/shuvbot-skills
+          {
+            _tag: "result" as const,
+            value: { stdout: "/home/user/repos/shuvbot-skills/my-skill\n", stderr: "", exitCode: 0 },
+          },
+        ]);
+
+        const skillOps = yield* SkillOps;
+        const result = yield* skillOps.activateSkill(
+          testHost,
+          "my-skill",
+          testRepoPath, // ~/repos/shuvbot-skills
+          testActiveDir,
+        );
+
+        // Should be treated as already active (tilde expansion match)
+        expect(result.host).toBe("testhost");
+        expect(result.skillName).toBe("my-skill");
+        expect(result.alreadyInState).toBe(true);
+        expect(result.status).toBe("active");
+      }),
+    );
+
     it.effect("ensures active directory exists before creating symlink", () =>
       Effect.gen(function* () {
         const responsesRef = yield* MockSshResponses;

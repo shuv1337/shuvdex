@@ -120,6 +120,36 @@ describe("parseArgs", () => {
     expect(result.flags.repo).toBe("~/repos/shuvbot-skills");
   });
 
+  it("parses --local-skill-path flag", () => {
+    const result = parseArgs([
+      "node",
+      "fleet",
+      "sync",
+      "my-skill",
+      "--local-skill-path",
+      "/local/repo/path",
+    ]);
+    expect(result.command).toBe("sync");
+    expect(result.flags.localSkillPath).toBe("/local/repo/path");
+  });
+
+  it("parses -l as local-skill-path shorthand", () => {
+    const result = parseArgs([
+      "node",
+      "fleet",
+      "sync",
+      "my-skill",
+      "-l",
+      "/local/repo",
+    ]);
+    expect(result.flags.localSkillPath).toBe("/local/repo");
+  });
+
+  it("defaults localSkillPath to undefined", () => {
+    const result = parseArgs(["node", "fleet", "sync", "my-skill"]);
+    expect(result.flags.localSkillPath).toBeUndefined();
+  });
+
   it("parses sync command with skill and hosts", () => {
     const result = parseArgs(["node", "fleet", "sync", "my-skill", "shuvtest", "shuvbot"]);
     expect(result.command).toBe("sync");
@@ -254,6 +284,7 @@ describe("help text", () => {
     expect(help).toContain("skill");
     expect(help).toContain("hosts");
     expect(help).toContain("--json");
+    expect(help).toContain("--local-skill-path");
     expect(help).toContain("--repo");
     expect(help).toContain("--config");
   });

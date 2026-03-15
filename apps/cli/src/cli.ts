@@ -72,6 +72,7 @@ export interface ParsedArgs {
     readonly help: boolean;
     readonly config: string;
     readonly repo: string;
+    readonly localSkillPath: string | undefined;
     readonly activeDir: string;
   };
   readonly positional: ReadonlyArray<string>;
@@ -83,6 +84,7 @@ export const parseArgs = (argv: ReadonlyArray<string>): ParsedArgs => {
   let help = false;
   let config = DEFAULT_CONFIG_PATH;
   let repo = DEFAULT_REPO_PATH;
+  let localSkillPath: string | undefined;
   let activeDir = DEFAULT_ACTIVE_DIR;
   const positional: Array<string> = [];
 
@@ -101,6 +103,9 @@ export const parseArgs = (argv: ReadonlyArray<string>): ParsedArgs => {
     } else if (arg === "--repo" || arg === "-r") {
       i++;
       repo = args[i] ?? DEFAULT_REPO_PATH;
+    } else if (arg === "--local-skill-path" || arg === "-l") {
+      i++;
+      localSkillPath = args[i];
     } else if (arg === "--active-dir" || arg === "-a") {
       i++;
       activeDir = args[i] ?? DEFAULT_ACTIVE_DIR;
@@ -112,7 +117,7 @@ export const parseArgs = (argv: ReadonlyArray<string>): ParsedArgs => {
     i++;
   }
 
-  return { command, flags: { json, help, config, repo, activeDir }, positional };
+  return { command, flags: { json, help, config, repo, localSkillPath, activeDir }, positional };
 };
 
 /**
@@ -192,6 +197,7 @@ Arguments:
 
 Options:
   --json               Output as JSON
+  --local-skill-path, -l <path>  Local path to skills repo (default: ~/repos/shuvbot-skills expanded)
   --repo, -r <path>    Path to skills repo on remote hosts (default: ~/repos/shuvbot-skills)
   --config, -c <path>  Path to fleet config file (default: fleet.yaml)
   --help, -h           Show help
@@ -564,12 +570,12 @@ const runSyncCommand = (
       return 1;
     }
 
-    // Use the repo flag as the remote repo path. The local repo path
-    // is the same path resolved relative to the current working directory
-    // (or if it starts with ~/ it's a home-relative path).
-    const localRepoPath = parsed.flags.repo.startsWith("~/")
-      ? `${process.env.HOME}${parsed.flags.repo.slice(1)}`
-      : parsed.flags.repo;
+    // Local skill path: use --local-skill-path if provided, otherwise
+    // expand ~ in the repo path for local filesystem access.
+    const localRepoPath = parsed.flags.localSkillPath
+      ?? (parsed.flags.repo.startsWith("~/")
+        ? `${process.env.HOME}${parsed.flags.repo.slice(1)}`
+        : parsed.flags.repo);
 
     const result = yield* runSync(
       registry,

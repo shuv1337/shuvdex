@@ -152,6 +152,48 @@ describe("fleet activate", () => {
     );
   });
 
+  // --- runActivate already active with tilde expansion ---
+
+  layer(TestLayer)("runActivate tilde expansion idempotent", (it) => {
+    it.effect("returns 'already active' when readlink returns expanded tilde path", () =>
+      Effect.gen(function* () {
+        const responsesRef = yield* MockSshResponses;
+        // Mock responses for activateSkill:
+        // 1. checkSymlink => "active"
+        // 2. readSymlinkTarget => expanded path (no tilde)
+        yield* Ref.set(responsesRef, [
+          {
+            _tag: "result" as const,
+            value: { stdout: "active\n", stderr: "", exitCode: 0 },
+          },
+          {
+            _tag: "result" as const,
+            value: {
+              stdout: `/home/user/repos/shuvbot-skills/my-skill\n`,
+              stderr: "",
+              exitCode: 0,
+            },
+          },
+        ]);
+
+        const result = yield* runActivate(
+          singleRegistry,
+          "my-skill",
+          repoPath, // ~/repos/shuvbot-skills
+          activeDir,
+        );
+
+        expect(result.hosts).toHaveLength(1);
+        expect(result.hosts[0].status).toBe("ok");
+        if (result.hosts[0].status === "ok") {
+          expect(result.hosts[0].alreadyInState).toBe(true);
+          expect(result.hosts[0].skillStatus).toBe("active");
+        }
+        expect(result.allSucceeded).toBe(true);
+      }),
+    );
+  });
+
   // --- runActivate multiple hosts ---
 
   layer(TestLayer)("runActivate multiple hosts", (it) => {

@@ -99,6 +99,40 @@ export const _buildRsyncSshCmd = (host: HostConfig): string => {
 };
 
 /**
+ * Compare two paths allowing for tilde expansion differences.
+ *
+ * When a symlink is created on a remote host with a tilde path like
+ * `~/repos/shuvbot-skills/my-skill`, the shell expands `~` to the user's
+ * home directory. When we later read the symlink target with `readlink`,
+ * it returns the expanded path (e.g. `/home/user/repos/shuvbot-skills/my-skill`).
+ * This function handles the comparison by checking whether the expanded path
+ * ends with the tilde-relative portion of the other path.
+ *
+ * @returns `true` if the paths match (either exactly or via tilde expansion)
+ */
+const pathsMatchWithTildeExpansion = (
+  actual: string | undefined,
+  expected: string,
+): boolean => {
+  if (actual === undefined) return false;
+  // Exact match
+  if (actual === expected) return true;
+  // If expected starts with ~/, the actual (expanded) path should end
+  // with the portion after ~
+  if (expected.startsWith("~/")) {
+    const suffix = expected.slice(1); // e.g. "/repos/shuvbot-skills/my-skill"
+    return actual.endsWith(suffix);
+  }
+  // If actual starts with ~/, the expected (expanded) path should end
+  // with the portion after ~
+  if (actual.startsWith("~/")) {
+    const suffix = actual.slice(1);
+    return expected.endsWith(suffix);
+  }
+  return false;
+};
+
+/**
  * Directories that should be filtered out when listing skills.
  * These are common non-skill directories that may exist in a repository.
  */
@@ -480,7 +514,7 @@ export const SkillOpsLive: Layer.Layer<SkillOps, never, SshExecutor | GitOps> = 
               // CORRECT target path. If it points elsewhere, repoint it.
               const currentTarget = yield* readSymlinkTarget(ssh, host, symlinkPath);
 
-              if (currentTarget === targetPath) {
+              if (pathsMatchWithTildeExpansion(currentTarget, targetPath)) {
                 // Already active with correct target — idempotent success
                 yield* Effect.annotateCurrentSpan("skill.alreadyActive", true);
                 return {
