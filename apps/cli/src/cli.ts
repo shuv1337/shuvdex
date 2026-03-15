@@ -197,7 +197,7 @@ Arguments:
 
 Options:
   --json               Output as JSON
-  --local-skill-path, -l <path>  Local path to skills repo (default: ~/repos/shuvbot-skills expanded)
+  --local-skill-path, -l <path>  Local path to skills repo (default: current directory)
   --repo, -r <path>    Path to skills repo on remote hosts (default: ~/repos/shuvbot-skills)
   --config, -c <path>  Path to fleet config file (default: fleet.yaml)
   --help, -h           Show help
@@ -571,11 +571,9 @@ const runSyncCommand = (
     }
 
     // Local skill path: use --local-skill-path if provided, otherwise
-    // expand ~ in the repo path for local filesystem access.
-    const localRepoPath = parsed.flags.localSkillPath
-      ?? (parsed.flags.repo.startsWith("~/")
-        ? `${process.env.HOME}${parsed.flags.repo.slice(1)}`
-        : parsed.flags.repo);
+    // default to the current working directory (independent from --repo
+    // which specifies the remote path on target hosts).
+    const localRepoPath = parsed.flags.localSkillPath ?? process.cwd();
 
     const result = yield* runSync(
       registry,

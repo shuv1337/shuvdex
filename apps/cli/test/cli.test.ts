@@ -150,6 +150,21 @@ describe("parseArgs", () => {
     expect(result.flags.localSkillPath).toBeUndefined();
   });
 
+  it("keeps localSkillPath undefined when only --repo is set", () => {
+    const result = parseArgs([
+      "node",
+      "fleet",
+      "sync",
+      "my-skill",
+      "--repo",
+      "/remote/skills/path",
+    ]);
+    // --repo sets the remote repo path, but localSkillPath should remain
+    // independent (undefined) — it must NOT inherit from --repo
+    expect(result.flags.localSkillPath).toBeUndefined();
+    expect(result.flags.repo).toBe("/remote/skills/path");
+  });
+
   it("parses sync command with skill and hosts", () => {
     const result = parseArgs(["node", "fleet", "sync", "my-skill", "shuvtest", "shuvbot"]);
     expect(result.command).toBe("sync");

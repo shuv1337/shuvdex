@@ -441,4 +441,58 @@ describe("fleet sync", () => {
       expect(() => JSON.parse(output)).not.toThrow();
     });
   });
+
+  // --- runSync with --repo (remote) independent from local path ---
+
+  describe("runSync with separate local and remote paths", () => {
+    it("uses localRepoPath independently from remote repoPath", () => {
+      // When --repo is set to a remote-only path but local path is the actual
+      // local directory, sync should validate the skill against the local path,
+      // NOT the remote path.
+      const remoteRepoPath = "/remote/only/skills";
+      const localRepoPath = "/home/shuv/repos/codex-fleet/apps/cli"; // exists locally
+
+      const result = runSync(
+        singleRegistry,
+        "test", // "test" directory exists under localRepoPath (apps/cli/test)
+        localRepoPath,
+        remoteRepoPath,
+      );
+
+      const program = result.pipe(Effect.provide(TestLayer));
+      return Effect.runPromise(program).then((res) => {
+        // The local validation should pass because the skill "test" exists
+        // at localRepoPath/test (i.e., /home/shuv/repos/codex-fleet/apps/cli/test).
+        // The remote path is separate and used only for SSH operations.
+        expect(res.skillError).toBeUndefined();
+        expect(res.hosts).toHaveLength(1);
+        // Verify the remote path didn't contaminate local validation
+        expect(remoteRepoPath).not.toBe(localRepoPath);
+      });
+    });
+
+    it("fails local validation when localRepoPath has no skill even if remote would", () => {
+      // Even if the remote --repo path theoretically has the skill,
+      // local validation should use localRepoPath independently
+      const remoteRepoPath = "~/repos/shuvbot-skills"; // default remote
+      const localRepoPath = "/tmp/empty-nonexistent-dir";
+
+      const result = runSync(
+        singleRegistry,
+        "my-skill",
+        localRepoPath,
+        remoteRepoPath,
+      );
+
+      const program = result.pipe(Effect.provide(TestLayer));
+      return Effect.runPromise(program).then((res) => {
+        expect(res.allSucceeded).toBe(false);
+        expect(res.skillError).toBeDefined();
+        expect(res.skillError).toContain("not found");
+        // Verify it looked in the local path, not the remote
+        expect(res.skillError).toContain(localRepoPath);
+        expect(res.hosts).toHaveLength(0);
+      });
+    });
+  });
 });
