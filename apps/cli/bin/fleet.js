@@ -1,5 +1,12 @@
 #!/usr/bin/env node
 
-// Fleet CLI entry point - implementation pending
-console.log("fleet: not yet implemented");
-process.exit(0);
+import { Effect } from "effect";
+import { run } from "../dist/cli.js";
+
+Effect.runPromise(run(process.argv)).then(
+  (code) => process.exit(code),
+  (err) => {
+    console.error("Fatal:", err);
+    process.exit(1);
+  },
+);

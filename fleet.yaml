@@ -1,0 +1,9 @@
+hosts:
+  shuvtest:
+    hostname: shuvtest
+    connectionType: ssh
+    timeout: 10
+  shuvbot:
+    hostname: shuvbot
+    connectionType: ssh
+    timeout: 10
