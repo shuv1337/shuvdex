@@ -12,6 +12,7 @@ import { Effect, Layer } from "effect";
 import { loadConfig } from "@codex-fleet/core";
 import { SshExecutorLive } from "@codex-fleet/ssh";
 import { GitOpsLive } from "@codex-fleet/git-ops";
+import { SkillOpsLive } from "@codex-fleet/skill-ops";
 import { TelemetryLive } from "@codex-fleet/telemetry";
 import { runStatus, formatTable, formatJson } from "./commands/status.js";
 import {
@@ -19,6 +20,11 @@ import {
   formatPullTable,
   formatPullJson,
 } from "./commands/pull.js";
+import {
+  runSync,
+  formatSyncTable,
+  formatSyncJson,
+} from "./commands/sync.js";
 
 /**
  * Default config path if not specified.
@@ -141,6 +147,31 @@ Exit codes:
 `;
 
 /**
+ * Show sync command help text.
+ */
+export const syncHelp = (): string =>
+  `Usage: fleet sync <skill> [hosts...] [options]
+
+Sync a skill from local to remote hosts. Validates that the
+skill exists locally before attempting any SSH connections.
+
+Arguments:
+  skill                Skill name to sync (required)
+  hosts                Host names to sync to (default: all)
+
+Options:
+  --json               Output as JSON
+  --repo, -r <path>    Path to skills repo on remote hosts (default: ~/repos/shuvbot-skills)
+  --config, -c <path>  Path to fleet config file (default: fleet.yaml)
+  --help, -h           Show help
+
+Exit codes:
+  0  All hosts synced successfully
+  1  All hosts failed or skill missing
+  2  Partial success (some hosts succeeded, some failed)
+`;
+
+/**
  * Run the CLI with the given argv.
  * Returns the exit code.
  */
@@ -178,6 +209,14 @@ export const run = (
           return 0;
         }
         return yield* runPullCommand(parsed);
+      }
+
+      case "sync": {
+        if (parsed.flags.help) {
+          yield* Effect.sync(() => process.stdout.write(syncHelp()));
+          return 0;
+        }
+        return yield* runSyncCommand(parsed);
       }
 
       default: {
@@ -277,6 +316,90 @@ const runPullCommand = (
     yield* Effect.sync(() => process.stdout.write(output + "\n"));
 
     // Exit code: 0 = all ok, 1 = all failed, 2 = partial
+    if (result.allSucceeded) {
+      return 0;
+    }
+    const okCount = result.hosts.filter((h) => h.status === "ok").length;
+    return okCount > 0 ? 2 : 1;
+  }).pipe(
+    Effect.catchAll(() => Effect.succeed(1)),
+  );
+
+/**
+ * Execute the sync subcommand end-to-end.
+ *
+ * The first positional argument is the skill name (required).
+ * Remaining positional arguments are host names (optional filter).
+ *
+ * Exit codes:
+ * - 0: All hosts synced successfully
+ * - 1: All hosts failed, skill missing, or config error
+ * - 2: Partial success
+ */
+const runSyncCommand = (
+  parsed: ParsedArgs,
+): Effect.Effect<number, never, never> =>
+  Effect.gen(function* () {
+    // Skill name is the first positional arg
+    const skillName = parsed.positional[0] as string | undefined;
+    if (!skillName) {
+      yield* Effect.sync(() =>
+        process.stderr.write(
+          `Error: missing required argument: <skill>\n\n${syncHelp()}`,
+        ),
+      );
+      return 1;
+    }
+
+    // Load config
+    const registry = yield* loadConfig(parsed.flags.config).pipe(
+      Effect.catchAll((err) =>
+        Effect.gen(function* () {
+          yield* Effect.sync(() =>
+            process.stderr.write(`Error: ${err.message}\n`),
+          );
+          return yield* Effect.fail("config-error" as const);
+        }),
+      ),
+    );
+
+    // Build live layer: SSH + Telemetry + GitOps + SkillOps
+    const baseLiveLayer = Layer.merge(SshExecutorLive, TelemetryLive);
+    const gitOpsLayer = Layer.provideMerge(GitOpsLive, baseLiveLayer);
+    const liveLayer = Layer.provideMerge(SkillOpsLive, gitOpsLayer);
+
+    // Host filter from remaining positional args (after skill name)
+    const filterHosts =
+      parsed.positional.length > 1
+        ? parsed.positional.slice(1)
+        : undefined;
+
+    // Use the repo flag as the remote repo path. The local repo path
+    // is the same path resolved relative to the current working directory
+    // (or if it starts with ~/ it's a home-relative path).
+    const localRepoPath = parsed.flags.repo.startsWith("~/")
+      ? `${process.env.HOME}${parsed.flags.repo.slice(1)}`
+      : parsed.flags.repo;
+
+    const result = yield* runSync(
+      registry,
+      skillName,
+      localRepoPath,
+      parsed.flags.repo,
+      filterHosts,
+    ).pipe(Effect.provide(liveLayer));
+
+    // Format and print output
+    const output = parsed.flags.json
+      ? formatSyncJson(result)
+      : formatSyncTable(result);
+
+    yield* Effect.sync(() => process.stdout.write(output + "\n"));
+
+    // Exit code: 0 = all ok, 1 = all failed / skill error, 2 = partial
+    if (result.skillError) {
+      return 1;
+    }
     if (result.allSucceeded) {
       return 0;
     }

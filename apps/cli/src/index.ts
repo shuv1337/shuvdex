@@ -4,7 +4,7 @@
  * CLI tool for fleet skills management.
  */
 
-export { run, parseArgs, mainHelp, statusHelp, pullHelp } from "./cli.js";
+export { run, parseArgs, mainHelp, statusHelp, pullHelp, syncHelp } from "./cli.js";
 export type { ParsedArgs } from "./cli.js";
 export {
   runStatus,
@@ -19,3 +19,9 @@ export {
   formatPullJson,
 } from "./commands/pull.js";
 export type { HostPullResult, PullCommandResult } from "./commands/pull.js";
+export {
+  runSync,
+  formatSyncTable,
+  formatSyncJson,
+} from "./commands/sync.js";
+export type { HostSyncResult, SyncCommandResult } from "./commands/sync.js";

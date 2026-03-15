@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseArgs, mainHelp, statusHelp, pullHelp } from "../src/cli.js";
+import { parseArgs, mainHelp, statusHelp, pullHelp, syncHelp } from "../src/cli.js";
 
 describe("parseArgs", () => {
   it("parses status command", () => {
@@ -109,6 +109,24 @@ describe("parseArgs", () => {
     const result = parseArgs(["node", "fleet", "pull"]);
     expect(result.flags.repo).toBe("~/repos/shuvbot-skills");
   });
+
+  it("parses sync command with skill and hosts", () => {
+    const result = parseArgs(["node", "fleet", "sync", "my-skill", "shuvtest", "shuvbot"]);
+    expect(result.command).toBe("sync");
+    expect(result.positional).toEqual(["my-skill", "shuvtest", "shuvbot"]);
+  });
+
+  it("parses sync command with skill only", () => {
+    const result = parseArgs(["node", "fleet", "sync", "my-skill"]);
+    expect(result.command).toBe("sync");
+    expect(result.positional).toEqual(["my-skill"]);
+  });
+
+  it("parses sync command with no args", () => {
+    const result = parseArgs(["node", "fleet", "sync"]);
+    expect(result.command).toBe("sync");
+    expect(result.positional).toEqual([]);
+  });
 });
 
 describe("help text", () => {
@@ -135,6 +153,16 @@ describe("help text", () => {
   it("pullHelp describes the command", () => {
     const help = pullHelp();
     expect(help).toContain("fleet pull");
+    expect(help).toContain("hosts");
+    expect(help).toContain("--json");
+    expect(help).toContain("--repo");
+    expect(help).toContain("--config");
+  });
+
+  it("syncHelp describes the command", () => {
+    const help = syncHelp();
+    expect(help).toContain("fleet sync");
+    expect(help).toContain("skill");
     expect(help).toContain("hosts");
     expect(help).toContain("--json");
     expect(help).toContain("--repo");
