@@ -433,7 +433,7 @@ describe("SkillOps", () => {
       }),
     );
 
-    it.effect("returns 'inactive' when SSH command fails", () =>
+    it.effect("propagates SSH command failure as SkillCommandFailed (not silently inactive)", () =>
       Effect.gen(function* () {
         const responsesRef = yield* MockSshResponses;
         yield* Ref.set(responsesRef, [
@@ -450,10 +450,17 @@ describe("SkillOps", () => {
         ]);
 
         const skillOps = yield* SkillOps;
-        const status = yield* skillOps.getSkillStatus(testHost, "my-skill", testActiveDir);
+        const result = yield* skillOps
+          .getSkillStatus(testHost, "my-skill", testActiveDir)
+          .pipe(Effect.either);
 
-        // Should gracefully default to inactive, not error
-        expect(status).toBe("inactive");
+        // SSH/command failures should propagate, not be silently treated as inactive
+        expect(result._tag).toBe("Left");
+        if (result._tag === "Left") {
+          expect(result.left).toBeInstanceOf(SkillCommandFailed);
+          const err = result.left as SkillCommandFailed;
+          expect(err.host).toBe("testhost");
+        }
       }),
     );
 
@@ -1235,6 +1242,11 @@ describe("SkillOps activateSkill", () => {
             _tag: "result" as const,
             value: { stdout: "active\n", stderr: "", exitCode: 0 },
           },
+          // readSymlinkTarget: returns the correct target path
+          {
+            _tag: "result" as const,
+            value: { stdout: `${testRepoPath}/my-skill\n`, stderr: "", exitCode: 0 },
+          },
         ]);
 
         const skillOps = yield* SkillOps;
@@ -1562,7 +1574,7 @@ describe("SkillOps deactivateSkill", () => {
       }),
     );
 
-    it.effect("handles SSH failure gracefully on symlink check", () =>
+    it.effect("propagates SSH failure on symlink check as ActivationFailed (not silently inactive)", () =>
       Effect.gen(function* () {
         const responsesRef = yield* MockSshResponses;
         yield* Ref.set(responsesRef, [
@@ -1580,15 +1592,19 @@ describe("SkillOps deactivateSkill", () => {
         ]);
 
         const skillOps = yield* SkillOps;
-        // Should treat SSH failure on check as "absent" and return idempotent success
-        const result = yield* skillOps.deactivateSkill(
-          testHost,
-          "my-skill",
-          testActiveDir,
-        );
+        // SSH/command failures should NOT be silently treated as "absent"
+        const result = yield* skillOps
+          .deactivateSkill(testHost, "my-skill", testActiveDir)
+          .pipe(Effect.either);
 
-        expect(result.alreadyInState).toBe(true);
-        expect(result.status).toBe("inactive");
+        expect(result._tag).toBe("Left");
+        if (result._tag === "Left") {
+          expect(result.left).toBeInstanceOf(ActivationFailed);
+          const err = result.left as ActivationFailed;
+          expect(err.host).toBe("testhost");
+          expect(err.operation).toBe("deactivate");
+          expect(err.cause).toContain("connection reset");
+        }
       }),
     );
 
@@ -1696,7 +1712,7 @@ describe("SkillOps activation OTEL tracing", () => {
       }),
     );
 
-    it.effect("records alreadyActive=true when skill is already active", () =>
+    it.effect("records alreadyActive=true when skill is already active with correct target", () =>
       Effect.gen(function* () {
         const spansRef = yield* CollectedSpans;
         yield* Ref.set(spansRef, []);
@@ -1707,6 +1723,11 @@ describe("SkillOps activation OTEL tracing", () => {
           {
             _tag: "result" as const,
             value: { stdout: "active\n", stderr: "", exitCode: 0 },
+          },
+          // readSymlinkTarget: correct target path
+          {
+            _tag: "result" as const,
+            value: { stdout: `${testRepoPath}/my-skill\n`, stderr: "", exitCode: 0 },
           },
         ]);
 
@@ -2267,7 +2288,7 @@ describe("SkillOps checkDrift", () => {
       }),
     );
 
-    it.effect("handles rev-list failure gracefully (reports as diverged with zero counts)", () =>
+    it.effect("handles rev-list failure gracefully (reports as diverged with undefined counts)", () =>
       Effect.gen(function* () {
         const responsesRef = yield* MockSshResponses;
         yield* Ref.set(responsesRef, [
@@ -2308,10 +2329,10 @@ describe("SkillOps checkDrift", () => {
         const hostBResult = report.hosts.find((h) => h.host === "host-b")!;
         expect(hostBResult.status).toBe("drifted");
         expect(hostBResult.sha).toBe(driftedSha);
-        // Fallback to diverged with 0 counts
+        // Fallback to diverged with undefined counts (missing refs)
         expect(hostBResult.direction).toBe("diverged");
-        expect(hostBResult.ahead).toBe(0);
-        expect(hostBResult.behind).toBe(0);
+        expect(hostBResult.ahead).toBeUndefined();
+        expect(hostBResult.behind).toBeUndefined();
       }),
     );
 
@@ -2744,4 +2765,390 @@ describe("SkillOps portability", () => {
     });
   });
 
+});
+
+// ──────────────────────────────────────────────────────────────
+// Regression tests: edge case fixes
+// ──────────────────────────────────────────────────────────────
+
+describe("Regression: discovery propagates errors instead of silently treating as inactive", () => {
+  layer(TestLayer)("listSkills error propagation", (it) => {
+    it.effect("SSH failure during symlink check propagates (not silently inactive)", () =>
+      Effect.gen(function* () {
+        const responsesRef = yield* MockSshResponses;
+        yield* Ref.set(responsesRef, [
+          // repo exists
+          {
+            _tag: "result" as const,
+            value: { stdout: "exists\n", stderr: "", exitCode: 0 },
+          },
+          // list directories
+          {
+            _tag: "result" as const,
+            value: { stdout: "my-skill\n", stderr: "", exitCode: 0 },
+          },
+          // symlink check for my-skill fails with SSH connection error
+          {
+            _tag: "error" as const,
+            value: new CommandFailed({
+              host: "testhost",
+              command: "test -L ...",
+              exitCode: 255,
+              stdout: "",
+              stderr: "ssh: connect to host testhost port 22: Connection refused",
+            }),
+          },
+        ]);
+
+        const skillOps = yield* SkillOps;
+        const result = yield* skillOps
+          .listSkills(testHost, testRepoPath, testActiveDir)
+          .pipe(Effect.either);
+
+        // SSH errors during symlink checking must NOT be silently treated
+        // as inactive skills. They must propagate as SkillCommandFailed.
+        expect(result._tag).toBe("Left");
+        if (result._tag === "Left") {
+          expect(result.left).toBeInstanceOf(SkillCommandFailed);
+        }
+      }),
+    );
+
+    it.effect("getSkillStatus propagates connection failure (not silently inactive)", () =>
+      Effect.gen(function* () {
+        const responsesRef = yield* MockSshResponses;
+        yield* Ref.set(responsesRef, [
+          // SSH connection completely fails
+          {
+            _tag: "error" as const,
+            value: new CommandFailed({
+              host: "testhost",
+              command: "test -L ... && test -e ...",
+              exitCode: 255,
+              stdout: "",
+              stderr: "Connection timed out",
+            }),
+          },
+        ]);
+
+        const skillOps = yield* SkillOps;
+        const result = yield* skillOps
+          .getSkillStatus(testHost, "my-skill", testActiveDir)
+          .pipe(Effect.either);
+
+        expect(result._tag).toBe("Left");
+        if (result._tag === "Left") {
+          expect(result.left).toBeInstanceOf(SkillCommandFailed);
+        }
+      }),
+    );
+
+    it.effect("broken symlinks still correctly reported as inactive (not an error)", () =>
+      Effect.gen(function* () {
+        const responsesRef = yield* MockSshResponses;
+        yield* Ref.set(responsesRef, [
+          // The command succeeds, but test -e fails for broken symlink
+          // → outputs "inactive"
+          {
+            _tag: "result" as const,
+            value: { stdout: "inactive\n", stderr: "", exitCode: 0 },
+          },
+        ]);
+
+        const skillOps = yield* SkillOps;
+        const status = yield* skillOps.getSkillStatus(testHost, "broken-skill", testActiveDir);
+
+        // Broken symlinks should still be inactive (not an error)
+        expect(status).toBe("inactive");
+      }),
+    );
+
+    it.effect("missing symlinks still correctly reported as inactive (not an error)", () =>
+      Effect.gen(function* () {
+        const responsesRef = yield* MockSshResponses;
+        yield* Ref.set(responsesRef, [
+          {
+            _tag: "result" as const,
+            value: { stdout: "inactive\n", stderr: "", exitCode: 0 },
+          },
+        ]);
+
+        const skillOps = yield* SkillOps;
+        const status = yield* skillOps.getSkillStatus(testHost, "nonexistent", testActiveDir);
+
+        expect(status).toBe("inactive");
+      }),
+    );
+  });
+});
+
+describe("Regression: activateSkill verifies symlink target path matches", () => {
+  layer(TestLayer)("wrong-target symlink repointing", (it) => {
+    it.effect("repoints symlink when target points to wrong path", () =>
+      Effect.gen(function* () {
+        const responsesRef = yield* MockSshResponses;
+        yield* Ref.set(responsesRef, [
+          // checkSymlink: active (symlink exists and target is valid)
+          {
+            _tag: "result" as const,
+            value: { stdout: "active\n", stderr: "", exitCode: 0 },
+          },
+          // readSymlinkTarget: returns WRONG target path
+          {
+            _tag: "result" as const,
+            value: { stdout: "/old/repo/path/my-skill\n", stderr: "", exitCode: 0 },
+          },
+          // mkdir -p activeDir
+          {
+            _tag: "result" as const,
+            value: { stdout: "", stderr: "", exitCode: 0 },
+          },
+          // remove existing wrong-target symlink
+          {
+            _tag: "result" as const,
+            value: { stdout: "", stderr: "", exitCode: 0 },
+          },
+          // ln -s with correct target
+          {
+            _tag: "result" as const,
+            value: { stdout: "", stderr: "", exitCode: 0 },
+          },
+        ]);
+
+        const callsRef = yield* RecordedSshCalls;
+        const callsBefore = yield* Ref.get(callsRef);
+        const countBefore = callsBefore.length;
+
+        const skillOps = yield* SkillOps;
+        const result = yield* skillOps.activateSkill(
+          testHost,
+          "my-skill",
+          testRepoPath,
+          testActiveDir,
+        );
+
+        // Should NOT be treated as "already in state" since target was wrong
+        expect(result.alreadyInState).toBe(false);
+        expect(result.status).toBe("active");
+
+        // Verify the ln -s command was called with the correct new target
+        const callsAfter = yield* Ref.get(callsRef);
+        const lnCall = callsAfter[countBefore + 4]; // 5th call is ln -s
+        expect(lnCall).toBeDefined();
+        expect(lnCall.command).toContain("ln -s");
+        expect(lnCall.command).toContain(`${testRepoPath}/my-skill`);
+        expect(lnCall.command).toContain(`${testActiveDir}/my-skill`);
+      }),
+    );
+
+    it.effect("does not repoint when symlink target matches expected path", () =>
+      Effect.gen(function* () {
+        const responsesRef = yield* MockSshResponses;
+        yield* Ref.set(responsesRef, [
+          // checkSymlink: active
+          {
+            _tag: "result" as const,
+            value: { stdout: "active\n", stderr: "", exitCode: 0 },
+          },
+          // readSymlinkTarget: returns correct target path
+          {
+            _tag: "result" as const,
+            value: { stdout: `${testRepoPath}/my-skill\n`, stderr: "", exitCode: 0 },
+          },
+        ]);
+
+        const callsRef = yield* RecordedSshCalls;
+        const callsBefore = yield* Ref.get(callsRef);
+        const countBefore = callsBefore.length;
+
+        const skillOps = yield* SkillOps;
+        const result = yield* skillOps.activateSkill(
+          testHost,
+          "my-skill",
+          testRepoPath,
+          testActiveDir,
+        );
+
+        // Correct target — treated as idempotent
+        expect(result.alreadyInState).toBe(true);
+        expect(result.status).toBe("active");
+
+        // Only 2 SSH calls: checkSymlink + readSymlinkTarget (no mkdir, rm, or ln)
+        const callsAfter = yield* Ref.get(callsRef);
+        expect(callsAfter.length - countBefore).toBe(2);
+      }),
+    );
+
+    it.effect("records repointed span attribute when wrong-target is repointed", () =>
+      Effect.gen(function* () {
+        const spansRef = yield* CollectedSpans;
+        yield* Ref.set(spansRef, []);
+
+        const responsesRef = yield* MockSshResponses;
+        yield* Ref.set(responsesRef, [
+          // checkSymlink: active
+          {
+            _tag: "result" as const,
+            value: { stdout: "active\n", stderr: "", exitCode: 0 },
+          },
+          // readSymlinkTarget: wrong target
+          {
+            _tag: "result" as const,
+            value: { stdout: "/wrong/path/my-skill\n", stderr: "", exitCode: 0 },
+          },
+          // mkdir -p
+          {
+            _tag: "result" as const,
+            value: { stdout: "", stderr: "", exitCode: 0 },
+          },
+          // remove existing
+          {
+            _tag: "result" as const,
+            value: { stdout: "", stderr: "", exitCode: 0 },
+          },
+          // ln -s
+          {
+            _tag: "result" as const,
+            value: { stdout: "", stderr: "", exitCode: 0 },
+          },
+        ]);
+
+        const skillOps = yield* SkillOps;
+        yield* skillOps.activateSkill(testHost, "my-skill", testRepoPath, testActiveDir);
+
+        const spans = yield* Ref.get(spansRef);
+        const activateSpan = spans.find((s) => s.name === "skill.activateSkill");
+        expect(activateSpan).toBeDefined();
+        expect(activateSpan!.attributes["skill.repointed"]).toBe(true);
+        expect(activateSpan!.attributes["skill.previousTarget"]).toBe("/wrong/path/my-skill");
+      }),
+    );
+  });
+});
+
+describe("Regression: drift counts handle missing refs gracefully", () => {
+  layer(TestLayer)("missing ref handling", (it) => {
+    it.effect("rev-list failure yields undefined ahead/behind (not misleading zeros)", () =>
+      Effect.gen(function* () {
+        const responsesRef = yield* MockSshResponses;
+        yield* Ref.set(responsesRef, [
+          // getHead for host-a (reference)
+          {
+            _tag: "result" as const,
+            value: { stdout: `${refSha}\n`, stderr: "", exitCode: 0 },
+          },
+          // getHead for host-b (different SHA)
+          {
+            _tag: "result" as const,
+            value: { stdout: `${driftedSha}\n`, stderr: "", exitCode: 0 },
+          },
+          // git rev-list fails (missing ref, shallow clone, etc.)
+          {
+            _tag: "error" as const,
+            value: new CommandFailed({
+              host: "host-b",
+              command: "git rev-list ...",
+              exitCode: 128,
+              stdout: "",
+              stderr: "fatal: Invalid symmetric difference expression",
+            }),
+          },
+          // getHead for host-c (in sync)
+          {
+            _tag: "result" as const,
+            value: { stdout: `${refSha}\n`, stderr: "", exitCode: 0 },
+          },
+        ]);
+
+        const skillOps = yield* SkillOps;
+        const report = yield* skillOps.checkDrift(allHosts, repoPath, "host-a");
+
+        expect(report.hasDrift).toBe(true);
+
+        const hostBResult = report.hosts.find((h) => h.host === "host-b")!;
+        expect(hostBResult.status).toBe("drifted");
+        expect(hostBResult.sha).toBe(driftedSha);
+        expect(hostBResult.direction).toBe("diverged");
+        // Missing refs → undefined counts, not misleading 0
+        expect(hostBResult.ahead).toBeUndefined();
+        expect(hostBResult.behind).toBeUndefined();
+      }),
+    );
+
+    it.effect("valid rev-list still produces numeric counts", () =>
+      Effect.gen(function* () {
+        const responsesRef = yield* MockSshResponses;
+        yield* Ref.set(responsesRef, [
+          // getHead for host-a (reference)
+          {
+            _tag: "result" as const,
+            value: { stdout: `${refSha}\n`, stderr: "", exitCode: 0 },
+          },
+          // getHead for host-b (drifted)
+          {
+            _tag: "result" as const,
+            value: { stdout: `${driftedSha}\n`, stderr: "", exitCode: 0 },
+          },
+          // git rev-list succeeds: 3 behind, 1 ahead
+          {
+            _tag: "result" as const,
+            value: { stdout: "3\t1\n", stderr: "", exitCode: 0 },
+          },
+          // getHead for host-c (in sync)
+          {
+            _tag: "result" as const,
+            value: { stdout: `${refSha}\n`, stderr: "", exitCode: 0 },
+          },
+        ]);
+
+        const skillOps = yield* SkillOps;
+        const report = yield* skillOps.checkDrift(allHosts, repoPath, "host-a");
+
+        const hostBResult = report.hosts.find((h) => h.host === "host-b")!;
+        expect(hostBResult.status).toBe("drifted");
+        expect(hostBResult.direction).toBe("diverged");
+        // Valid counts from rev-list
+        expect(hostBResult.behind).toBe(3);
+        expect(hostBResult.ahead).toBe(1);
+      }),
+    );
+
+    it.effect("garbled rev-list output treated as missing refs", () =>
+      Effect.gen(function* () {
+        const responsesRef = yield* MockSshResponses;
+        yield* Ref.set(responsesRef, [
+          // getHead for host-a (reference)
+          {
+            _tag: "result" as const,
+            value: { stdout: `${refSha}\n`, stderr: "", exitCode: 0 },
+          },
+          // getHead for host-b (drifted)
+          {
+            _tag: "result" as const,
+            value: { stdout: `${driftedSha}\n`, stderr: "", exitCode: 0 },
+          },
+          // git rev-list returns garbled output
+          {
+            _tag: "result" as const,
+            value: { stdout: "not-a-number\tgarbage\n", stderr: "", exitCode: 0 },
+          },
+          // getHead for host-c (in sync)
+          {
+            _tag: "result" as const,
+            value: { stdout: `${refSha}\n`, stderr: "", exitCode: 0 },
+          },
+        ]);
+
+        const skillOps = yield* SkillOps;
+        const report = yield* skillOps.checkDrift(allHosts, repoPath, "host-a");
+
+        const hostBResult = report.hosts.find((h) => h.host === "host-b")!;
+        expect(hostBResult.status).toBe("drifted");
+        expect(hostBResult.direction).toBe("diverged");
+        // Garbled output → undefined counts (same as missing refs)
+        expect(hostBResult.ahead).toBeUndefined();
+        expect(hostBResult.behind).toBeUndefined();
+      }),
+    );
+  });
 });

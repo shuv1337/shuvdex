@@ -472,18 +472,28 @@ export const SkillOpsLive: Layer.Layer<SkillOps, never, SshExecutor | GitOps> = 
             const symlinkPath = `${activeDir}/${skillName}`;
             const targetPath = `${repoPath}/${skillName}`;
 
-            // Check if already active (valid symlink exists pointing to correct target)
+            // Check if already active (valid symlink exists)
             const currentStatus = yield* checkSymlink(ssh, host, skillName, activeDir);
 
             if (currentStatus === "active") {
-              // Already active — idempotent success
-              yield* Effect.annotateCurrentSpan("skill.alreadyActive", true);
-              return {
-                host: host.hostname,
-                skillName,
-                alreadyInState: true,
-                status: "active" as const,
-              } satisfies ActivationResult;
+              // Symlink exists and target is valid. Verify it points to the
+              // CORRECT target path. If it points elsewhere, repoint it.
+              const currentTarget = yield* readSymlinkTarget(ssh, host, symlinkPath);
+
+              if (currentTarget === targetPath) {
+                // Already active with correct target — idempotent success
+                yield* Effect.annotateCurrentSpan("skill.alreadyActive", true);
+                return {
+                  host: host.hostname,
+                  skillName,
+                  alreadyInState: true,
+                  status: "active" as const,
+                } satisfies ActivationResult;
+              }
+
+              // Wrong target — remove and recreate below
+              yield* Effect.annotateCurrentSpan("skill.repointed", true);
+              yield* Effect.annotateCurrentSpan("skill.previousTarget", currentTarget ?? "unknown");
             }
 
             // Ensure the active directory exists
@@ -500,7 +510,7 @@ export const SkillOpsLive: Layer.Layer<SkillOps, never, SshExecutor | GitOps> = 
               ),
             );
 
-            // Remove any existing broken symlink before creating a new one
+            // Remove any existing symlink (broken or wrong-target) before creating a new one
             yield* ssh.executeCommand(
               host,
               `test -L ${symlinkPath} && rm ${symlinkPath} || true`,
@@ -511,7 +521,7 @@ export const SkillOpsLive: Layer.Layer<SkillOps, never, SshExecutor | GitOps> = 
                     host: host.hostname,
                     skillName,
                     operation: "activate",
-                    cause: `Failed to remove broken symlink: ${err.stderr}`,
+                    cause: `Failed to remove existing symlink: ${err.stderr}`,
                   }),
                 ),
               ),
@@ -559,12 +569,23 @@ export const SkillOpsLive: Layer.Layer<SkillOps, never, SshExecutor | GitOps> = 
           Effect.gen(function* () {
             const symlinkPath = `${activeDir}/${skillName}`;
 
-            // Check if a symlink exists at all (even broken ones should be removed)
+            // Check if a symlink exists at all (even broken ones should be removed).
+            // The compound command `test -L … || echo "absent"` never exits
+            // non-zero under normal conditions.  A CommandFailed here indicates
+            // a real SSH/transport error which we propagate rather than silently
+            // treating as "absent".
             const symlinkExistsResult = yield* ssh
               .executeCommand(host, `test -L ${symlinkPath} && echo "exists" || echo "absent"`)
               .pipe(
-                Effect.catchTag("CommandFailed", () =>
-                  Effect.succeed({ stdout: "absent\n", stderr: "", exitCode: 0 }),
+                Effect.catchTag("CommandFailed", (err: CommandFailed) =>
+                  Effect.fail(
+                    new ActivationFailed({
+                      host: host.hostname,
+                      skillName,
+                      operation: "deactivate",
+                      cause: `Failed to check symlink existence: ${err.stderr}`,
+                    }),
+                  ),
                 ),
               );
 
@@ -699,6 +720,10 @@ export const SkillOpsLive: Layer.Layer<SkillOps, never, SshExecutor | GitOps> = 
 
               // Different SHA — determine direction and behind/ahead counts.
               // Use `git rev-list --left-right --count` to find ahead/behind.
+              // This can fail when refs are missing (e.g., shallow clone,
+              // force-pushed history, or the reference SHA doesn't exist on
+              // the target host). In that case, report as diverged with
+              // undefined counts rather than misleading zeros.
               const countResult = yield* execSkillCmd(
                 ssh,
                 config,
@@ -706,26 +731,34 @@ export const SkillOpsLive: Layer.Layer<SkillOps, never, SshExecutor | GitOps> = 
               ).pipe(
                 Effect.map((result) => {
                   const parts = result.stdout.trim().split(/\s+/);
-                  const behind = parseInt(parts[0] ?? "0", 10) || 0;
-                  const ahead = parseInt(parts[1] ?? "0", 10) || 0;
-                  return { behind, ahead };
+                  const behind = parseInt(parts[0] ?? "0", 10);
+                  const ahead = parseInt(parts[1] ?? "0", 10);
+                  // Validate parsed values are actual numbers
+                  if (Number.isNaN(behind) || Number.isNaN(ahead)) {
+                    return { behind: undefined as number | undefined, ahead: undefined as number | undefined, missing: true };
+                  }
+                  return { behind, ahead, missing: false };
                 }),
                 Effect.catchAll(() =>
-                  // If rev-list fails (e.g., SHAs don't share ancestry),
-                  // report as diverged with unknown counts
-                  Effect.succeed({ behind: 0, ahead: 0 }),
+                  // If rev-list fails (e.g., SHAs don't share ancestry,
+                  // missing refs in shallow clone), report as diverged
+                  // with undefined counts
+                  Effect.succeed({ behind: undefined as number | undefined, ahead: undefined as number | undefined, missing: true }),
                 ),
               );
 
-              const { behind, ahead } = countResult;
+              const { behind, ahead, missing } = countResult;
 
               // Determine drift direction
               let direction: "ahead" | "behind" | "diverged";
-              if (ahead > 0 && behind > 0) {
+              if (missing) {
+                // Can't determine direction when refs are missing
                 direction = "diverged";
-              } else if (ahead > 0) {
+              } else if ((ahead ?? 0) > 0 && (behind ?? 0) > 0) {
+                direction = "diverged";
+              } else if ((ahead ?? 0) > 0) {
                 direction = "ahead";
-              } else if (behind > 0) {
+              } else if ((behind ?? 0) > 0) {
                 direction = "behind";
               } else {
                 // Edge case: counts are both 0 but SHAs differ (shouldn't happen
@@ -774,6 +807,9 @@ export const SkillOpsLive: Layer.Layer<SkillOps, never, SshExecutor | GitOps> = 
  * A skill is "active" if a symlink with its name exists in activeDir
  * AND the symlink target is valid (not broken). Broken symlinks are
  * reported as "inactive".
+ *
+ * SSH/command errors are propagated — they are NOT silently treated
+ * as "inactive". Only broken or missing symlinks are treated as inactive.
  */
 const checkSymlink = (
   ssh: SshExecutor["Type"],
@@ -782,7 +818,7 @@ const checkSymlink = (
   activeDir: string,
 ): Effect.Effect<
   SkillStatus,
-  never
+  SkillCommandFailed
 > => {
   const symlinkPath = `${activeDir}/${skillName}`;
 
@@ -802,7 +838,77 @@ const checkSymlink = (
         const status = result.stdout.trim();
         return status === "active" ? "active" : "inactive";
       }),
-      // If SSH fails for any reason, default to inactive
-      Effect.catchAll(() => Effect.succeed("inactive" as SkillStatus)),
+      // Map CommandFailed to SkillCommandFailed (propagated, not swallowed).
+      // Connection-level errors (ConnectionFailed, ConnectionTimeout) are
+      // left as-is since they are part of SshError which the caller handles.
+      Effect.catchTag("CommandFailed", (err: CommandFailed) =>
+        Effect.fail(
+          new SkillCommandFailed({
+            host: err.host,
+            command: `checkSymlink ${skillName}`,
+            exitCode: err.exitCode,
+            stderr: err.stderr,
+          }),
+        ),
+      ),
+      // Swallow only ConnectionFailed / ConnectionTimeout from the
+      // `test -L … && test -e … || echo "inactive"` compound command.
+      // That command is designed to never exit non-zero; a CommandFailed
+      // here means a real problem, but connection-level errors are
+      // SSH transport issues.  We propagate them wrapped in
+      // SkillCommandFailed so callers see a typed skill-ops error.
+      Effect.catchAll((err) =>
+        Effect.fail(
+          new SkillCommandFailed({
+            host: host.hostname,
+            command: `checkSymlink ${skillName}`,
+            exitCode: -1,
+            stderr: String(err),
+          }),
+        ),
+      ),
     );
 };
+
+/**
+ * Read the target path that a symlink points to, if it exists.
+ *
+ * Returns the target path string if the symlink exists, or undefined
+ * if there is no symlink at the given path. SSH errors are propagated.
+ */
+const readSymlinkTarget = (
+  ssh: SshExecutor["Type"],
+  host: HostConfig,
+  symlinkPath: string,
+): Effect.Effect<string | undefined, SkillCommandFailed> =>
+  ssh
+    .executeCommand(
+      host,
+      `test -L ${symlinkPath} && readlink ${symlinkPath} || echo "__NO_SYMLINK__"`,
+    )
+    .pipe(
+      Effect.map((result) => {
+        const target = result.stdout.trim();
+        return target === "__NO_SYMLINK__" ? undefined : target;
+      }),
+      Effect.catchTag("CommandFailed", (err: CommandFailed) =>
+        Effect.fail(
+          new SkillCommandFailed({
+            host: err.host,
+            command: `readSymlinkTarget ${symlinkPath}`,
+            exitCode: err.exitCode,
+            stderr: err.stderr,
+          }),
+        ),
+      ),
+      Effect.catchAll((err) =>
+        Effect.fail(
+          new SkillCommandFailed({
+            host: host.hostname,
+            command: `readSymlinkTarget ${symlinkPath}`,
+            exitCode: -1,
+            stderr: String(err),
+          }),
+        ),
+      ),
+    );
