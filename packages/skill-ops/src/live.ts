@@ -11,8 +11,8 @@ import type { HostConfig } from "@codex-fleet/core";
 import { SshExecutor, CommandFailed } from "@codex-fleet/ssh";
 import { withSpan } from "@codex-fleet/telemetry";
 import { SkillOps } from "./types.js";
-import type { SkillInfo, SkillStatus, SyncResult, VerifySyncResult } from "./types.js";
-import { SkillCommandFailed, SkillRepoNotFound, SkillNotFound, SyncFailed } from "./errors.js";
+import type { SkillInfo, SkillStatus, SyncResult, VerifySyncResult, ActivationResult } from "./types.js";
+import { SkillCommandFailed, SkillRepoNotFound, SkillNotFound, SyncFailed, ActivationFailed } from "./errors.js";
 import { execFile } from "node:child_process";
 import { access, constants } from "node:fs/promises";
 
@@ -365,6 +365,160 @@ export const SkillOpsLive: Layer.Layer<SkillOps, never, SshExecutor> = Layer.eff
               filesChecked,
               mismatched,
             } satisfies VerifySyncResult;
+          }),
+        ),
+
+      activateSkill: (
+        host: HostConfig,
+        skillName: string,
+        repoPath: string,
+        activeDir: string,
+      ) =>
+        withSpan("skill.activateSkill", {
+          attributes: {
+            host: host.hostname,
+            operation: "activateSkill",
+            skillName,
+            repoPath,
+            activeDir,
+          },
+        })(
+          Effect.gen(function* () {
+            const symlinkPath = `${activeDir}/${skillName}`;
+            const targetPath = `${repoPath}/${skillName}`;
+
+            // Check if already active (valid symlink exists pointing to correct target)
+            const currentStatus = yield* checkSymlink(ssh, host, skillName, activeDir);
+
+            if (currentStatus === "active") {
+              // Already active — idempotent success
+              yield* Effect.annotateCurrentSpan("skill.alreadyActive", true);
+              return {
+                host: host.hostname,
+                skillName,
+                alreadyInState: true,
+                status: "active" as const,
+              } satisfies ActivationResult;
+            }
+
+            // Ensure the active directory exists
+            yield* ssh.executeCommand(host, `mkdir -p ${activeDir}`).pipe(
+              Effect.catchTag("CommandFailed", (err) =>
+                Effect.fail(
+                  new ActivationFailed({
+                    host: host.hostname,
+                    skillName,
+                    operation: "activate",
+                    cause: `Failed to create active directory: ${err.stderr}`,
+                  }),
+                ),
+              ),
+            );
+
+            // Remove any existing broken symlink before creating a new one
+            yield* ssh.executeCommand(
+              host,
+              `test -L ${symlinkPath} && rm ${symlinkPath} || true`,
+            ).pipe(
+              Effect.catchTag("CommandFailed", (err) =>
+                Effect.fail(
+                  new ActivationFailed({
+                    host: host.hostname,
+                    skillName,
+                    operation: "activate",
+                    cause: `Failed to remove broken symlink: ${err.stderr}`,
+                  }),
+                ),
+              ),
+            );
+
+            // Create the symlink
+            yield* ssh.executeCommand(host, `ln -s ${targetPath} ${symlinkPath}`).pipe(
+              Effect.catchTag("CommandFailed", (err) =>
+                Effect.fail(
+                  new ActivationFailed({
+                    host: host.hostname,
+                    skillName,
+                    operation: "activate",
+                    cause: `Failed to create symlink: ${err.stderr}`,
+                  }),
+                ),
+              ),
+            );
+
+            yield* Effect.annotateCurrentSpan("skill.alreadyActive", false);
+            yield* Effect.annotateCurrentSpan("skill.activated", true);
+
+            return {
+              host: host.hostname,
+              skillName,
+              alreadyInState: false,
+              status: "active" as const,
+            } satisfies ActivationResult;
+          }),
+        ),
+
+      deactivateSkill: (
+        host: HostConfig,
+        skillName: string,
+        activeDir: string,
+      ) =>
+        withSpan("skill.deactivateSkill", {
+          attributes: {
+            host: host.hostname,
+            operation: "deactivateSkill",
+            skillName,
+            activeDir,
+          },
+        })(
+          Effect.gen(function* () {
+            const symlinkPath = `${activeDir}/${skillName}`;
+
+            // Check if a symlink exists at all (even broken ones should be removed)
+            const symlinkExistsResult = yield* ssh
+              .executeCommand(host, `test -L ${symlinkPath} && echo "exists" || echo "absent"`)
+              .pipe(
+                Effect.catchTag("CommandFailed", () =>
+                  Effect.succeed({ stdout: "absent\n", stderr: "", exitCode: 0 }),
+                ),
+              );
+
+            const symlinkExists = symlinkExistsResult.stdout.trim() === "exists";
+
+            if (!symlinkExists) {
+              // Already inactive — idempotent success
+              yield* Effect.annotateCurrentSpan("skill.alreadyInactive", true);
+              return {
+                host: host.hostname,
+                skillName,
+                alreadyInState: true,
+                status: "inactive" as const,
+              } satisfies ActivationResult;
+            }
+
+            // Remove the symlink (rm on a symlink only removes the link, not the target)
+            yield* ssh.executeCommand(host, `rm ${symlinkPath}`).pipe(
+              Effect.catchTag("CommandFailed", (err) =>
+                Effect.fail(
+                  new ActivationFailed({
+                    host: host.hostname,
+                    skillName,
+                    operation: "deactivate",
+                    cause: `Failed to remove symlink: ${err.stderr}`,
+                  }),
+                ),
+              ),
+            );
+
+            yield* Effect.annotateCurrentSpan("skill.alreadyInactive", false);
+            yield* Effect.annotateCurrentSpan("skill.deactivated", true);
+
+            return {
+              host: host.hostname,
+              skillName,
+              alreadyInState: false,
+              status: "inactive" as const,
+            } satisfies ActivationResult;
           }),
         ),
     });

@@ -4,7 +4,7 @@
 import { Context, Effect } from "effect";
 import type { HostConfig } from "@codex-fleet/core";
 import type { SshError } from "@codex-fleet/ssh";
-import type { SkillCommandFailed, SkillRepoNotFound, SkillNotFound, SyncFailed, ChecksumMismatch } from "./errors.js";
+import type { SkillCommandFailed, SkillRepoNotFound, SkillNotFound, SyncFailed, ChecksumMismatch, ActivationFailed } from "./errors.js";
 
 /**
  * Status of a skill on a remote host.
@@ -49,6 +49,20 @@ export interface VerifySyncResult {
   readonly filesChecked: number;
   /** Files that have mismatched checksums (empty if all match) */
   readonly mismatched: ReadonlyArray<string>;
+}
+
+/**
+ * Result of activating or deactivating a skill on a remote host.
+ */
+export interface ActivationResult {
+  /** Target host name */
+  readonly host: string;
+  /** Skill that was activated or deactivated */
+  readonly skillName: string;
+  /** Whether the operation was a no-op (already in desired state) */
+  readonly alreadyInState: boolean;
+  /** Current status after the operation */
+  readonly status: SkillStatus;
 }
 
 /**
@@ -144,6 +158,51 @@ export interface SkillOpsService {
   ) => Effect.Effect<
     VerifySyncResult,
     SshError | SkillCommandFailed | ChecksumMismatch
+  >;
+
+  /**
+   * Activate a skill on a remote host by creating a symlink in the active
+   * skills directory that points to the skill's path in the repository.
+   *
+   * Idempotent: if the skill is already active (symlink already exists and
+   * points to the correct target), the operation succeeds without error.
+   *
+   * @param host - The host configuration to connect to
+   * @param skillName - The name of the skill to activate
+   * @param repoPath - Absolute path to the skills repository on the remote host
+   * @param activeDir - Absolute path to the active skills directory (where symlinks live)
+   * @returns Effect yielding an ActivationResult
+   */
+  readonly activateSkill: (
+    host: HostConfig,
+    skillName: string,
+    repoPath: string,
+    activeDir: string,
+  ) => Effect.Effect<
+    ActivationResult,
+    SshError | SkillCommandFailed | ActivationFailed
+  >;
+
+  /**
+   * Deactivate a skill on a remote host by removing its symlink from the
+   * active skills directory. The actual skill files in the repository
+   * remain intact.
+   *
+   * Idempotent: if the skill is already inactive (no symlink exists),
+   * the operation succeeds without error.
+   *
+   * @param host - The host configuration to connect to
+   * @param skillName - The name of the skill to deactivate
+   * @param activeDir - Absolute path to the active skills directory (where symlinks live)
+   * @returns Effect yielding an ActivationResult
+   */
+  readonly deactivateSkill: (
+    host: HostConfig,
+    skillName: string,
+    activeDir: string,
+  ) => Effect.Effect<
+    ActivationResult,
+    SshError | SkillCommandFailed | ActivationFailed
   >;
 }
 

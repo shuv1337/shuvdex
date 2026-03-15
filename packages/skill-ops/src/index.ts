@@ -11,11 +11,11 @@
  */
 
 // Types and service
-export type { SkillOpsService, SkillInfo, SkillStatus, SyncResult, VerifySyncResult } from "./types.js";
+export type { SkillOpsService, SkillInfo, SkillStatus, SyncResult, VerifySyncResult, ActivationResult } from "./types.js";
 export { SkillOps } from "./types.js";
 
 // Errors
-export { SkillCommandFailed, SkillRepoNotFound, SkillNotFound, SyncFailed, ChecksumMismatch } from "./errors.js";
+export { SkillCommandFailed, SkillRepoNotFound, SkillNotFound, SyncFailed, ChecksumMismatch, ActivationFailed } from "./errors.js";
 export type { SkillOpsError } from "./errors.js";
 
 // Layers

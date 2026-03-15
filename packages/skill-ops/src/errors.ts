@@ -76,6 +76,21 @@ export class ChecksumMismatch extends Data.TaggedError("ChecksumMismatch")<{
 }
 
 /**
+ * Error returned when skill activation or deactivation fails on a remote host.
+ * Contains the host, skill name, desired operation, and underlying cause.
+ */
+export class ActivationFailed extends Data.TaggedError("ActivationFailed")<{
+  readonly host: string;
+  readonly skillName: string;
+  readonly operation: "activate" | "deactivate";
+  readonly cause: string;
+}> {
+  get message(): string {
+    return `Failed to ${this.operation} skill "${this.skillName}" on ${this.host}: ${this.cause}`;
+  }
+}
+
+/**
  * Union of all skill operation error types.
  */
 export type SkillOpsError =
@@ -83,4 +98,5 @@ export type SkillOpsError =
   | SkillRepoNotFound
   | SkillNotFound
   | SyncFailed
-  | ChecksumMismatch;
+  | ChecksumMismatch
+  | ActivationFailed;

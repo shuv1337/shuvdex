@@ -9,6 +9,7 @@ import {
   SkillNotFound,
   SyncFailed,
   ChecksumMismatch,
+  ActivationFailed,
 } from "../src/index.js";
 import {
   SshExecutorTest,
@@ -1149,6 +1150,727 @@ describe("SkillOps sync OTEL tracing", () => {
         expect(verifySpan).toBeDefined();
         expect(verifySpan!.attributes["skill.checksumMatch"]).toBe(true);
         expect(verifySpan!.attributes["skill.filesChecked"]).toBe(1);
+      }),
+    );
+  });
+});
+
+describe("SkillOps activateSkill", () => {
+  layer(TestLayer)("activation operations", (it) => {
+    it.effect("creates symlink in active dir pointing to skill repo path", () =>
+      Effect.gen(function* () {
+        const responsesRef = yield* MockSshResponses;
+        yield* Ref.set(responsesRef, [
+          // checkSymlink: test -L && test -e → inactive
+          {
+            _tag: "result" as const,
+            value: { stdout: "inactive\n", stderr: "", exitCode: 0 },
+          },
+          // mkdir -p activeDir
+          {
+            _tag: "result" as const,
+            value: { stdout: "", stderr: "", exitCode: 0 },
+          },
+          // remove broken symlink (test -L fails, || true succeeds)
+          {
+            _tag: "result" as const,
+            value: { stdout: "", stderr: "", exitCode: 0 },
+          },
+          // ln -s
+          {
+            _tag: "result" as const,
+            value: { stdout: "", stderr: "", exitCode: 0 },
+          },
+        ]);
+
+        const callsRef = yield* RecordedSshCalls;
+        const callsBefore = yield* Ref.get(callsRef);
+        const countBefore = callsBefore.length;
+
+        const skillOps = yield* SkillOps;
+        const result = yield* skillOps.activateSkill(
+          testHost,
+          "my-skill",
+          testRepoPath,
+          testActiveDir,
+        );
+
+        expect(result.host).toBe("testhost");
+        expect(result.skillName).toBe("my-skill");
+        expect(result.alreadyInState).toBe(false);
+        expect(result.status).toBe("active");
+
+        // Verify the ln -s command was called with correct paths
+        const callsAfter = yield* Ref.get(callsRef);
+        const lnCall = callsAfter[countBefore + 3]; // 4th call is ln -s
+        expect(lnCall).toBeDefined();
+        expect(lnCall.command).toContain("ln -s");
+        expect(lnCall.command).toContain(`${testRepoPath}/my-skill`);
+        expect(lnCall.command).toContain(`${testActiveDir}/my-skill`);
+      }),
+    );
+
+    it.effect("already-active activation returns success with alreadyInState=true (idempotent)", () =>
+      Effect.gen(function* () {
+        const responsesRef = yield* MockSshResponses;
+        yield* Ref.set(responsesRef, [
+          // checkSymlink: already active
+          {
+            _tag: "result" as const,
+            value: { stdout: "active\n", stderr: "", exitCode: 0 },
+          },
+        ]);
+
+        const skillOps = yield* SkillOps;
+        const result = yield* skillOps.activateSkill(
+          testHost,
+          "my-skill",
+          testRepoPath,
+          testActiveDir,
+        );
+
+        expect(result.host).toBe("testhost");
+        expect(result.skillName).toBe("my-skill");
+        expect(result.alreadyInState).toBe(true);
+        expect(result.status).toBe("active");
+      }),
+    );
+
+    it.effect("ensures active directory exists before creating symlink", () =>
+      Effect.gen(function* () {
+        const responsesRef = yield* MockSshResponses;
+        yield* Ref.set(responsesRef, [
+          // checkSymlink: inactive
+          {
+            _tag: "result" as const,
+            value: { stdout: "inactive\n", stderr: "", exitCode: 0 },
+          },
+          // mkdir -p activeDir
+          {
+            _tag: "result" as const,
+            value: { stdout: "", stderr: "", exitCode: 0 },
+          },
+          // remove broken symlink
+          {
+            _tag: "result" as const,
+            value: { stdout: "", stderr: "", exitCode: 0 },
+          },
+          // ln -s
+          {
+            _tag: "result" as const,
+            value: { stdout: "", stderr: "", exitCode: 0 },
+          },
+        ]);
+
+        const callsRef = yield* RecordedSshCalls;
+        const callsBefore = yield* Ref.get(callsRef);
+        const countBefore = callsBefore.length;
+
+        const skillOps = yield* SkillOps;
+        yield* skillOps.activateSkill(testHost, "my-skill", testRepoPath, testActiveDir);
+
+        const callsAfter = yield* Ref.get(callsRef);
+        // 2nd call should be mkdir -p
+        const mkdirCall = callsAfter[countBefore + 1];
+        expect(mkdirCall).toBeDefined();
+        expect(mkdirCall.command).toContain("mkdir -p");
+        expect(mkdirCall.command).toContain(testActiveDir);
+      }),
+    );
+
+    it.effect("removes broken symlink before creating new one", () =>
+      Effect.gen(function* () {
+        const responsesRef = yield* MockSshResponses;
+        yield* Ref.set(responsesRef, [
+          // checkSymlink: inactive (broken symlink returns inactive)
+          {
+            _tag: "result" as const,
+            value: { stdout: "inactive\n", stderr: "", exitCode: 0 },
+          },
+          // mkdir -p
+          {
+            _tag: "result" as const,
+            value: { stdout: "", stderr: "", exitCode: 0 },
+          },
+          // remove broken symlink: test -L succeeds, rm succeeds
+          {
+            _tag: "result" as const,
+            value: { stdout: "", stderr: "", exitCode: 0 },
+          },
+          // ln -s
+          {
+            _tag: "result" as const,
+            value: { stdout: "", stderr: "", exitCode: 0 },
+          },
+        ]);
+
+        const callsRef = yield* RecordedSshCalls;
+        const callsBefore = yield* Ref.get(callsRef);
+        const countBefore = callsBefore.length;
+
+        const skillOps = yield* SkillOps;
+        yield* skillOps.activateSkill(testHost, "my-skill", testRepoPath, testActiveDir);
+
+        const callsAfter = yield* Ref.get(callsRef);
+        // 3rd call should be test -L && rm || true
+        const cleanupCall = callsAfter[countBefore + 2];
+        expect(cleanupCall).toBeDefined();
+        expect(cleanupCall.command).toContain("test -L");
+        expect(cleanupCall.command).toContain("rm");
+      }),
+    );
+
+    it.effect("fails with ActivationFailed when ln -s command fails", () =>
+      Effect.gen(function* () {
+        const responsesRef = yield* MockSshResponses;
+        yield* Ref.set(responsesRef, [
+          // checkSymlink: inactive
+          {
+            _tag: "result" as const,
+            value: { stdout: "inactive\n", stderr: "", exitCode: 0 },
+          },
+          // mkdir -p
+          {
+            _tag: "result" as const,
+            value: { stdout: "", stderr: "", exitCode: 0 },
+          },
+          // remove broken symlink
+          {
+            _tag: "result" as const,
+            value: { stdout: "", stderr: "", exitCode: 0 },
+          },
+          // ln -s fails
+          {
+            _tag: "error" as const,
+            value: new CommandFailed({
+              host: "testhost",
+              command: "ln -s ...",
+              exitCode: 1,
+              stdout: "",
+              stderr: "permission denied",
+            }),
+          },
+        ]);
+
+        const skillOps = yield* SkillOps;
+        const result = yield* skillOps
+          .activateSkill(testHost, "my-skill", testRepoPath, testActiveDir)
+          .pipe(Effect.either);
+
+        expect(result._tag).toBe("Left");
+        if (result._tag === "Left") {
+          expect(result.left).toBeInstanceOf(ActivationFailed);
+          const err = result.left as ActivationFailed;
+          expect(err.host).toBe("testhost");
+          expect(err.skillName).toBe("my-skill");
+          expect(err.operation).toBe("activate");
+          expect(err.cause).toContain("permission denied");
+        }
+      }),
+    );
+
+    it.effect("fails with ActivationFailed when mkdir -p fails", () =>
+      Effect.gen(function* () {
+        const responsesRef = yield* MockSshResponses;
+        yield* Ref.set(responsesRef, [
+          // checkSymlink: inactive
+          {
+            _tag: "result" as const,
+            value: { stdout: "inactive\n", stderr: "", exitCode: 0 },
+          },
+          // mkdir -p fails
+          {
+            _tag: "error" as const,
+            value: new CommandFailed({
+              host: "testhost",
+              command: "mkdir -p ...",
+              exitCode: 1,
+              stdout: "",
+              stderr: "read-only file system",
+            }),
+          },
+        ]);
+
+        const skillOps = yield* SkillOps;
+        const result = yield* skillOps
+          .activateSkill(testHost, "my-skill", testRepoPath, testActiveDir)
+          .pipe(Effect.either);
+
+        expect(result._tag).toBe("Left");
+        if (result._tag === "Left") {
+          expect(result.left).toBeInstanceOf(ActivationFailed);
+          const err = result.left as ActivationFailed;
+          expect(err.operation).toBe("activate");
+          expect(err.cause).toContain("read-only file system");
+        }
+      }),
+    );
+  });
+});
+
+describe("SkillOps deactivateSkill", () => {
+  layer(TestLayer)("deactivation operations", (it) => {
+    it.effect("removes symlink and leaves repo files intact", () =>
+      Effect.gen(function* () {
+        const responsesRef = yield* MockSshResponses;
+        yield* Ref.set(responsesRef, [
+          // check symlink exists: test -L → exists
+          {
+            _tag: "result" as const,
+            value: { stdout: "exists\n", stderr: "", exitCode: 0 },
+          },
+          // rm symlink
+          {
+            _tag: "result" as const,
+            value: { stdout: "", stderr: "", exitCode: 0 },
+          },
+        ]);
+
+        const callsRef = yield* RecordedSshCalls;
+        const callsBefore = yield* Ref.get(callsRef);
+        const countBefore = callsBefore.length;
+
+        const skillOps = yield* SkillOps;
+        const result = yield* skillOps.deactivateSkill(
+          testHost,
+          "my-skill",
+          testActiveDir,
+        );
+
+        expect(result.host).toBe("testhost");
+        expect(result.skillName).toBe("my-skill");
+        expect(result.alreadyInState).toBe(false);
+        expect(result.status).toBe("inactive");
+
+        // Verify rm was called on the symlink path (not the repo files)
+        const callsAfter = yield* Ref.get(callsRef);
+        const rmCall = callsAfter[countBefore + 1]; // 2nd call is rm
+        expect(rmCall).toBeDefined();
+        expect(rmCall.command).toContain("rm");
+        expect(rmCall.command).toContain(`${testActiveDir}/my-skill`);
+        // Should NOT contain recursive flag — only removing symlink
+        expect(rmCall.command).not.toContain("-r");
+        expect(rmCall.command).not.toContain("-rf");
+      }),
+    );
+
+    it.effect("already-inactive deactivation returns success with alreadyInState=true (idempotent)", () =>
+      Effect.gen(function* () {
+        const responsesRef = yield* MockSshResponses;
+        yield* Ref.set(responsesRef, [
+          // check symlink exists: absent
+          {
+            _tag: "result" as const,
+            value: { stdout: "absent\n", stderr: "", exitCode: 0 },
+          },
+        ]);
+
+        const skillOps = yield* SkillOps;
+        const result = yield* skillOps.deactivateSkill(
+          testHost,
+          "my-skill",
+          testActiveDir,
+        );
+
+        expect(result.host).toBe("testhost");
+        expect(result.skillName).toBe("my-skill");
+        expect(result.alreadyInState).toBe(true);
+        expect(result.status).toBe("inactive");
+      }),
+    );
+
+    it.effect("removes broken symlinks (test -L succeeds but test -e fails)", () =>
+      Effect.gen(function* () {
+        const responsesRef = yield* MockSshResponses;
+        yield* Ref.set(responsesRef, [
+          // check symlink exists: test -L → exists (even if broken)
+          {
+            _tag: "result" as const,
+            value: { stdout: "exists\n", stderr: "", exitCode: 0 },
+          },
+          // rm symlink
+          {
+            _tag: "result" as const,
+            value: { stdout: "", stderr: "", exitCode: 0 },
+          },
+        ]);
+
+        const skillOps = yield* SkillOps;
+        const result = yield* skillOps.deactivateSkill(
+          testHost,
+          "broken-skill",
+          testActiveDir,
+        );
+
+        expect(result.alreadyInState).toBe(false);
+        expect(result.status).toBe("inactive");
+      }),
+    );
+
+    it.effect("fails with ActivationFailed when rm command fails", () =>
+      Effect.gen(function* () {
+        const responsesRef = yield* MockSshResponses;
+        yield* Ref.set(responsesRef, [
+          // check symlink exists: exists
+          {
+            _tag: "result" as const,
+            value: { stdout: "exists\n", stderr: "", exitCode: 0 },
+          },
+          // rm fails
+          {
+            _tag: "error" as const,
+            value: new CommandFailed({
+              host: "testhost",
+              command: "rm ...",
+              exitCode: 1,
+              stdout: "",
+              stderr: "operation not permitted",
+            }),
+          },
+        ]);
+
+        const skillOps = yield* SkillOps;
+        const result = yield* skillOps
+          .deactivateSkill(testHost, "my-skill", testActiveDir)
+          .pipe(Effect.either);
+
+        expect(result._tag).toBe("Left");
+        if (result._tag === "Left") {
+          expect(result.left).toBeInstanceOf(ActivationFailed);
+          const err = result.left as ActivationFailed;
+          expect(err.host).toBe("testhost");
+          expect(err.skillName).toBe("my-skill");
+          expect(err.operation).toBe("deactivate");
+          expect(err.cause).toContain("operation not permitted");
+        }
+      }),
+    );
+
+    it.effect("handles SSH failure gracefully on symlink check", () =>
+      Effect.gen(function* () {
+        const responsesRef = yield* MockSshResponses;
+        yield* Ref.set(responsesRef, [
+          // check symlink existence fails with CommandFailed
+          {
+            _tag: "error" as const,
+            value: new CommandFailed({
+              host: "testhost",
+              command: "test -L ...",
+              exitCode: 255,
+              stdout: "",
+              stderr: "connection reset",
+            }),
+          },
+        ]);
+
+        const skillOps = yield* SkillOps;
+        // Should treat SSH failure on check as "absent" and return idempotent success
+        const result = yield* skillOps.deactivateSkill(
+          testHost,
+          "my-skill",
+          testActiveDir,
+        );
+
+        expect(result.alreadyInState).toBe(true);
+        expect(result.status).toBe("inactive");
+      }),
+    );
+
+    it.effect("checks the correct symlink path", () =>
+      Effect.gen(function* () {
+        const responsesRef = yield* MockSshResponses;
+        yield* Ref.set(responsesRef, [
+          // check: absent
+          {
+            _tag: "result" as const,
+            value: { stdout: "absent\n", stderr: "", exitCode: 0 },
+          },
+        ]);
+
+        const callsRef = yield* RecordedSshCalls;
+        const callsBefore = yield* Ref.get(callsRef);
+        const countBefore = callsBefore.length;
+
+        const skillOps = yield* SkillOps;
+        yield* skillOps.deactivateSkill(testHost, "my-skill", testActiveDir);
+
+        const callsAfter = yield* Ref.get(callsRef);
+        const checkCall = callsAfter[countBefore];
+        expect(checkCall).toBeDefined();
+        expect(checkCall.command).toContain("test -L");
+        expect(checkCall.command).toContain(`${testActiveDir}/my-skill`);
+      }),
+    );
+  });
+});
+
+describe("ActivationFailed error", () => {
+  it("has correct _tag and fields", () => {
+    const err = new ActivationFailed({
+      host: "h",
+      skillName: "my-skill",
+      operation: "activate",
+      cause: "permission denied",
+    });
+    expect(err._tag).toBe("ActivationFailed");
+    expect(err.host).toBe("h");
+    expect(err.skillName).toBe("my-skill");
+    expect(err.operation).toBe("activate");
+    expect(err.cause).toBe("permission denied");
+    expect(err.message).toContain("activate");
+    expect(err.message).toContain("my-skill");
+    expect(err.message).toContain("h");
+    expect(err.message).toContain("permission denied");
+  });
+
+  it("has correct message for deactivate operation", () => {
+    const err = new ActivationFailed({
+      host: "testhost",
+      skillName: "test-skill",
+      operation: "deactivate",
+      cause: "not permitted",
+    });
+    expect(err.message).toContain("deactivate");
+    expect(err.message).toContain("test-skill");
+    expect(err.message).toContain("testhost");
+  });
+});
+
+describe("SkillOps activation OTEL tracing", () => {
+  layer(TestLayer)("span creation", (it) => {
+    it.effect("creates span for activateSkill", () =>
+      Effect.gen(function* () {
+        const spansRef = yield* CollectedSpans;
+        yield* Ref.set(spansRef, []);
+
+        const responsesRef = yield* MockSshResponses;
+        yield* Ref.set(responsesRef, [
+          // checkSymlink: inactive
+          {
+            _tag: "result" as const,
+            value: { stdout: "inactive\n", stderr: "", exitCode: 0 },
+          },
+          // mkdir -p
+          {
+            _tag: "result" as const,
+            value: { stdout: "", stderr: "", exitCode: 0 },
+          },
+          // remove broken symlink
+          {
+            _tag: "result" as const,
+            value: { stdout: "", stderr: "", exitCode: 0 },
+          },
+          // ln -s
+          {
+            _tag: "result" as const,
+            value: { stdout: "", stderr: "", exitCode: 0 },
+          },
+        ]);
+
+        const skillOps = yield* SkillOps;
+        yield* skillOps.activateSkill(testHost, "my-skill", testRepoPath, testActiveDir);
+
+        const spans = yield* Ref.get(spansRef);
+        const activateSpan = spans.find((s) => s.name === "skill.activateSkill");
+        expect(activateSpan).toBeDefined();
+        expect(activateSpan!.attributes.host).toBe("testhost");
+        expect(activateSpan!.attributes.operation).toBe("activateSkill");
+        expect(activateSpan!.attributes.skillName).toBe("my-skill");
+        expect(activateSpan!.status).toBe("ok");
+      }),
+    );
+
+    it.effect("records alreadyActive=true when skill is already active", () =>
+      Effect.gen(function* () {
+        const spansRef = yield* CollectedSpans;
+        yield* Ref.set(spansRef, []);
+
+        const responsesRef = yield* MockSshResponses;
+        yield* Ref.set(responsesRef, [
+          // checkSymlink: active
+          {
+            _tag: "result" as const,
+            value: { stdout: "active\n", stderr: "", exitCode: 0 },
+          },
+        ]);
+
+        const skillOps = yield* SkillOps;
+        yield* skillOps.activateSkill(testHost, "my-skill", testRepoPath, testActiveDir);
+
+        const spans = yield* Ref.get(spansRef);
+        const activateSpan = spans.find((s) => s.name === "skill.activateSkill");
+        expect(activateSpan).toBeDefined();
+        expect(activateSpan!.attributes["skill.alreadyActive"]).toBe(true);
+      }),
+    );
+
+    it.effect("records activated=true when skill was newly activated", () =>
+      Effect.gen(function* () {
+        const spansRef = yield* CollectedSpans;
+        yield* Ref.set(spansRef, []);
+
+        const responsesRef = yield* MockSshResponses;
+        yield* Ref.set(responsesRef, [
+          // checkSymlink: inactive
+          {
+            _tag: "result" as const,
+            value: { stdout: "inactive\n", stderr: "", exitCode: 0 },
+          },
+          // mkdir -p
+          {
+            _tag: "result" as const,
+            value: { stdout: "", stderr: "", exitCode: 0 },
+          },
+          // remove broken symlink
+          {
+            _tag: "result" as const,
+            value: { stdout: "", stderr: "", exitCode: 0 },
+          },
+          // ln -s
+          {
+            _tag: "result" as const,
+            value: { stdout: "", stderr: "", exitCode: 0 },
+          },
+        ]);
+
+        const skillOps = yield* SkillOps;
+        yield* skillOps.activateSkill(testHost, "my-skill", testRepoPath, testActiveDir);
+
+        const spans = yield* Ref.get(spansRef);
+        const activateSpan = spans.find((s) => s.name === "skill.activateSkill");
+        expect(activateSpan).toBeDefined();
+        expect(activateSpan!.attributes["skill.alreadyActive"]).toBe(false);
+        expect(activateSpan!.attributes["skill.activated"]).toBe(true);
+      }),
+    );
+
+    it.effect("creates span for deactivateSkill", () =>
+      Effect.gen(function* () {
+        const spansRef = yield* CollectedSpans;
+        yield* Ref.set(spansRef, []);
+
+        const responsesRef = yield* MockSshResponses;
+        yield* Ref.set(responsesRef, [
+          // check symlink: exists
+          {
+            _tag: "result" as const,
+            value: { stdout: "exists\n", stderr: "", exitCode: 0 },
+          },
+          // rm
+          {
+            _tag: "result" as const,
+            value: { stdout: "", stderr: "", exitCode: 0 },
+          },
+        ]);
+
+        const skillOps = yield* SkillOps;
+        yield* skillOps.deactivateSkill(testHost, "my-skill", testActiveDir);
+
+        const spans = yield* Ref.get(spansRef);
+        const deactivateSpan = spans.find((s) => s.name === "skill.deactivateSkill");
+        expect(deactivateSpan).toBeDefined();
+        expect(deactivateSpan!.attributes.host).toBe("testhost");
+        expect(deactivateSpan!.attributes.operation).toBe("deactivateSkill");
+        expect(deactivateSpan!.attributes.skillName).toBe("my-skill");
+        expect(deactivateSpan!.status).toBe("ok");
+      }),
+    );
+
+    it.effect("records alreadyInactive=true when skill is already inactive", () =>
+      Effect.gen(function* () {
+        const spansRef = yield* CollectedSpans;
+        yield* Ref.set(spansRef, []);
+
+        const responsesRef = yield* MockSshResponses;
+        yield* Ref.set(responsesRef, [
+          // check symlink: absent
+          {
+            _tag: "result" as const,
+            value: { stdout: "absent\n", stderr: "", exitCode: 0 },
+          },
+        ]);
+
+        const skillOps = yield* SkillOps;
+        yield* skillOps.deactivateSkill(testHost, "my-skill", testActiveDir);
+
+        const spans = yield* Ref.get(spansRef);
+        const deactivateSpan = spans.find((s) => s.name === "skill.deactivateSkill");
+        expect(deactivateSpan).toBeDefined();
+        expect(deactivateSpan!.attributes["skill.alreadyInactive"]).toBe(true);
+      }),
+    );
+
+    it.effect("records error span when activation fails", () =>
+      Effect.gen(function* () {
+        const spansRef = yield* CollectedSpans;
+        yield* Ref.set(spansRef, []);
+
+        const responsesRef = yield* MockSshResponses;
+        yield* Ref.set(responsesRef, [
+          // checkSymlink: inactive
+          {
+            _tag: "result" as const,
+            value: { stdout: "inactive\n", stderr: "", exitCode: 0 },
+          },
+          // mkdir -p fails
+          {
+            _tag: "error" as const,
+            value: new CommandFailed({
+              host: "testhost",
+              command: "mkdir -p ...",
+              exitCode: 1,
+              stdout: "",
+              stderr: "permission denied",
+            }),
+          },
+        ]);
+
+        const skillOps = yield* SkillOps;
+        yield* skillOps
+          .activateSkill(testHost, "my-skill", testRepoPath, testActiveDir)
+          .pipe(Effect.either);
+
+        const spans = yield* Ref.get(spansRef);
+        const activateSpan = spans.find((s) => s.name === "skill.activateSkill");
+        expect(activateSpan).toBeDefined();
+        expect(activateSpan!.status).toBe("error");
+      }),
+    );
+
+    it.effect("records error span when deactivation fails", () =>
+      Effect.gen(function* () {
+        const spansRef = yield* CollectedSpans;
+        yield* Ref.set(spansRef, []);
+
+        const responsesRef = yield* MockSshResponses;
+        yield* Ref.set(responsesRef, [
+          // check symlink: exists
+          {
+            _tag: "result" as const,
+            value: { stdout: "exists\n", stderr: "", exitCode: 0 },
+          },
+          // rm fails
+          {
+            _tag: "error" as const,
+            value: new CommandFailed({
+              host: "testhost",
+              command: "rm ...",
+              exitCode: 1,
+              stdout: "",
+              stderr: "not permitted",
+            }),
+          },
+        ]);
+
+        const skillOps = yield* SkillOps;
+        yield* skillOps
+          .deactivateSkill(testHost, "my-skill", testActiveDir)
+          .pipe(Effect.either);
+
+        const spans = yield* Ref.get(spansRef);
+        const deactivateSpan = spans.find((s) => s.name === "skill.deactivateSkill");
+        expect(deactivateSpan).toBeDefined();
+        expect(deactivateSpan!.status).toBe("error");
       }),
     );
   });
