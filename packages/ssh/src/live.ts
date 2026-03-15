@@ -10,7 +10,7 @@ import type { HostConfig } from "@codex-fleet/core";
 import { withSpan } from "@codex-fleet/telemetry";
 import { SshExecutor } from "./types.js";
 import type { CommandResult, ExecuteCommandOptions } from "./types.js";
-import { ConnectionFailed, ConnectionTimeout, CommandFailed } from "./errors.js";
+import { ConnectionFailed, ConnectionTimeout, CommandFailed, CommandTimeout } from "./errors.js";
 
 /**
  * Build the ssh command arguments for a given host configuration.
@@ -49,38 +49,61 @@ function buildSshArgs(host: HostConfig): Array<string> {
  * - Succeeds with CommandResult (stdout, stderr, exitCode) for ALL exit codes
  * - Fails with ConnectionTimeout if the SSH connection times out
  * - Fails with ConnectionFailed if the SSH connection cannot be established
+ * - Fails with CommandTimeout if commandTimeoutMs is set and the command exceeds it
  *
  * Note: Non-zero exit codes are returned in the result, NOT as errors from this
  * internal function. The service layer handles promoting non-zero exits to
  * CommandFailed errors.
+ *
+ * ConnectTimeout applies only to SSH connection establishment via the SSH -o
+ * ConnectTimeout option and does NOT kill long-running commands. The optional
+ * commandTimeoutMs provides a separate, independent timeout for command execution.
  */
 function execSsh(
   host: HostConfig,
   command: string,
-  timeoutMs: number,
-): Effect.Effect<CommandResult, ConnectionFailed | ConnectionTimeout> {
-  return Effect.async<CommandResult, ConnectionFailed | ConnectionTimeout>(
+  connectTimeoutMs: number,
+  commandTimeoutMs?: number,
+): Effect.Effect<CommandResult, ConnectionFailed | ConnectionTimeout | CommandTimeout> {
+  return Effect.async<CommandResult, ConnectionFailed | ConnectionTimeout | CommandTimeout>(
     (resume) => {
       const args = [
         ...buildSshArgs(host),
         "-o",
-        `ConnectTimeout=${Math.max(1, Math.ceil(timeoutMs / 1000))}`,
+        `ConnectTimeout=${Math.max(1, Math.ceil(connectTimeoutMs / 1000))}`,
         command,
       ];
 
+      // Only set process-level timeout if commandTimeoutMs is explicitly provided.
+      // Without it, commands can run indefinitely once SSH connection is established.
       const child = execFile("ssh", args, {
-        timeout: timeoutMs,
+        ...(commandTimeoutMs !== undefined ? { timeout: commandTimeoutMs } : {}),
         maxBuffer: 10 * 1024 * 1024, // 10 MB
         encoding: "utf-8",
       }, (error, stdout, stderr) => {
         if (error) {
-          // Check if it was killed due to timeout
+          // Check if it was killed due to command timeout
           if (error.killed || error.signal === "SIGTERM") {
+            // If commandTimeoutMs was set and process was killed, it's a command timeout
+            if (commandTimeoutMs !== undefined) {
+              resume(
+                Effect.fail(
+                  new CommandTimeout({
+                    host: host.hostname,
+                    command,
+                    timeoutMs: commandTimeoutMs,
+                  }),
+                ),
+              );
+              return;
+            }
+            // Otherwise treat as connection timeout (shouldn't normally happen
+            // since we no longer set process-level timeout for connections)
             resume(
               Effect.fail(
                 new ConnectionTimeout({
                   host: host.hostname,
-                  timeoutMs,
+                  timeoutMs: connectTimeoutMs,
                 }),
               ),
             );
@@ -101,7 +124,7 @@ function execSsh(
                 Effect.fail(
                   new ConnectionTimeout({
                     host: host.hostname,
-                    timeoutMs,
+                    timeoutMs: connectTimeoutMs,
                   }),
                 ),
               );
@@ -165,18 +188,27 @@ export const SshExecutorLive: Layer.Layer<SshExecutor> = Layer.succeed(
       command: string,
       options?: ExecuteCommandOptions,
     ) => {
-      const timeoutMs = options?.timeoutMs ?? host.timeout * 1000;
+      const connectTimeoutMs = options?.timeoutMs ?? host.timeout * 1000;
+      const commandTimeoutMs = options?.commandTimeoutMs;
 
       return withSpan("ssh.executeCommand", {
         attributes: {
           host: host.hostname,
           command,
           port: host.port,
-          "ssh.timeout_ms": timeoutMs,
+          "ssh.connect_timeout_ms": connectTimeoutMs,
+          ...(commandTimeoutMs !== undefined
+            ? { "ssh.command_timeout_ms": commandTimeoutMs }
+            : {}),
         },
       })(
         Effect.gen(function* () {
-          const result = yield* execSsh(host, command, timeoutMs);
+          const result = yield* execSsh(
+            host,
+            command,
+            connectTimeoutMs,
+            commandTimeoutMs,
+          );
 
           // Annotate the span with the exit code
           yield* Effect.annotateCurrentSpan("exitCode", result.exitCode);

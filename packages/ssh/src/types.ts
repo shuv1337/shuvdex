@@ -3,7 +3,7 @@
  */
 import { Context, Effect } from "effect";
 import type { HostConfig } from "@codex-fleet/core";
-import type { ConnectionFailed, ConnectionTimeout, CommandFailed } from "./errors.js";
+import type { ConnectionFailed, ConnectionTimeout, CommandFailed, CommandTimeout } from "./errors.js";
 
 /**
  * Result of executing a command on a remote host.
@@ -18,8 +18,20 @@ export interface CommandResult {
  * Options for executing a command on a remote host.
  */
 export interface ExecuteCommandOptions {
-  /** Timeout in milliseconds for the SSH connection (overrides host config). */
+  /**
+   * Timeout in milliseconds for the SSH connection establishment only
+   * (overrides host config timeout). This is passed to SSH -o ConnectTimeout
+   * and does NOT affect command runtime.
+   */
   readonly timeoutMs?: number;
+
+  /**
+   * Optional timeout in milliseconds for the command execution itself.
+   * If set, the command process will be killed after this duration.
+   * If not set (default), commands can run indefinitely once the connection
+   * is established.
+   */
+  readonly commandTimeoutMs?: number;
 }
 
 /**
@@ -41,7 +53,7 @@ export interface SshExecutorService {
     host: HostConfig,
     command: string,
     options?: ExecuteCommandOptions,
-  ) => Effect.Effect<CommandResult, ConnectionFailed | ConnectionTimeout | CommandFailed>;
+  ) => Effect.Effect<CommandResult, ConnectionFailed | ConnectionTimeout | CommandFailed | CommandTimeout>;
 }
 
 /**

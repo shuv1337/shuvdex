@@ -8,7 +8,7 @@ import { Context, Effect, Layer, Ref } from "effect";
 import { SshExecutor } from "./types.js";
 import type { CommandResult, ExecuteCommandOptions } from "./types.js";
 import type { HostConfig } from "@codex-fleet/core";
-import type { ConnectionFailed, ConnectionTimeout, CommandFailed } from "./errors.js";
+import type { ConnectionFailed, ConnectionTimeout, CommandFailed, CommandTimeout } from "./errors.js";
 
 /**
  * A mock response entry - either a successful result or an error.
@@ -17,7 +17,7 @@ export type MockResponse =
   | { readonly _tag: "result"; readonly value: CommandResult }
   | {
       readonly _tag: "error";
-      readonly value: ConnectionFailed | ConnectionTimeout | CommandFailed;
+      readonly value: ConnectionFailed | ConnectionTimeout | CommandFailed | CommandTimeout;
     };
 
 /**

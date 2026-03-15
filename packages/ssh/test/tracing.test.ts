@@ -80,7 +80,7 @@ describe("SSH OTEL Tracing (integration)", () => {
         expect(span!.attributes["host"]).toBe("shuvtest");
         expect(span!.attributes["command"]).toBe("hostname");
         expect(span!.attributes["port"]).toBe(22);
-        expect(span!.attributes["ssh.timeout_ms"]).toBeDefined();
+        expect(span!.attributes["ssh.connect_timeout_ms"]).toBeDefined();
       }),
     );
 

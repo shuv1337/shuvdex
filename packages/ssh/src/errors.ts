@@ -50,6 +50,21 @@ export class CommandFailed extends Data.TaggedError("CommandFailed")<{
 }
 
 /**
+ * Error returned when a command execution exceeds the configured command timeout.
+ * Distinct from ConnectionTimeout - the SSH connection succeeded, but the
+ * remote command took too long to complete.
+ */
+export class CommandTimeout extends Data.TaggedError("CommandTimeout")<{
+  readonly host: string;
+  readonly command: string;
+  readonly timeoutMs: number;
+}> {
+  get message(): string {
+    return `Command on ${this.host} timed out after ${this.timeoutMs}ms: ${this.command}`;
+  }
+}
+
+/**
  * Union of all SSH error types for use in Effect error channels.
  */
-export type SshError = ConnectionFailed | ConnectionTimeout | CommandFailed;
+export type SshError = ConnectionFailed | ConnectionTimeout | CommandFailed | CommandTimeout;

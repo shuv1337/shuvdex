@@ -16,7 +16,7 @@ export type { CommandResult, ExecuteCommandOptions, SshExecutorService } from ".
 export { SshExecutor } from "./types.js";
 
 // Errors
-export { ConnectionFailed, ConnectionTimeout, CommandFailed } from "./errors.js";
+export { ConnectionFailed, ConnectionTimeout, CommandFailed, CommandTimeout } from "./errors.js";
 export type { SshError } from "./errors.js";
 
 // Layers
