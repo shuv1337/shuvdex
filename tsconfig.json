@@ -1,0 +1,12 @@
+{
+  "files": [],
+  "references": [
+    { "path": "packages/core" },
+    { "path": "packages/telemetry" },
+    { "path": "packages/ssh" },
+    { "path": "packages/git-ops" },
+    { "path": "packages/skill-ops" },
+    { "path": "apps/cli" },
+    { "path": "apps/mcp-server" }
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "name": "@codex-fleet/skill-ops",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src/",
+    "clean": "rm -rf dist *.tsbuildinfo"
+  },
+  "dependencies": {
+    "effect": "^3.19.0",
+    "@codex-fleet/core": "*",
+    "@codex-fleet/ssh": "*",
+    "@codex-fleet/git-ops": "*",
+    "@codex-fleet/telemetry": "*"
+  },
+  "devDependencies": {
+    "@effect/vitest": "^0.27.0",
+    "typescript": "^5.8.2",
+    "vitest": "^3.2.0"
+  }
+}
