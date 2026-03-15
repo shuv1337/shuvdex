@@ -7,6 +7,8 @@ import {
   syncHelp,
   activateHelp,
   deactivateHelp,
+  rollbackHelp,
+  tagHelp,
 } from "../src/cli.js";
 
 describe("parseArgs", () => {
@@ -178,6 +180,42 @@ describe("parseArgs", () => {
     expect(result.command).toBe("deactivate");
     expect(result.positional).toEqual(["my-skill", "shuvtest"]);
   });
+
+  it("parses rollback command with ref and hosts", () => {
+    const result = parseArgs(["node", "fleet", "rollback", "v1.0.0", "shuvtest", "shuvbot"]);
+    expect(result.command).toBe("rollback");
+    expect(result.positional).toEqual(["v1.0.0", "shuvtest", "shuvbot"]);
+  });
+
+  it("parses rollback command with ref only", () => {
+    const result = parseArgs(["node", "fleet", "rollback", "abc1234"]);
+    expect(result.command).toBe("rollback");
+    expect(result.positional).toEqual(["abc1234"]);
+  });
+
+  it("parses rollback command with no args", () => {
+    const result = parseArgs(["node", "fleet", "rollback"]);
+    expect(result.command).toBe("rollback");
+    expect(result.positional).toEqual([]);
+  });
+
+  it("parses tag command with name and hosts", () => {
+    const result = parseArgs(["node", "fleet", "tag", "v2.0.0", "shuvtest"]);
+    expect(result.command).toBe("tag");
+    expect(result.positional).toEqual(["v2.0.0", "shuvtest"]);
+  });
+
+  it("parses tag command with name only", () => {
+    const result = parseArgs(["node", "fleet", "tag", "v2.0.0"]);
+    expect(result.command).toBe("tag");
+    expect(result.positional).toEqual(["v2.0.0"]);
+  });
+
+  it("parses tag command with no args", () => {
+    const result = parseArgs(["node", "fleet", "tag"]);
+    expect(result.command).toBe("tag");
+    expect(result.positional).toEqual([]);
+  });
 });
 
 describe("help text", () => {
@@ -238,6 +276,26 @@ describe("help text", () => {
     expect(help).toContain("hosts");
     expect(help).toContain("--json");
     expect(help).toContain("--active-dir");
+    expect(help).toContain("--config");
+  });
+
+  it("rollbackHelp describes the command", () => {
+    const help = rollbackHelp();
+    expect(help).toContain("fleet rollback");
+    expect(help).toContain("ref");
+    expect(help).toContain("hosts");
+    expect(help).toContain("--json");
+    expect(help).toContain("--repo");
+    expect(help).toContain("--config");
+  });
+
+  it("tagHelp describes the command", () => {
+    const help = tagHelp();
+    expect(help).toContain("fleet tag");
+    expect(help).toContain("name");
+    expect(help).toContain("hosts");
+    expect(help).toContain("--json");
+    expect(help).toContain("--repo");
     expect(help).toContain("--config");
   });
 });

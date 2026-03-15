@@ -35,6 +35,16 @@ import {
   formatDeactivateTable,
   formatDeactivateJson,
 } from "./commands/deactivate.js";
+import {
+  runRollback,
+  formatRollbackTable,
+  formatRollbackJson,
+} from "./commands/rollback.js";
+import {
+  runTag,
+  formatTagTable,
+  formatTagJson,
+} from "./commands/tag.js";
 
 /**
  * Default config path if not specified.
@@ -246,6 +256,56 @@ Exit codes:
 `;
 
 /**
+ * Show rollback command help text.
+ */
+export const rollbackHelp = (): string =>
+  `Usage: fleet rollback <ref> [hosts...] [options]
+
+Checkout a specific git reference (branch, tag, or SHA) on remote hosts.
+If no hosts are specified, rolls back all configured hosts.
+
+Arguments:
+  ref                  Git reference to checkout (required)
+  hosts                Host names to rollback on (default: all)
+
+Options:
+  --json               Output as JSON
+  --repo, -r <path>    Path to git repo on remote hosts (default: ~/repos/shuvbot-skills)
+  --config, -c <path>  Path to fleet config file (default: fleet.yaml)
+  --help, -h           Show help
+
+Exit codes:
+  0  All hosts rolled back successfully
+  1  All hosts failed
+  2  Partial success (some hosts succeeded, some failed)
+`;
+
+/**
+ * Show tag command help text.
+ */
+export const tagHelp = (): string =>
+  `Usage: fleet tag <name> [hosts...] [options]
+
+Create a git tag at the current HEAD on remote hosts.
+If no hosts are specified, tags all configured hosts.
+
+Arguments:
+  name                 Tag name to create (required)
+  hosts                Host names to tag on (default: all)
+
+Options:
+  --json               Output as JSON
+  --repo, -r <path>    Path to git repo on remote hosts (default: ~/repos/shuvbot-skills)
+  --config, -c <path>  Path to fleet config file (default: fleet.yaml)
+  --help, -h           Show help
+
+Exit codes:
+  0  All hosts tagged successfully
+  1  All hosts failed or duplicate tag
+  2  Partial success (some hosts succeeded, some failed)
+`;
+
+/**
  * Run the CLI with the given argv.
  * Returns the exit code.
  */
@@ -307,6 +367,22 @@ export const run = (
           return 0;
         }
         return yield* runDeactivateCommand(parsed);
+      }
+
+      case "rollback": {
+        if (parsed.flags.help) {
+          yield* Effect.sync(() => process.stdout.write(rollbackHelp()));
+          return 0;
+        }
+        return yield* runRollbackCommand(parsed);
+      }
+
+      case "tag": {
+        if (parsed.flags.help) {
+          yield* Effect.sync(() => process.stdout.write(tagHelp()));
+          return 0;
+        }
+        return yield* runTagCommand(parsed);
       }
 
       default: {
@@ -633,6 +709,154 @@ const runDeactivateCommand = (
     const output = parsed.flags.json
       ? formatDeactivateJson(result)
       : formatDeactivateTable(result);
+
+    yield* Effect.sync(() => process.stdout.write(output + "\n"));
+
+    // Exit code: 0 = all ok, 1 = all failed, 2 = partial
+    if (result.allSucceeded) {
+      return 0;
+    }
+    const okCount = result.hosts.filter((h) => h.status === "ok").length;
+    return okCount > 0 ? 2 : 1;
+  }).pipe(
+    Effect.catchAll(() => Effect.succeed(1)),
+  );
+
+/**
+ * Execute the rollback subcommand end-to-end.
+ *
+ * The first positional argument is the git ref (required).
+ * Remaining positional arguments are host names (optional filter).
+ *
+ * Exit codes:
+ * - 0: All hosts rolled back successfully
+ * - 1: All hosts failed or missing ref argument
+ * - 2: Partial success
+ */
+const runRollbackCommand = (
+  parsed: ParsedArgs,
+): Effect.Effect<number, never, never> =>
+  Effect.gen(function* () {
+    // Ref is the first positional arg
+    const ref = parsed.positional[0] as string | undefined;
+    if (!ref) {
+      yield* Effect.sync(() =>
+        process.stderr.write(
+          `Error: missing required argument: <ref>\n\n${rollbackHelp()}`,
+        ),
+      );
+      return 1;
+    }
+
+    // Load config
+    const registry = yield* loadConfig(parsed.flags.config).pipe(
+      Effect.catchAll((err) =>
+        Effect.gen(function* () {
+          yield* Effect.sync(() =>
+            process.stderr.write(`Error: ${err.message}\n`),
+          );
+          return yield* Effect.fail("config-error" as const);
+        }),
+      ),
+    );
+
+    // Build live layer: SSH + Telemetry + GitOps
+    const liveLayer = Layer.provideMerge(
+      GitOpsLive,
+      Layer.merge(SshExecutorLive, TelemetryLive),
+    );
+
+    // Host filter from remaining positional args (after ref)
+    const filterHosts =
+      parsed.positional.length > 1
+        ? parsed.positional.slice(1)
+        : undefined;
+
+    const result = yield* runRollback(
+      registry,
+      ref,
+      parsed.flags.repo,
+      filterHosts,
+    ).pipe(Effect.provide(liveLayer));
+
+    // Format and print output
+    const output = parsed.flags.json
+      ? formatRollbackJson(result)
+      : formatRollbackTable(result);
+
+    yield* Effect.sync(() => process.stdout.write(output + "\n"));
+
+    // Exit code: 0 = all ok, 1 = all failed, 2 = partial
+    if (result.allSucceeded) {
+      return 0;
+    }
+    const okCount = result.hosts.filter((h) => h.status === "ok").length;
+    return okCount > 0 ? 2 : 1;
+  }).pipe(
+    Effect.catchAll(() => Effect.succeed(1)),
+  );
+
+/**
+ * Execute the tag subcommand end-to-end.
+ *
+ * The first positional argument is the tag name (required).
+ * Remaining positional arguments are host names (optional filter).
+ *
+ * Exit codes:
+ * - 0: All hosts tagged successfully
+ * - 1: All hosts failed or missing tag name argument
+ * - 2: Partial success
+ */
+const runTagCommand = (
+  parsed: ParsedArgs,
+): Effect.Effect<number, never, never> =>
+  Effect.gen(function* () {
+    // Tag name is the first positional arg
+    const tagName = parsed.positional[0] as string | undefined;
+    if (!tagName) {
+      yield* Effect.sync(() =>
+        process.stderr.write(
+          `Error: missing required argument: <name>\n\n${tagHelp()}`,
+        ),
+      );
+      return 1;
+    }
+
+    // Load config
+    const registry = yield* loadConfig(parsed.flags.config).pipe(
+      Effect.catchAll((err) =>
+        Effect.gen(function* () {
+          yield* Effect.sync(() =>
+            process.stderr.write(`Error: ${err.message}\n`),
+          );
+          return yield* Effect.fail("config-error" as const);
+        }),
+      ),
+    );
+
+    // Build live layer: SSH + Telemetry + GitOps
+    const liveLayer = Layer.provideMerge(
+      GitOpsLive,
+      Layer.merge(SshExecutorLive, TelemetryLive),
+    );
+
+    // Host filter from remaining positional args (after tag name)
+    const filterHosts =
+      parsed.positional.length > 1
+        ? parsed.positional.slice(1)
+        : undefined;
+
+    const result = yield* runTag(
+      registry,
+      tagName,
+      parsed.flags.repo,
+      filterHosts,
+    ).pipe(Effect.provide(liveLayer));
+
+    // Format and print output
+    const output = parsed.flags.json
+      ? formatTagJson(result)
+      : formatTagTable(result);
 
     yield* Effect.sync(() => process.stdout.write(output + "\n"));
 

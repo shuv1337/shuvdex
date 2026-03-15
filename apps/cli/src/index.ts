@@ -13,6 +13,8 @@ export {
   syncHelp,
   activateHelp,
   deactivateHelp,
+  rollbackHelp,
+  tagHelp,
 } from "./cli.js";
 export type { ParsedArgs } from "./cli.js";
 export {
@@ -52,3 +54,21 @@ export type {
   HostDeactivateResult,
   DeactivateCommandResult,
 } from "./commands/deactivate.js";
+export {
+  runRollback,
+  formatRollbackTable,
+  formatRollbackJson,
+} from "./commands/rollback.js";
+export type {
+  HostRollbackResult,
+  RollbackCommandResult,
+} from "./commands/rollback.js";
+export {
+  runTag,
+  formatTagTable,
+  formatTagJson,
+} from "./commands/tag.js";
+export type {
+  HostTagResult,
+  TagCommandResult,
+} from "./commands/tag.js";
