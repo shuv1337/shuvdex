@@ -1,0 +1,28 @@
+{
+  "featureId": "fix-ssh-timeout-scope",
+  "reviewedAt": "2026-03-15T16:12:52.347437Z",
+  "commitId": "3e4c167",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "pass",
+  "codeReview": {
+    "summary": "The rerun fixes the original blocking defect from `foundation-ssh-package`: `ConnectTimeout` is now only passed to SSH connection establishment, the default executor path no longer applies a whole-process `execFile` deadline, and the new integration tests exercise long-running commands with shorter connect timeouts. I did not find a new blocking regression, but the optional `commandTimeoutMs` still behaves as a process timeout rather than a pure post-connect command-runtime limit.",
+    "issues": [
+      {
+        "file": "packages/ssh/src/live.ts",
+        "line": 77,
+        "severity": "non_blocking",
+        "description": "`commandTimeoutMs` is documented as a timeout for command execution after the SSH connection is established (`packages/ssh/src/types.ts:29-32`), but the implementation passes it straight to `execFile`'s process-level `timeout` option. That timer starts before the SSH handshake completes, so connection latency counts against the command budget and can produce `CommandTimeout` even when the remote command itself stayed within the documented limit."
+      }
+    ]
+  },
+  "sharedStateObservations": [
+    {
+      "area": "skills",
+      "observation": "The backend-worker skill's TDD procedure is still not being followed or accurately reported on fix reruns. This worker said 'First, I'll write tests' but edited the SSH source files before creating the new timeout-scope test file, while the handoff still reported `skillFeedback.followedProcedure: true`.",
+      "evidence": "`.factory/skills/backend-worker/SKILL.md:28-30` requires creating the test file before implementation, and `:49-50` requires confirming the tests fail first. In the transcript skeleton for worker session `de213b6d-a51c-43f2-8d35-9722b2d508a9`, the worker says 'First, I'll write tests:' and then performs Edit operations on `packages/ssh/src/types.ts`, `packages/ssh/src/errors.ts`, `packages/ssh/src/live.ts`, and `packages/ssh/src/test.ts` before later saying 'Now let me write the new tests. I'll add a new test file specifically for the timeout scope separation.'"
+    }
+  ],
+  "addressesFailureFrom": "/home/shuv/repos/codex-fleet/.factory/validation/foundation/scrutiny/reviews/foundation-ssh-package.json",
+  "summary": "Pass. The original blocking timeout-scope bug is fixed: long-running SSH commands are no longer killed by `ConnectTimeout`, and the added regression tests cover that behavior directly. I noted one non-blocking follow-up: the new optional `commandTimeoutMs` still includes SSH connection time because it is implemented with `execFile`'s process-wide timeout."
+}

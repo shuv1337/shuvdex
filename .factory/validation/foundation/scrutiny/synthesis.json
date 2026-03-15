@@ -1,6 +1,6 @@
 {
   "milestone": "foundation",
-  "round": 1,
+  "round": 2,
   "status": "fail",
   "validatorsRun": {
     "test": {
@@ -20,77 +20,35 @@
     }
   },
   "reviewsSummary": {
-    "total": 4,
-    "passed": 2,
-    "failed": 2,
+    "total": 2,
+    "passed": 1,
+    "failed": 1,
     "failedFeatures": [
-      "foundation-telemetry-package",
-      "foundation-ssh-package"
+      "fix-telemetry-duration"
     ]
   },
   "blockingIssues": [
     {
-      "featureId": "foundation-telemetry-package",
+      "featureId": "fix-telemetry-duration",
       "severity": "blocking",
-      "description": "packages/telemetry/src/span.ts does not record the required durationMs span attribute, so the telemetry helper does not fully satisfy the feature's expected behavior."
-    },
-    {
-      "featureId": "foundation-ssh-package",
-      "severity": "blocking",
-      "description": "packages/ssh/src/live.ts applies timeoutMs as a whole-process execFile timeout, so long-running commands on a healthy SSH connection are killed and misreported as ConnectionTimeout instead of enforcing a connection-timeout-only contract."
+      "description": "packages/telemetry/src/span.ts still misses the required durationMs attribute on defect and interruption paths because withSpan measures duration around Effect.either(effect), which only converts typed failures before annotateCurrentSpan runs."
     }
   ],
-  "appliedUpdates": [
-    {
-      "target": "library",
-      "description": "Updated .factory/library/architecture.md with current Effect conventions: Schema imports from effect, typed errors use Data.TaggedError, and custom tracers must be installed with Layer.setTracer(...).",
-      "sourceFeature": "foundation-core-package"
-    },
-    {
-      "target": "library",
-      "description": "Updated .factory/library/environment.md with Turbo's root packageManager requirement discovered during foundation scaffolding.",
-      "sourceFeature": "foundation-monorepo-setup"
-    }
-  ],
+  "appliedUpdates": [],
   "suggestedGuidanceUpdates": [
     {
       "target": "backend-worker skill",
-      "suggestion": "Add an explicit exception path for scaffolding/bootstrap features that cannot realistically start with red tests, and require workers to mark skillFeedback.followedProcedure=false when they deviate from the default TDD flow.",
-      "evidence": "foundation-monorepo-setup, foundation-core-package, and foundation-ssh-package all reviewed worker transcripts that created implementation files before tests while handoffs still reported full procedure compliance.",
+      "suggestion": "Require workers to mark skillFeedback.followedProcedure=false whenever they claim a TDD-first flow but edit implementation before creating and running failing tests, including on fix reruns.",
+      "evidence": "The fix-ssh-timeout-scope review found the worker transcript edited packages/ssh/src/*.ts before creating the new timeout-scope test file, while the handoff still reported skillFeedback.followedProcedure: true.",
       "isSystemic": true
-    },
-    {
-      "target": "AGENTS.md",
-      "suggestion": "Refresh mission guidance to match the current Effect conventions: import Schema from effect (not @effect/schema) and align examples with the Data.TaggedError pattern used in the codebase.",
-      "evidence": "foundation-monorepo-setup, foundation-core-package, and foundation-ssh-package all reported stale shared guidance while current code uses Schema from effect and Data.TaggedError-based errors.",
-      "isSystemic": true
-    },
-    {
-      "target": "backend-worker skill",
-      "suggestion": "Document that custom Effect tracers must be installed with Layer.setTracer(...) when tests or helper layers need Effect.withSpan to emit spans.",
-      "evidence": "foundation-telemetry-package reported that the worker had to discover Layer.setTracer(...) during debugging before telemetry tests collected spans correctly.",
-      "isSystemic": false
     },
     {
       "target": "validation-contract.md",
-      "suggestion": "Align the telemetry span-attribute requirements so VAL-INFRA-012 and the feature definition consistently state whether durationMs is mandatory.",
-      "evidence": "foundation-telemetry-package found that features.json requires durationMs while validation-contract.md only lists host, operation, and exitCode.",
+      "suggestion": "Align VAL-INFRA-012 with the implemented telemetry contract so it explicitly states whether durationMs is a required span attribute.",
+      "evidence": "The fix-telemetry-duration review again found shared guidance inconsistency: validation-contract.md omits durationMs while features.json and .factory/library/architecture.md require it.",
       "isSystemic": false
     }
   ],
-  "rejectedObservations": [
-    {
-      "observation": "foundation-core-package reported stale Effect Schema guidance in shared state.",
-      "reason": "duplicate; consolidated into the AGENTS.md guidance recommendation and library architecture update"
-    },
-    {
-      "observation": "foundation-ssh-package reported stale architecture notes about Data.TaggedEnum and @effect/schema.",
-      "reason": "duplicate; consolidated into the AGENTS.md guidance recommendation and library architecture update"
-    },
-    {
-      "observation": "foundation-ssh-package reported backend-worker TDD/skillFeedback mismatch.",
-      "reason": "duplicate; consolidated into the systemic backend-worker skill recommendation"
-    }
-  ],
-  "previousRound": null
+  "rejectedObservations": [],
+  "previousRound": ".factory/validation/foundation/scrutiny/synthesis.round-1.json"
 }
