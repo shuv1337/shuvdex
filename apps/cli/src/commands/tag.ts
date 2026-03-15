@@ -15,6 +15,7 @@ import type { HostConfig } from "@codex-fleet/core";
 import { HostRegistry } from "@codex-fleet/core";
 import { GitOps } from "@codex-fleet/git-ops";
 import { withSpan } from "@codex-fleet/telemetry";
+import { validateHostFilters } from "./validate-hosts.js";
 
 /**
  * Result of a tag operation on a single host.
@@ -40,6 +41,7 @@ export interface TagCommandResult {
   readonly tagName: string;
   readonly hosts: ReadonlyArray<HostTagResult>;
   readonly allSucceeded: boolean;
+  readonly unknownHosts?: ReadonlyArray<string>;
 }
 
 /**
@@ -94,6 +96,17 @@ export const runTag = (
 ): Effect.Effect<TagCommandResult, never, GitOps> =>
   withSpan("cli.tag")(
     Effect.gen(function* () {
+      // Validate host filters before attempting any operations
+      const validationError = validateHostFilters(registry, filterHosts);
+      if (validationError) {
+        return {
+          tagName,
+          hosts: [],
+          allSucceeded: false,
+          unknownHosts: validationError.unknownHosts,
+        };
+      }
+
       const allHosts = registry.getAllHosts();
 
       // Filter to specified hosts if provided

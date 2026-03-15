@@ -16,6 +16,7 @@ import { HostRegistry } from "@codex-fleet/core";
 import { SkillOps } from "@codex-fleet/skill-ops";
 import type { SkillStatus } from "@codex-fleet/skill-ops";
 import { withSpan } from "@codex-fleet/telemetry";
+import { validateHostFilters } from "./validate-hosts.js";
 
 /**
  * Result of a deactivate operation on a single host.
@@ -42,6 +43,7 @@ export interface DeactivateCommandResult {
   readonly skillName: string;
   readonly hosts: ReadonlyArray<HostDeactivateResult>;
   readonly allSucceeded: boolean;
+  readonly unknownHosts?: ReadonlyArray<string>;
 }
 
 /**
@@ -97,6 +99,17 @@ export const runDeactivate = (
 ): Effect.Effect<DeactivateCommandResult, never, SkillOps> =>
   withSpan("cli.deactivate")(
     Effect.gen(function* () {
+      // Validate host filters before attempting any operations
+      const validationError = validateHostFilters(registry, filterHosts);
+      if (validationError) {
+        return {
+          skillName,
+          hosts: [],
+          allSucceeded: false,
+          unknownHosts: validationError.unknownHosts,
+        };
+      }
+
       const allHosts = registry.getAllHosts();
 
       // Filter to specified hosts if provided

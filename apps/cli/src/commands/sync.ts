@@ -15,6 +15,7 @@ import type { HostConfig } from "@codex-fleet/core";
 import { HostRegistry } from "@codex-fleet/core";
 import { SkillOps } from "@codex-fleet/skill-ops";
 import { withSpan } from "@codex-fleet/telemetry";
+import { validateHostFilters } from "./validate-hosts.js";
 
 /**
  * Result of a sync operation on a single host.
@@ -41,6 +42,7 @@ export interface SyncCommandResult {
   readonly hosts: ReadonlyArray<HostSyncResult>;
   readonly allSucceeded: boolean;
   readonly skillError?: string;
+  readonly unknownHosts?: ReadonlyArray<string>;
 }
 
 /**
@@ -100,6 +102,17 @@ export const runSync = (
 ): Effect.Effect<SyncCommandResult, never, SkillOps> =>
   withSpan("cli.sync")(
     Effect.gen(function* () {
+      // Validate host filters before attempting any operations
+      const validationError = validateHostFilters(registry, filterHosts);
+      if (validationError) {
+        return {
+          skillName,
+          hosts: [],
+          allSucceeded: false,
+          unknownHosts: validationError.unknownHosts,
+        };
+      }
+
       // Validate skill exists locally before any SSH
       const { access, constants } = yield* Effect.promise(
         () => import("node:fs/promises"),

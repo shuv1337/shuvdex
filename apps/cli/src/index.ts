@@ -72,3 +72,5 @@ export type {
   HostTagResult,
   TagCommandResult,
 } from "./commands/tag.js";
+export { validateHostFilters } from "./commands/validate-hosts.js";
+export type { UnknownHostsError } from "./commands/validate-hosts.js";

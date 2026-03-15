@@ -15,6 +15,7 @@ import { HostRegistry } from "@codex-fleet/core";
 import { GitOps } from "@codex-fleet/git-ops";
 import type { SshError } from "@codex-fleet/ssh";
 import { withSpan } from "@codex-fleet/telemetry";
+import { validateHostFilters } from "./validate-hosts.js";
 
 /**
  * Result of a pull operation on a single host.
@@ -40,6 +41,7 @@ export type HostPullResult =
 export interface PullCommandResult {
   readonly hosts: ReadonlyArray<HostPullResult>;
   readonly allSucceeded: boolean;
+  readonly unknownHosts?: ReadonlyArray<string>;
 }
 
 /**
@@ -88,6 +90,16 @@ export const runPull = (
 ): Effect.Effect<PullCommandResult, never, GitOps> =>
   withSpan("cli.pull")(
     Effect.gen(function* () {
+      // Validate host filters before attempting any operations
+      const validationError = validateHostFilters(registry, filterHosts);
+      if (validationError) {
+        return {
+          hosts: [],
+          allSucceeded: false,
+          unknownHosts: validationError.unknownHosts,
+        };
+      }
+
       const allHosts = registry.getAllHosts();
 
       // Filter to specified hosts if provided

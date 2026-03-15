@@ -45,6 +45,7 @@ import {
   formatTagTable,
   formatTagJson,
 } from "./commands/tag.js";
+import { validateHostFilters } from "./commands/validate-hosts.js";
 
 /**
  * Default config path if not specified.
@@ -473,6 +474,15 @@ const runPullCommand = (
     const filterHosts =
       parsed.positional.length > 0 ? parsed.positional : undefined;
 
+    // Validate host filters before running the command
+    const hostValidation = validateHostFilters(registry, filterHosts);
+    if (hostValidation) {
+      yield* Effect.sync(() =>
+        process.stderr.write(`Error: ${hostValidation.message}\n`),
+      );
+      return 1;
+    }
+
     const result = yield* runPull(
       registry,
       parsed.flags.repo,
@@ -544,6 +554,15 @@ const runSyncCommand = (
       parsed.positional.length > 1
         ? parsed.positional.slice(1)
         : undefined;
+
+    // Validate host filters before running the command
+    const hostValidation = validateHostFilters(registry, filterHosts);
+    if (hostValidation) {
+      yield* Effect.sync(() =>
+        process.stderr.write(`Error: ${hostValidation.message}\n`),
+      );
+      return 1;
+    }
 
     // Use the repo flag as the remote repo path. The local repo path
     // is the same path resolved relative to the current working directory
@@ -629,6 +648,15 @@ const runActivateCommand = (
         ? parsed.positional.slice(1)
         : undefined;
 
+    // Validate host filters before running the command
+    const hostValidation = validateHostFilters(registry, filterHosts);
+    if (hostValidation) {
+      yield* Effect.sync(() =>
+        process.stderr.write(`Error: ${hostValidation.message}\n`),
+      );
+      return 1;
+    }
+
     const result = yield* runActivate(
       registry,
       skillName,
@@ -702,6 +730,15 @@ const runDeactivateCommand = (
       parsed.positional.length > 1
         ? parsed.positional.slice(1)
         : undefined;
+
+    // Validate host filters before running the command
+    const hostValidation = validateHostFilters(registry, filterHosts);
+    if (hostValidation) {
+      yield* Effect.sync(() =>
+        process.stderr.write(`Error: ${hostValidation.message}\n`),
+      );
+      return 1;
+    }
 
     const result = yield* runDeactivate(
       registry,
@@ -777,6 +814,15 @@ const runRollbackCommand = (
         ? parsed.positional.slice(1)
         : undefined;
 
+    // Validate host filters before running the command
+    const hostValidation = validateHostFilters(registry, filterHosts);
+    if (hostValidation) {
+      yield* Effect.sync(() =>
+        process.stderr.write(`Error: ${hostValidation.message}\n`),
+      );
+      return 1;
+    }
+
     const result = yield* runRollback(
       registry,
       ref,
@@ -850,6 +896,15 @@ const runTagCommand = (
       parsed.positional.length > 1
         ? parsed.positional.slice(1)
         : undefined;
+
+    // Validate host filters before running the command
+    const hostValidation = validateHostFilters(registry, filterHosts);
+    if (hostValidation) {
+      yield* Effect.sync(() =>
+        process.stderr.write(`Error: ${hostValidation.message}\n`),
+      );
+      return 1;
+    }
 
     const result = yield* runTag(
       registry,
