@@ -1,0 +1,66 @@
+{
+  "groupId": "telemetry-export-rerun",
+  "testedAt": "2026-03-15T18:37:33.992456+00:00",
+  "surface": "terminal-node-api",
+  "toolsUsed": [
+    "node",
+    "python3"
+  ],
+  "assertions": [
+    {
+      "id": "VAL-INFRA-014",
+      "title": "Export to Collector",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Run a terminal Node script against the built telemetry and ssh package entrypoints with TelemetryLive enabled and emit a uniquely named traced ssh hostname operation.",
+          "expected": "The public package surface exports the generated spans to the default OTLP/HTTP collector at localhost:4318.",
+          "observed": "The script completed successfully, ssh.executeCommand returned exitCode 0 for shuvtest, and the wrapped fetch layer captured a POST to http://localhost:4318/v1/traces."
+        },
+        {
+          "action": "Inspect the captured OTLP request body and collector response from the intercepted fetch call.",
+          "expected": "The POST body contains the unique validation span and the collector acknowledges the export request.",
+          "observed": "The request body included span name validation.telemetry.export.rerun.1773599799381 alongside ssh.executeCommand, and the collector responded HTTP 200 with {\"partialSuccess\":{}}."
+        },
+        {
+          "action": "Probe the collector read-only surfaces after the export run.",
+          "expected": "Collector reachability is observable even if GET trace inspection remains limited.",
+          "observed": "GET http://localhost:13133/ returned 200 health JSON, GET http://localhost:4318/ returned 404, and GET http://localhost:4318/v1/traces returned 405 POST-only."
+        }
+      ],
+      "reason": "Fresh terminal-package evidence now conclusively shows the live telemetry layer exported spans to the OTLP collector: the intercepted POST /v1/traces request contained the unique validation span name and received an HTTP 200 collector response.",
+      "evidence": {
+        "files": [
+          "foundation/telemetry-export-rerun/telemetry-export-rerun.mjs",
+          "foundation/telemetry-export-rerun/telemetry-export-rerun.output.json",
+          "foundation/telemetry-export-rerun/collector-readonly-probes.json"
+        ],
+        "network": [
+          "POST http://localhost:4318/v1/traces -> 200 with response {\"partialSuccess\":{}}",
+          "POST http://localhost:4318/v1/metrics -> 200 with response {\"partialSuccess\":{}}",
+          "GET http://localhost:13133/ -> 200 health JSON",
+          "GET http://localhost:4318/ -> 404",
+          "GET http://localhost:4318/v1/traces -> 405 POST-only"
+        ],
+        "observations": [
+          "DEFAULT_COLLECTOR_URL remained http://localhost:4318.",
+          "The OTLP traces request body included span name validation.telemetry.export.rerun.1773599799381 and child span ssh.executeCommand.",
+          "The collector accepted the trace export request with HTTP 200, providing user-surface evidence that the span reached the collector endpoint even though no separate UI was queried."
+        ]
+      },
+      "issues": null
+    }
+  ],
+  "frictions": [
+    {
+      "description": "shuvtest still emits the known post-quantum SSH warning on stderr during the traced hostname call.",
+      "resolved": true,
+      "resolution": "Treated it as expected background stderr per mission guidance and relied on exitCode 0 plus collector POST evidence for the assertion result.",
+      "affectedAssertions": [
+        "VAL-INFRA-014"
+      ]
+    }
+  ],
+  "blockers": [],
+  "summary": "Retested 1 assertion on the terminal-node-api surface: VAL-INFRA-014 passed because a live public-package run emitted a uniquely named span that was captured in a POST to http://localhost:4318/v1/traces and acknowledged by the collector with HTTP 200."
+}

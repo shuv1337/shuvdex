@@ -30,6 +30,8 @@ Testing surface, resource cost classification, and validation approach.
 
 - Read-only probes against `http://localhost:4318` currently return `404` for `GET /` and `405` for `GET /v1/traces`.
 - Verifying actual trace ingestion therefore requires a readable maple/dashboard surface or another trace-query interface; collector reachability alone is not conclusive evidence that a span was ingested.
+- Foundation rerun evidence showed a reliable terminal-only proof path: run the public telemetry package under Node with a temporary `fetch` interceptor, then assert the live exporter makes `POST http://localhost:4318/v1/traces` and that the OTLP JSON body contains the unique span name while the collector replies `200` with `{"partialSuccess":{}}`.
+- `http://localhost:13133/` is a readable collector health endpoint and returned `200` health JSON during the rerun, but it only proves collector availability, not trace ingestion.
 
 ## Validation Concurrency
 

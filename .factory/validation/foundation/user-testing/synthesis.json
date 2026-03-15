@@ -1,12 +1,12 @@
 {
   "milestone": "foundation",
-  "round": 1,
-  "status": "fail",
+  "round": 2,
+  "status": "pass",
   "assertionsSummary": {
     "total": 15,
-    "passed": 14,
+    "passed": 15,
     "failed": 0,
-    "blocked": 1
+    "blocked": 0
   },
   "passedAssertions": [
     "VAL-INFRA-001",
@@ -22,26 +22,22 @@
     "VAL-INFRA-011",
     "VAL-INFRA-012",
     "VAL-INFRA-013",
+    "VAL-INFRA-014",
     "VAL-INFRA-015"
   ],
   "failedAssertions": [],
-  "blockedAssertions": [
-    {
-      "id": "VAL-INFRA-014",
-      "blockedBy": "No readable collector or maple dashboard surface was available to prove that a live-emitted span reached the OTEL collector at http://localhost:4318. Read-only probes returned GET / -> 404 and GET /v1/traces -> 405, so ingestion could not be confirmed from the available user-testing tools."
-    }
-  ],
+  "blockedAssertions": [],
   "appliedUpdates": [
     {
       "target": "user-testing.md",
-      "description": "Documented the foundation terminal-node-api validation surface, isolation guidance, and flow-validator rules for package-level user testing.",
-      "source": "setup"
+      "description": "Documented the terminal-only OTLP export proof path: intercept the live telemetry package's POST to /v1/traces, confirm the unique span name appears in the OTLP body, and require an HTTP 200 collector response.",
+      "source": "flow-report"
     },
     {
       "target": "user-testing.md",
-      "description": "Recorded OTEL collector probe behavior (GET / -> 404, GET /v1/traces -> 405) so future validators know collector reachability alone does not prove ingestion.",
+      "description": "Recorded the readable collector health endpoint at http://localhost:13133/ and clarified that it proves availability but not ingestion.",
       "source": "flow-report"
     }
   ],
-  "previousRound": null
+  "previousRound": ".factory/validation/foundation/user-testing/synthesis.round-1.json"
 }
