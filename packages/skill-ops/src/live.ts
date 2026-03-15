@@ -2,16 +2,19 @@
  * Live implementation of the SkillOps service.
  *
  * Executes commands on remote hosts via the SshExecutor service to discover
- * skills and check their activation status. All operations are traced
- * with OTEL spans via @codex-fleet/telemetry.
+ * skills, check activation status, sync skill directories, and verify
+ * file integrity. All operations are traced with OTEL spans via
+ * @codex-fleet/telemetry.
  */
 import { Effect, Layer } from "effect";
 import type { HostConfig } from "@codex-fleet/core";
 import { SshExecutor, CommandFailed } from "@codex-fleet/ssh";
 import { withSpan } from "@codex-fleet/telemetry";
 import { SkillOps } from "./types.js";
-import type { SkillInfo, SkillStatus } from "./types.js";
-import { SkillCommandFailed, SkillRepoNotFound } from "./errors.js";
+import type { SkillInfo, SkillStatus, SyncResult, VerifySyncResult } from "./types.js";
+import { SkillCommandFailed, SkillRepoNotFound, SkillNotFound, SyncFailed } from "./errors.js";
+import { execFile } from "node:child_process";
+import { access, constants } from "node:fs/promises";
 
 /**
  * Directories that should be filtered out when listing skills.
@@ -138,6 +141,230 @@ export const SkillOpsLive: Layer.Layer<SkillOps, never, SshExecutor> = Layer.eff
             const status = yield* checkSymlink(ssh, host, skillName, activeDir);
             yield* Effect.annotateCurrentSpan("skill.status", status);
             return status;
+          }),
+        ),
+
+      syncSkill: (
+        host: HostConfig,
+        skillName: string,
+        localRepoPath: string,
+        remoteRepoPath: string,
+      ) =>
+        withSpan("skill.syncSkill", {
+          attributes: {
+            host: host.hostname,
+            operation: "syncSkill",
+            skillName,
+            localRepoPath,
+            remoteRepoPath,
+          },
+        })(
+          Effect.gen(function* () {
+            const localSkillPath = `${localRepoPath}/${skillName}`;
+
+            // Verify local skill directory exists
+            yield* Effect.tryPromise({
+              try: () => access(localSkillPath, constants.R_OK),
+              catch: () =>
+                new SkillNotFound({
+                  skillName,
+                  sourcePath: localSkillPath,
+                }),
+            });
+
+            // Build the SSH target string
+            const userPrefix = host.user ? `${host.user}@` : "";
+            const sshTarget = `${userPrefix}${host.hostname}`;
+            const remoteSkillPath = `${remoteRepoPath}/${skillName}`;
+
+            // Ensure remote directory parent exists.
+            // Use raw SSH executor (not execSkillCmd) to keep error types aligned.
+            yield* ssh.executeCommand(host, `mkdir -p ${remoteRepoPath}`).pipe(
+              Effect.catchTag("CommandFailed", (err) =>
+                Effect.fail(
+                  new SyncFailed({
+                    host: host.hostname,
+                    skillName,
+                    cause: `Failed to create remote directory: ${err.stderr}`,
+                  }),
+                ),
+              ),
+            );
+
+            // Use rsync to transfer the skill directory.
+            // -a = archive mode (preserves permissions, ownership, timestamps, structure)
+            // --delete = remove files on dest that don't exist on source
+            // -e ssh = use SSH transport with ConnectTimeout
+            // Trailing / on source means "copy contents of directory"
+            const timeoutSec = host.timeout || 30;
+            const portOpt = host.port && host.port !== 22 ? ` -p ${host.port}` : "";
+            const sshCmd = `ssh -o ConnectTimeout=${timeoutSec} -o StrictHostKeyChecking=no -o BatchMode=yes${portOpt}`;
+            const rsyncCmd = `rsync -a --delete -e '${sshCmd}' ${localSkillPath}/ ${sshTarget}:${remoteSkillPath}/`;
+
+            yield* Effect.tryPromise({
+              try: () =>
+                new Promise<{ stdout: string; stderr: string }>((resolve, reject) => {
+                  execFile(
+                    "bash",
+                    ["-c", rsyncCmd],
+                    { maxBuffer: 10 * 1024 * 1024 },
+                    (error, stdout, stderr) => {
+                      if (error) {
+                        reject(error);
+                      } else {
+                        resolve({ stdout, stderr });
+                      }
+                    },
+                  );
+                }),
+              catch: (err) =>
+                new SyncFailed({
+                  host: host.hostname,
+                  skillName,
+                  cause: String(err instanceof Error ? err.message : err),
+                }),
+            });
+
+            // Count files transferred by listing files in the remote directory.
+            // Use raw SSH executor and map errors to SyncFailed.
+            const countResult = yield* ssh
+              .executeCommand(host, `find ${remoteSkillPath} -type f | wc -l`)
+              .pipe(
+                Effect.catchTag("CommandFailed", (err) =>
+                  Effect.fail(
+                    new SyncFailed({
+                      host: host.hostname,
+                      skillName,
+                      cause: `Failed to count transferred files: ${err.stderr}`,
+                    }),
+                  ),
+                ),
+              );
+            const filesTransferred = parseInt(countResult.stdout.trim(), 10) || 0;
+
+            yield* Effect.annotateCurrentSpan("skill.filesTransferred", filesTransferred);
+            yield* Effect.annotateCurrentSpan("skill.syncSuccess", true);
+
+            return {
+              host: host.hostname,
+              skillName,
+              filesTransferred,
+              success: true,
+            } satisfies SyncResult;
+          }),
+        ),
+
+      verifySync: (
+        host: HostConfig,
+        skillName: string,
+        localRepoPath: string,
+        remoteRepoPath: string,
+      ) =>
+        withSpan("skill.verifySync", {
+          attributes: {
+            host: host.hostname,
+            operation: "verifySync",
+            skillName,
+            localRepoPath,
+            remoteRepoPath,
+          },
+        })(
+          Effect.gen(function* () {
+            const localSkillPath = `${localRepoPath}/${skillName}`;
+            const remoteSkillPath = `${remoteRepoPath}/${skillName}`;
+
+            // Generate checksums locally using find + sha256sum.
+            // Output format: <hash>  <relative-path>
+            // We cd into the skill dir first so paths are relative.
+            const localChecksumResult = yield* Effect.tryPromise({
+              try: () =>
+                new Promise<{ stdout: string; stderr: string }>((resolve, reject) => {
+                  execFile(
+                    "bash",
+                    [
+                      "-c",
+                      `cd ${localSkillPath} && find . -type f -exec sha256sum {} \\; | sort -k2`,
+                    ],
+                    { maxBuffer: 10 * 1024 * 1024 },
+                    (error, stdout, stderr) => {
+                      if (error) {
+                        reject(error);
+                      } else {
+                        resolve({ stdout, stderr });
+                      }
+                    },
+                  );
+                }),
+              catch: (err) =>
+                new SkillCommandFailed({
+                  host: "localhost",
+                  command: "sha256sum (local)",
+                  exitCode: 1,
+                  stderr: String(err instanceof Error ? err.message : err),
+                }),
+            });
+
+            // Generate checksums on remote host
+            const remoteChecksumResult = yield* execSkillCmd(
+              ssh,
+              host,
+              `cd ${remoteSkillPath} && find . -type f -exec sha256sum {} \\; | sort -k2`,
+            );
+
+            // Parse checksums into maps: relative_path -> hash
+            const parseChecksums = (output: string): Map<string, string> => {
+              const map = new Map<string, string>();
+              const lines = output.trim().split("\n").filter((l) => l.length > 0);
+              for (const line of lines) {
+                // sha256sum output: <hash>  <path>  (two spaces between)
+                const match = line.match(/^([a-f0-9]{64})\s+(.+)$/);
+                if (match) {
+                  map.set(match[2], match[1]);
+                }
+              }
+              return map;
+            };
+
+            const localChecksums = parseChecksums(localChecksumResult.stdout);
+            const remoteChecksums = parseChecksums(remoteChecksumResult.stdout);
+
+            // Compare checksums
+            const mismatched: Array<string> = [];
+
+            // Check all local files exist on remote and match
+            for (const [path, hash] of localChecksums) {
+              const remoteHash = remoteChecksums.get(path);
+              if (remoteHash === undefined) {
+                mismatched.push(path);
+              } else if (remoteHash !== hash) {
+                mismatched.push(path);
+              }
+            }
+
+            // Check for extra files on remote that don't exist locally
+            for (const [path] of remoteChecksums) {
+              if (!localChecksums.has(path)) {
+                mismatched.push(path);
+              }
+            }
+
+            const filesChecked = Math.max(localChecksums.size, remoteChecksums.size);
+            const match = mismatched.length === 0;
+
+            yield* Effect.annotateCurrentSpan("skill.filesChecked", filesChecked);
+            yield* Effect.annotateCurrentSpan("skill.checksumMatch", match);
+
+            if (!match) {
+              yield* Effect.annotateCurrentSpan("skill.mismatchCount", mismatched.length);
+            }
+
+            return {
+              host: host.hostname,
+              skillName,
+              match,
+              filesChecked,
+              mismatched,
+            } satisfies VerifySyncResult;
           }),
         ),
     });

@@ -1,11 +1,14 @@
 import { it, layer } from "@effect/vitest";
-import { describe, expect } from "vitest";
+import { describe, expect, beforeEach, afterEach } from "vitest";
 import { Effect, Ref, Layer } from "effect";
 import {
   SkillOps,
   SkillOpsLive,
   SkillCommandFailed,
   SkillRepoNotFound,
+  SkillNotFound,
+  SyncFailed,
+  ChecksumMismatch,
 } from "../src/index.js";
 import {
   SshExecutorTest,
@@ -15,6 +18,10 @@ import {
 } from "@codex-fleet/ssh";
 import { TelemetryTest, CollectedSpans } from "@codex-fleet/telemetry";
 import type { HostConfig } from "@codex-fleet/core";
+import { mkdtemp, mkdir, writeFile, chmod, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { execFile as execFileCb } from "node:child_process";
 
 /**
  * Test host configuration.
@@ -633,5 +640,516 @@ describe("SkillRepoNotFound error", () => {
     expect(err.path).toBe("/some/path");
     expect(err.message).toContain("h");
     expect(err.message).toContain("/some/path");
+  });
+});
+
+describe("SkillNotFound error", () => {
+  it("has correct _tag and fields", () => {
+    const err = new SkillNotFound({
+      skillName: "my-skill",
+      sourcePath: "/local/path/my-skill",
+    });
+    expect(err._tag).toBe("SkillNotFound");
+    expect(err.skillName).toBe("my-skill");
+    expect(err.sourcePath).toBe("/local/path/my-skill");
+    expect(err.message).toContain("my-skill");
+    expect(err.message).toContain("/local/path/my-skill");
+  });
+});
+
+describe("SyncFailed error", () => {
+  it("has correct _tag and fields", () => {
+    const err = new SyncFailed({
+      host: "h",
+      skillName: "my-skill",
+      cause: "rsync failed",
+    });
+    expect(err._tag).toBe("SyncFailed");
+    expect(err.host).toBe("h");
+    expect(err.skillName).toBe("my-skill");
+    expect(err.cause).toBe("rsync failed");
+    expect(err.message).toContain("h");
+    expect(err.message).toContain("my-skill");
+    expect(err.message).toContain("rsync failed");
+  });
+});
+
+describe("ChecksumMismatch error", () => {
+  it("has correct _tag and fields", () => {
+    const err = new ChecksumMismatch({
+      host: "h",
+      skillName: "my-skill",
+      mismatched: ["./file1.txt", "./file2.txt"],
+    });
+    expect(err._tag).toBe("ChecksumMismatch");
+    expect(err.host).toBe("h");
+    expect(err.skillName).toBe("my-skill");
+    expect(err.mismatched).toEqual(["./file1.txt", "./file2.txt"]);
+    expect(err.message).toContain("2 file(s) differ");
+  });
+});
+
+describe("SkillOps syncSkill", () => {
+  let tmpDir: string;
+
+  beforeEach(async () => {
+    tmpDir = await mkdtemp(join(tmpdir(), "skill-ops-test-"));
+  });
+
+  afterEach(async () => {
+    await rm(tmpDir, { recursive: true, force: true });
+  });
+
+  layer(TestLayer)("sync operations", (it) => {
+    it.effect("fails with SkillNotFound when local skill directory does not exist", () =>
+      Effect.gen(function* () {
+        const skillOps = yield* SkillOps;
+        const result = yield* skillOps
+          .syncSkill(testHost, "nonexistent-skill", "/tmp/no-such-path", "/remote/repo")
+          .pipe(Effect.either);
+
+        expect(result._tag).toBe("Left");
+        if (result._tag === "Left") {
+          expect(result.left).toBeInstanceOf(SkillNotFound);
+          const err = result.left as SkillNotFound;
+          expect(err.skillName).toBe("nonexistent-skill");
+          expect(err.sourcePath).toContain("nonexistent-skill");
+        }
+      }),
+    );
+
+    it.effect("calls mkdir -p on remote to ensure parent exists", () =>
+      Effect.gen(function* () {
+        // Create a local skill directory
+        const localRepo = tmpDir;
+        const skillDir = join(localRepo, "test-skill");
+        yield* Effect.promise(() => mkdir(skillDir, { recursive: true }));
+        yield* Effect.promise(() => writeFile(join(skillDir, "config.yaml"), "name: test-skill\n"));
+
+        // Use localhost with a non-existent user so rsync fails immediately
+        // (no DNS resolution delay, SSH auth fails fast with BatchMode=yes)
+        const localhostHost: HostConfig = {
+          hostname: "localhost",
+          connectionType: "ssh",
+          port: 22,
+          user: "nonexistentuser99",
+          timeout: 1,
+        };
+
+        const responsesRef = yield* MockSshResponses;
+        yield* Ref.set(responsesRef, [
+          // mkdir -p response
+          {
+            _tag: "result" as const,
+            value: { stdout: "", stderr: "", exitCode: 0 },
+          },
+          // find ... | wc -l response (file count) - may not be reached
+          {
+            _tag: "result" as const,
+            value: { stdout: "1\n", stderr: "", exitCode: 0 },
+          },
+        ]);
+
+        const callsRef = yield* RecordedSshCalls;
+        const callsBefore = yield* Ref.get(callsRef);
+        const countBefore = callsBefore.length;
+
+        const skillOps = yield* SkillOps;
+
+        // rsync uses local execFile (not SSH executor) but will fail
+        // because the user doesn't exist. We expect a SyncFailed error.
+        const result = yield* skillOps
+          .syncSkill(localhostHost, "test-skill", localRepo, "/remote/repo")
+          .pipe(Effect.either);
+
+        // Verify the mkdir SSH command was called before rsync attempt
+        const callsAfter = yield* Ref.get(callsRef);
+        const mkdirCall = callsAfter[countBefore];
+        expect(mkdirCall).toBeDefined();
+        expect(mkdirCall.command).toContain("mkdir -p");
+        expect(mkdirCall.command).toContain("/remote/repo");
+
+        // The overall result should be SyncFailed due to rsync failure
+        expect(result._tag).toBe("Left");
+        if (result._tag === "Left") {
+          expect(result.left).toBeInstanceOf(SyncFailed);
+        }
+      }),
+    );
+
+    it.effect("includes host, skillName in SyncFailed error", () =>
+      Effect.gen(function* () {
+        // Create local skill dir
+        const localRepo = tmpDir;
+        const skillDir = join(localRepo, "test-skill");
+        yield* Effect.promise(() => mkdir(skillDir, { recursive: true }));
+        yield* Effect.promise(() => writeFile(join(skillDir, "readme.md"), "hello\n"));
+
+        // Use localhost with a non-existent user so rsync fails immediately
+        const localhostHost: HostConfig = {
+          hostname: "localhost",
+          connectionType: "ssh",
+          port: 22,
+          user: "nonexistentuser99",
+          timeout: 1,
+        };
+
+        const responsesRef = yield* MockSshResponses;
+        yield* Ref.set(responsesRef, [
+          // mkdir response
+          {
+            _tag: "result" as const,
+            value: { stdout: "", stderr: "", exitCode: 0 },
+          },
+        ]);
+
+        const skillOps = yield* SkillOps;
+        const result = yield* skillOps
+          .syncSkill(localhostHost, "test-skill", localRepo, "/remote/repo")
+          .pipe(Effect.either);
+
+        expect(result._tag).toBe("Left");
+        if (result._tag === "Left") {
+          const err = result.left as SyncFailed;
+          expect(err._tag).toBe("SyncFailed");
+          expect(err.host).toBe("localhost");
+          expect(err.skillName).toBe("test-skill");
+          expect(err.cause.length).toBeGreaterThan(0);
+        }
+      }),
+    );
+  });
+});
+
+/**
+ * Helper to get sha256 checksums for a directory via shell command.
+ * Returns the raw output of `find . -type f -exec sha256sum {} | sort -k2`.
+ */
+const getLocalChecksums = (dir: string): Promise<string> =>
+  new Promise((resolve, reject) => {
+    execFileCb(
+      "bash",
+      ["-c", `cd ${dir} && find . -type f -exec sha256sum {} \\; | sort -k2`],
+      (err, stdout) => (err ? reject(err) : resolve(stdout)),
+    );
+  });
+
+describe("SkillOps verifySync", () => {
+  let tmpDir: string;
+
+  beforeEach(async () => {
+    tmpDir = await mkdtemp(join(tmpdir(), "skill-ops-verify-"));
+  });
+
+  afterEach(async () => {
+    await rm(tmpDir, { recursive: true, force: true });
+  });
+
+  layer(TestLayer)("verify operations", (it) => {
+    it.effect("returns match=true when all checksums match", () =>
+      Effect.gen(function* () {
+        // Create local skill directory with files
+        const localRepo = tmpDir;
+        const skillDir = join(localRepo, "test-skill");
+        yield* Effect.promise(() => mkdir(skillDir, { recursive: true }));
+        yield* Effect.promise(() => writeFile(join(skillDir, "config.yaml"), "name: test-skill\n"));
+        yield* Effect.promise(() => writeFile(join(skillDir, "run.sh"), "#!/bin/bash\necho hi\n"));
+
+        // Get actual local checksums
+        const localOutput = yield* Effect.promise(() => getLocalChecksums(skillDir));
+
+        // Mock remote SSH to return identical checksums
+        const responsesRef = yield* MockSshResponses;
+        yield* Ref.set(responsesRef, [
+          {
+            _tag: "result" as const,
+            value: { stdout: localOutput, stderr: "", exitCode: 0 },
+          },
+        ]);
+
+        const skillOps = yield* SkillOps;
+        const result = yield* skillOps.verifySync(
+          testHost,
+          "test-skill",
+          localRepo,
+          "/remote/repo",
+        );
+
+        expect(result.match).toBe(true);
+        expect(result.host).toBe("testhost");
+        expect(result.skillName).toBe("test-skill");
+        expect(result.filesChecked).toBe(2);
+        expect(result.mismatched).toEqual([]);
+      }),
+    );
+
+    it.effect("returns match=false when checksums differ", () =>
+      Effect.gen(function* () {
+        // Create local skill directory
+        const localRepo = tmpDir;
+        const skillDir = join(localRepo, "test-skill");
+        yield* Effect.promise(() => mkdir(skillDir, { recursive: true }));
+        yield* Effect.promise(() => writeFile(join(skillDir, "config.yaml"), "name: test-skill\n"));
+
+        // Get actual local checksums
+        const localOutput = yield* Effect.promise(() => getLocalChecksums(skillDir));
+
+        // Modify the checksum to simulate mismatch
+        const fakeRemote = localOutput.replace(/^[a-f0-9]{64}/, "0".repeat(64));
+
+        const responsesRef = yield* MockSshResponses;
+        yield* Ref.set(responsesRef, [
+          {
+            _tag: "result" as const,
+            value: { stdout: fakeRemote, stderr: "", exitCode: 0 },
+          },
+        ]);
+
+        const skillOps = yield* SkillOps;
+        const result = yield* skillOps.verifySync(
+          testHost,
+          "test-skill",
+          localRepo,
+          "/remote/repo",
+        );
+
+        expect(result.match).toBe(false);
+        expect(result.mismatched.length).toBeGreaterThan(0);
+        expect(result.mismatched).toContain("./config.yaml");
+      }),
+    );
+
+    it.effect("detects extra files on remote", () =>
+      Effect.gen(function* () {
+        // Create local skill directory with one file
+        const localRepo = tmpDir;
+        const skillDir = join(localRepo, "test-skill");
+        yield* Effect.promise(() => mkdir(skillDir, { recursive: true }));
+        yield* Effect.promise(() => writeFile(join(skillDir, "config.yaml"), "name: test-skill\n"));
+
+        // Get actual local checksums
+        const localOutput = yield* Effect.promise(() => getLocalChecksums(skillDir));
+
+        // Remote has extra file
+        const extraLine = "abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890  ./extra-file.txt";
+        const remoteOutput = `${localOutput.trim()}\n${extraLine}\n`;
+
+        const responsesRef = yield* MockSshResponses;
+        yield* Ref.set(responsesRef, [
+          {
+            _tag: "result" as const,
+            value: { stdout: remoteOutput, stderr: "", exitCode: 0 },
+          },
+        ]);
+
+        const skillOps = yield* SkillOps;
+        const result = yield* skillOps.verifySync(
+          testHost,
+          "test-skill",
+          localRepo,
+          "/remote/repo",
+        );
+
+        expect(result.match).toBe(false);
+        expect(result.mismatched).toContain("./extra-file.txt");
+      }),
+    );
+
+    it.effect("detects missing files on remote", () =>
+      Effect.gen(function* () {
+        // Create local skill directory with two files
+        const localRepo = tmpDir;
+        const skillDir = join(localRepo, "test-skill");
+        yield* Effect.promise(() => mkdir(skillDir, { recursive: true }));
+        yield* Effect.promise(() => writeFile(join(skillDir, "config.yaml"), "name: test-skill\n"));
+        yield* Effect.promise(() => writeFile(join(skillDir, "run.sh"), "#!/bin/bash\n"));
+
+        // Remote only has one of the two files with a fake hash
+        const fakeHash = "a".repeat(64);
+        const remoteOutput = `${fakeHash}  ./config.yaml\n`;
+
+        const responsesRef = yield* MockSshResponses;
+        yield* Ref.set(responsesRef, [
+          {
+            _tag: "result" as const,
+            value: { stdout: remoteOutput, stderr: "", exitCode: 0 },
+          },
+        ]);
+
+        const skillOps = yield* SkillOps;
+        const result = yield* skillOps.verifySync(
+          testHost,
+          "test-skill",
+          localRepo,
+          "/remote/repo",
+        );
+
+        expect(result.match).toBe(false);
+        // run.sh is missing on remote, config.yaml has wrong hash
+        expect(result.mismatched.length).toBeGreaterThanOrEqual(1);
+        expect(result.mismatched).toContain("./run.sh");
+      }),
+    );
+
+    it.effect("handles empty skill directory", () =>
+      Effect.gen(function* () {
+        // Create empty local skill directory
+        const localRepo = tmpDir;
+        const skillDir = join(localRepo, "empty-skill");
+        yield* Effect.promise(() => mkdir(skillDir, { recursive: true }));
+
+        const responsesRef = yield* MockSshResponses;
+        yield* Ref.set(responsesRef, [
+          {
+            _tag: "result" as const,
+            value: { stdout: "", stderr: "", exitCode: 0 },
+          },
+        ]);
+
+        const skillOps = yield* SkillOps;
+        const result = yield* skillOps.verifySync(
+          testHost,
+          "empty-skill",
+          localRepo,
+          "/remote/repo",
+        );
+
+        expect(result.match).toBe(true);
+        expect(result.filesChecked).toBe(0);
+        expect(result.mismatched).toEqual([]);
+      }),
+    );
+
+    it.effect("verifies correct SSH commands are sent for remote checksums", () =>
+      Effect.gen(function* () {
+        // Create local skill directory
+        const localRepo = tmpDir;
+        const skillDir = join(localRepo, "test-skill");
+        yield* Effect.promise(() => mkdir(skillDir, { recursive: true }));
+        yield* Effect.promise(() => writeFile(join(skillDir, "config.yaml"), "test\n"));
+
+        const responsesRef = yield* MockSshResponses;
+        yield* Ref.set(responsesRef, [
+          {
+            _tag: "result" as const,
+            value: { stdout: "", stderr: "", exitCode: 0 },
+          },
+        ]);
+
+        const callsRef = yield* RecordedSshCalls;
+        const callsBefore = yield* Ref.get(callsRef);
+        const countBefore = callsBefore.length;
+
+        const skillOps = yield* SkillOps;
+        yield* skillOps.verifySync(testHost, "test-skill", localRepo, "/remote/repo");
+
+        const callsAfter = yield* Ref.get(callsRef);
+        const remoteCall = callsAfter[countBefore];
+        expect(remoteCall).toBeDefined();
+        expect(remoteCall.command).toContain("cd /remote/repo/test-skill");
+        expect(remoteCall.command).toContain("sha256sum");
+        expect(remoteCall.command).toContain("sort -k2");
+        expect(remoteCall.host).toEqual(testHost);
+      }),
+    );
+  });
+});
+
+describe("SkillOps sync OTEL tracing", () => {
+  let tmpDir: string;
+
+  beforeEach(async () => {
+    tmpDir = await mkdtemp(join(tmpdir(), "skill-ops-trace-"));
+  });
+
+  afterEach(async () => {
+    await rm(tmpDir, { recursive: true, force: true });
+  });
+
+  layer(TestLayer)("span creation", (it) => {
+    it.effect("creates span for syncSkill (even on failure)", () =>
+      Effect.gen(function* () {
+        const spansRef = yield* CollectedSpans;
+        yield* Ref.set(spansRef, []);
+
+        const skillOps = yield* SkillOps;
+        yield* skillOps
+          .syncSkill(testHost, "nonexistent", "/no/such/path", "/remote")
+          .pipe(Effect.either);
+
+        const spans = yield* Ref.get(spansRef);
+        const syncSpan = spans.find((s) => s.name === "skill.syncSkill");
+        expect(syncSpan).toBeDefined();
+        expect(syncSpan!.attributes.host).toBe("testhost");
+        expect(syncSpan!.attributes.operation).toBe("syncSkill");
+        expect(syncSpan!.attributes.skillName).toBe("nonexistent");
+        expect(syncSpan!.status).toBe("error");
+      }),
+    );
+
+    it.effect("creates span for verifySync", () =>
+      Effect.gen(function* () {
+        const spansRef = yield* CollectedSpans;
+        yield* Ref.set(spansRef, []);
+
+        // Create local skill directory
+        const localRepo = tmpDir;
+        const skillDir = join(localRepo, "test-skill");
+        yield* Effect.promise(() => mkdir(skillDir, { recursive: true }));
+        yield* Effect.promise(() => writeFile(join(skillDir, "config.yaml"), "test\n"));
+
+        const responsesRef = yield* MockSshResponses;
+        yield* Ref.set(responsesRef, [
+          {
+            _tag: "result" as const,
+            value: { stdout: "", stderr: "", exitCode: 0 },
+          },
+        ]);
+
+        const skillOps = yield* SkillOps;
+        yield* skillOps.verifySync(testHost, "test-skill", localRepo, "/remote/repo");
+
+        const spans = yield* Ref.get(spansRef);
+        const verifySpan = spans.find((s) => s.name === "skill.verifySync");
+        expect(verifySpan).toBeDefined();
+        expect(verifySpan!.attributes.host).toBe("testhost");
+        expect(verifySpan!.attributes.operation).toBe("verifySync");
+        expect(verifySpan!.attributes.skillName).toBe("test-skill");
+        expect(verifySpan!.status).toBe("ok");
+      }),
+    );
+
+    it.effect("records checksumMatch and filesChecked in verifySync span", () =>
+      Effect.gen(function* () {
+        const spansRef = yield* CollectedSpans;
+        yield* Ref.set(spansRef, []);
+
+        // Create local skill directory with a file
+        const localRepo = tmpDir;
+        const skillDir = join(localRepo, "test-skill");
+        yield* Effect.promise(() => mkdir(skillDir, { recursive: true }));
+        yield* Effect.promise(() => writeFile(join(skillDir, "config.yaml"), "name: test-skill\n"));
+
+        // Get real local checksums to mock the remote response
+        const localOutput = yield* Effect.promise(() => getLocalChecksums(skillDir));
+
+        const responsesRef = yield* MockSshResponses;
+        yield* Ref.set(responsesRef, [
+          {
+            _tag: "result" as const,
+            value: { stdout: localOutput, stderr: "", exitCode: 0 },
+          },
+        ]);
+
+        const skillOps = yield* SkillOps;
+        yield* skillOps.verifySync(testHost, "test-skill", localRepo, "/remote/repo");
+
+        const spans = yield* Ref.get(spansRef);
+        const verifySpan = spans.find((s) => s.name === "skill.verifySync");
+        expect(verifySpan).toBeDefined();
+        expect(verifySpan!.attributes["skill.checksumMatch"]).toBe(true);
+        expect(verifySpan!.attributes["skill.filesChecked"]).toBe(1);
+      }),
+    );
   });
 });

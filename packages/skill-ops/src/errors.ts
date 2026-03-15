@@ -35,6 +35,52 @@ export class SkillRepoNotFound extends Data.TaggedError("SkillRepoNotFound")<{
 }
 
 /**
+ * Error returned when a skill cannot be found in the local source directory
+ * before attempting to sync.
+ */
+export class SkillNotFound extends Data.TaggedError("SkillNotFound")<{
+  readonly skillName: string;
+  readonly sourcePath: string;
+}> {
+  get message(): string {
+    return `Skill "${this.skillName}" not found at ${this.sourcePath}`;
+  }
+}
+
+/**
+ * Error returned when skill sync (rsync/scp transfer) fails.
+ * Contains the host, skill name, and underlying error details.
+ */
+export class SyncFailed extends Data.TaggedError("SyncFailed")<{
+  readonly host: string;
+  readonly skillName: string;
+  readonly cause: string;
+}> {
+  get message(): string {
+    return `Sync of skill "${this.skillName}" to ${this.host} failed: ${this.cause}`;
+  }
+}
+
+/**
+ * Error returned when file integrity verification fails after sync.
+ * Contains the mismatched files for diagnostics.
+ */
+export class ChecksumMismatch extends Data.TaggedError("ChecksumMismatch")<{
+  readonly host: string;
+  readonly skillName: string;
+  readonly mismatched: ReadonlyArray<string>;
+}> {
+  get message(): string {
+    return `Checksum mismatch for skill "${this.skillName}" on ${this.host}: ${this.mismatched.length} file(s) differ`;
+  }
+}
+
+/**
  * Union of all skill operation error types.
  */
-export type SkillOpsError = SkillCommandFailed | SkillRepoNotFound;
+export type SkillOpsError =
+  | SkillCommandFailed
+  | SkillRepoNotFound
+  | SkillNotFound
+  | SyncFailed
+  | ChecksumMismatch;
