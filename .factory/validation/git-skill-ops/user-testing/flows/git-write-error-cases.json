@@ -1,0 +1,224 @@
+{
+  "groupId": "git-write-error-cases",
+  "testedAt": "2026-03-15T21:09:50.800Z",
+  "isolation": {
+    "host": {
+      "hostname": "shuvtest",
+      "connectionType": "ssh",
+      "port": 22,
+      "timeout": 10
+    },
+    "allowedSandboxes": [
+      "/tmp/codex-fleet-user-testing-git-write",
+      "/tmp/codex-fleet-user-testing-git-conflict"
+    ],
+    "paths": {
+      "nonRepoDir": "/tmp/codex-fleet-user-testing-git-write/not-a-repo",
+      "authRepo": "/tmp/codex-fleet-user-testing-git-write/auth-repo",
+      "timeoutRepo": "/tmp/codex-fleet-user-testing-git-write/timeout-repo",
+      "conflictOrigin": "/tmp/codex-fleet-user-testing-git-conflict/origin.git",
+      "conflictRepo": "/tmp/codex-fleet-user-testing-git-conflict/repo-under-test",
+      "conflictPeer": "/tmp/codex-fleet-user-testing-git-conflict/peer"
+    },
+    "localScratchDir": "/tmp/codex-fleet-user-testing-git-write-errors"
+  },
+  "toolsUsed": [
+    "node --input-type=module",
+    "ssh",
+    "git"
+  ],
+  "assertions": [
+    {
+      "id": "VAL-GIT-009",
+      "title": "Handle Non-Repository Directory",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Reset `/tmp/codex-fleet-user-testing-git-write/not-a-repo` to a plain directory and call `GitOps.getHead` through the public `@codex-fleet/git-ops` API.",
+          "expected": "The API fails with a typed non-repository error and does not create `.git` metadata or other files.",
+          "observed": "The API failed with `_tag=NotARepository` for `/tmp/codex-fleet-user-testing-git-write/not-a-repo`; the before/after directory listings were identical."
+        },
+        {
+          "action": "Verify directly over SSH/git with `git -C /tmp/codex-fleet-user-testing-git-write/not-a-repo rev-parse HEAD` and list the directory contents.",
+          "expected": "Raw git exits non-zero with a not-a-repository error while the directory remains a plain non-repo path.",
+          "observed": "Direct verification reported `NON_REPO_GIT_EXIT=128`, stderr contained `fatal: not a git repository`, and the directory still showed only `README.txt` with no `.git`."
+        }
+      ],
+      "evidence": {
+        "artifacts": [
+          "git-skill-ops/git-write-error-cases/reset-git-write-error-cases.remote.sh",
+          "git-skill-ops/git-write-error-cases/reset-git-write-error-cases.stdout.txt",
+          "git-skill-ops/git-write-error-cases/reset-git-write-error-cases.stderr.txt",
+          "git-skill-ops/git-write-error-cases/validate-git-write-error-cases.mjs",
+          "git-skill-ops/git-write-error-cases/git-write-error-cases-api-results.json",
+          "git-skill-ops/git-write-error-cases/git-write-error-cases-api-run.stderr.txt",
+          "git-skill-ops/git-write-error-cases/verify-git-write-error-cases.remote.sh",
+          "git-skill-ops/git-write-error-cases/git-write-error-cases-ssh-verify.stdout.txt",
+          "git-skill-ops/git-write-error-cases/git-write-error-cases-ssh-verify.stderr.txt"
+        ],
+        "apiError": {
+          "name": "NotARepository",
+          "_tag": "NotARepository",
+          "message": "Not a git repository on shuvtest: /tmp/codex-fleet-user-testing-git-write/not-a-repo",
+          "stack": "NotARepository: Not a git repository on shuvtest: /tmp/codex-fleet-user-testing-git-write/not-a-repo\n    at file:///home/shuv/repos/codex-fleet/packages/git-ops/dist/live.js:85:32\n    at EffectPrimitive.effect_instruction_i1 (file:///home/shuv/repos/codex-fleet/node_modules/effect/dist/esm/internal/core.js:320:39)\n    at file:///home/shuv/repos/codex-fleet/node_modules/effect/dist/esm/internal/fiberRuntime.js:983:46\n    at effect_internal_function (file:///home/shuv/repos/codex-fleet/node_modules/effect/dist/esm/Utils.js:333:12)\n    at FiberRuntime.Failure (file:///home/shuv/repos/codex-fleet/node_modules/effect/dist/esm/internal/fiberRuntime.js:983:22)\n    at file:///home/shuv/repos/codex-fleet/node_modules/effect/dist/esm/internal/fiberRuntime.js:1151:31\n    at Object.context (file:///home/shuv/repos/codex-fleet/packages/telemetry/dist/test.js:83:21)\n    at FiberRuntime.runLoop (file:///home/shuv/repos/codex-fleet/node_modules/effect/dist/esm/internal/fiberRuntime.js:1142:34)\n    at FiberRuntime.evaluateEffect (file:///home/shuv/repos/codex-fleet/node_modules/effect/dist/esm/internal/fiberRuntime.js:746:27)\n    at FiberRuntime.evaluateMessageWhileSuspended (file:///home/shuv/repos/codex-fleet/node_modules/effect/dist/esm/internal/fiberRuntime.js:721:16)",
+          "host": "shuvtest",
+          "path": "/tmp/codex-fleet-user-testing-git-write/not-a-repo"
+        },
+        "sshVerification": "NON_REPO_GIT_EXIT=128; PLAIN_DIR=yes",
+        "noFilesystemModification": true
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-GIT-010",
+      "title": "Handle Merge Conflicts",
+      "status": "fail",
+      "steps": [
+        {
+          "action": "Reset the conflict sandbox to a divergent state (`repo-under-test` local commit vs. `peer` remote commit) and call `GitOps.pull` through the public API.",
+          "expected": "The API reports a merge-conflict error that includes the conflicted file list.",
+          "observed": "The API failed with `_tag=MergeConflict`, but the error returned `files: []` and an empty conflict summary."
+        },
+        {
+          "action": "Verify the repository state directly over SSH/git after the API error.",
+          "expected": "The working tree is in a recoverable merge-conflict state and the conflicted file list matches the API report.",
+          "observed": "Direct verification showed `UU conflict.txt`, `git diff --name-only --diff-filter=U` returned `conflict.txt`, and `.git/MERGE_HEAD` existed, but the API did not report `conflict.txt` in its error payload."
+        }
+      ],
+      "evidence": {
+        "artifacts": [
+          "git-skill-ops/git-write-error-cases/reset-git-write-error-cases.remote.sh",
+          "git-skill-ops/git-write-error-cases/reset-git-write-error-cases.stdout.txt",
+          "git-skill-ops/git-write-error-cases/reset-git-write-error-cases.stderr.txt",
+          "git-skill-ops/git-write-error-cases/validate-git-write-error-cases.mjs",
+          "git-skill-ops/git-write-error-cases/git-write-error-cases-api-results.json",
+          "git-skill-ops/git-write-error-cases/verify-git-write-error-cases.remote.sh",
+          "git-skill-ops/git-write-error-cases/git-write-error-cases-ssh-verify.stdout.txt",
+          "git-skill-ops/git-write-error-cases/git-write-error-cases-ssh-verify.stderr.txt"
+        ],
+        "apiError": {
+          "name": "MergeConflict",
+          "_tag": "MergeConflict",
+          "message": "Merge conflict on shuvtest: ",
+          "stack": "MergeConflict: Merge conflict on shuvtest: \n    at file:///home/shuv/repos/codex-fleet/packages/git-ops/dist/live.js:185:40\n    at EffectPrimitive.effect_instruction_i1 (file:///home/shuv/repos/codex-fleet/node_modules/effect/dist/esm/internal/core.js:320:39)\n    at file:///home/shuv/repos/codex-fleet/node_modules/effect/dist/esm/internal/fiberRuntime.js:983:46\n    at effect_internal_function (file:///home/shuv/repos/codex-fleet/node_modules/effect/dist/esm/Utils.js:333:12)\n    at FiberRuntime.Failure (file:///home/shuv/repos/codex-fleet/node_modules/effect/dist/esm/internal/fiberRuntime.js:983:22)\n    at file:///home/shuv/repos/codex-fleet/node_modules/effect/dist/esm/internal/fiberRuntime.js:1151:31\n    at Object.context (file:///home/shuv/repos/codex-fleet/packages/telemetry/dist/test.js:83:21)\n    at FiberRuntime.runLoop (file:///home/shuv/repos/codex-fleet/node_modules/effect/dist/esm/internal/fiberRuntime.js:1142:34)\n    at FiberRuntime.evaluateEffect (file:///home/shuv/repos/codex-fleet/node_modules/effect/dist/esm/internal/fiberRuntime.js:746:27)\n    at FiberRuntime.evaluateMessageWhileSuspended (file:///home/shuv/repos/codex-fleet/node_modules/effect/dist/esm/internal/fiberRuntime.js:721:16)",
+          "host": "shuvtest",
+          "files": [],
+          "stderr": "** WARNING: connection is not using a post-quantum key exchange algorithm.\r\n** This session may be vulnerable to \"store now, decrypt later\" attacks.\r\n** The server may need to be upgraded. See https://openssh.com/pq.html\r\nFrom /tmp/codex-fleet-user-testing-git-conflict/origin\n   f5bf3a5..2e8c7ae  main       -> origin/main\n"
+        },
+        "apiReportedFiles": [],
+        "sshVerification": "STATUS=UU conflict.txt; CONFLICTS=conflict.txt; MERGE_HEAD_PRESENT=yes",
+        "recoverableState": true
+      },
+      "issues": "The API classified the pull failure as `MergeConflict` but did not include the actual conflicted file list. Direct git verification showed `conflict.txt` in the merge state, so the contract requirement to report conflicted files is not met."
+    },
+    {
+      "id": "VAL-GIT-011",
+      "title": "Handle Authentication Failure",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Configure `auth-repo` for non-interactive SSH and call `GitOps.pull` against the invalid SSH origin through the public API.",
+          "expected": "The API fails with a typed authentication error distinct from network errors and does not alter local repository state.",
+          "observed": "The API failed with `_tag=AuthError` in 350 ms; stderr contained `Permission denied (publickey)` / `Could not read from remote repository`, and `HEAD` plus branch status were unchanged."
+        },
+        {
+          "action": "Verify directly over SSH/git with `git -C /tmp/codex-fleet-user-testing-git-write/auth-repo pull origin`.",
+          "expected": "Raw git fails immediately for authentication and leaves the repository unchanged without exposing secrets.",
+          "observed": "Direct verification returned `AUTH_PULL_EXIT=1` in 94 ms, preserved the same `HEAD`, and stderr contained only the SSH auth failure plus git access-rights message with no password/token disclosure."
+        }
+      ],
+      "evidence": {
+        "artifacts": [
+          "git-skill-ops/git-write-error-cases/reset-git-write-error-cases.remote.sh",
+          "git-skill-ops/git-write-error-cases/reset-git-write-error-cases.stdout.txt",
+          "git-skill-ops/git-write-error-cases/validate-git-write-error-cases.mjs",
+          "git-skill-ops/git-write-error-cases/git-write-error-cases-api-results.json",
+          "git-skill-ops/git-write-error-cases/verify-git-write-error-cases.remote.sh",
+          "git-skill-ops/git-write-error-cases/git-write-error-cases-ssh-verify.stdout.txt",
+          "git-skill-ops/git-write-error-cases/git-write-error-cases-ssh-verify.stderr.txt"
+        ],
+        "apiError": {
+          "name": "AuthError",
+          "_tag": "AuthError",
+          "message": "Authentication failed for git remote on shuvtest",
+          "stack": "AuthError: Authentication failed for git remote on shuvtest\n    at file:///home/shuv/repos/codex-fleet/packages/git-ops/dist/live.js:92:32\n    at EffectPrimitive.effect_instruction_i1 (file:///home/shuv/repos/codex-fleet/node_modules/effect/dist/esm/internal/core.js:320:39)\n    at file:///home/shuv/repos/codex-fleet/node_modules/effect/dist/esm/internal/fiberRuntime.js:983:46\n    at effect_internal_function (file:///home/shuv/repos/codex-fleet/node_modules/effect/dist/esm/Utils.js:333:12)\n    at FiberRuntime.Failure (file:///home/shuv/repos/codex-fleet/node_modules/effect/dist/esm/internal/fiberRuntime.js:983:22)\n    at file:///home/shuv/repos/codex-fleet/node_modules/effect/dist/esm/internal/fiberRuntime.js:1151:31\n    at Object.context (file:///home/shuv/repos/codex-fleet/packages/telemetry/dist/test.js:83:21)\n    at FiberRuntime.runLoop (file:///home/shuv/repos/codex-fleet/node_modules/effect/dist/esm/internal/fiberRuntime.js:1142:34)\n    at FiberRuntime.evaluateEffect (file:///home/shuv/repos/codex-fleet/node_modules/effect/dist/esm/internal/fiberRuntime.js:746:27)\n    at FiberRuntime.evaluateMessageWhileSuspended (file:///home/shuv/repos/codex-fleet/node_modules/effect/dist/esm/internal/fiberRuntime.js:721:16)",
+          "host": "shuvtest",
+          "stderr": "** WARNING: connection is not using a post-quantum key exchange algorithm.\r\n** This session may be vulnerable to \"store now, decrypt later\" attacks.\r\n** The server may need to be upgraded. See https://openssh.com/pq.html\r\ninvaliduser@localhost: Permission denied (publickey).\r\nfatal: Could not read from remote repository.\n\nPlease make sure you have the correct access rights\nand the repository exists.\n"
+        },
+        "sshVerification": "AUTH_PULL_EXIT=1; AUTH_PULL_ELAPSED_MS=94; HEAD unchanged",
+        "stateUnchanged": {
+          "headUnchanged": true,
+          "statusUnchanged": true
+        }
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-GIT-012",
+      "title": "Handle Network Timeout",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Call `GitOps.pull` against `timeout-repo`, whose origin is `https://does-not-exist.invalid/codex-fleet-user-testing.git`.",
+          "expected": "The API surfaces a typed timeout/network error quickly and leaves the repository state intact.",
+          "observed": "The API failed with `_tag=TimeoutError` in 328 ms; stderr reported `Could not resolve host: does-not-exist.invalid`, and `HEAD` plus branch status were unchanged."
+        },
+        {
+          "action": "Verify directly over SSH/git with `git -C /tmp/codex-fleet-user-testing-git-write/timeout-repo pull origin`.",
+          "expected": "Raw git fails quickly with DNS/timeout semantics and the repository remains uncorrupted.",
+          "observed": "Direct verification returned `TIMEOUT_PULL_EXIT=1` in 575 ms, reported `Could not resolve host`, and preserved the same `HEAD` / clean branch state."
+        }
+      ],
+      "evidence": {
+        "artifacts": [
+          "git-skill-ops/git-write-error-cases/reset-git-write-error-cases.remote.sh",
+          "git-skill-ops/git-write-error-cases/reset-git-write-error-cases.stdout.txt",
+          "git-skill-ops/git-write-error-cases/validate-git-write-error-cases.mjs",
+          "git-skill-ops/git-write-error-cases/git-write-error-cases-api-results.json",
+          "git-skill-ops/git-write-error-cases/verify-git-write-error-cases.remote.sh",
+          "git-skill-ops/git-write-error-cases/git-write-error-cases-ssh-verify.stdout.txt",
+          "git-skill-ops/git-write-error-cases/git-write-error-cases-ssh-verify.stderr.txt"
+        ],
+        "apiError": {
+          "name": "TimeoutError",
+          "_tag": "TimeoutError",
+          "message": "Network timeout during git pull origin on shuvtest",
+          "stack": "TimeoutError: Network timeout during git pull origin on shuvtest\n    at file:///home/shuv/repos/codex-fleet/packages/git-ops/dist/live.js:99:32\n    at EffectPrimitive.effect_instruction_i1 (file:///home/shuv/repos/codex-fleet/node_modules/effect/dist/esm/internal/core.js:320:39)\n    at file:///home/shuv/repos/codex-fleet/node_modules/effect/dist/esm/internal/fiberRuntime.js:983:46\n    at effect_internal_function (file:///home/shuv/repos/codex-fleet/node_modules/effect/dist/esm/Utils.js:333:12)\n    at FiberRuntime.Failure (file:///home/shuv/repos/codex-fleet/node_modules/effect/dist/esm/internal/fiberRuntime.js:983:22)\n    at file:///home/shuv/repos/codex-fleet/node_modules/effect/dist/esm/internal/fiberRuntime.js:1151:31\n    at Object.context (file:///home/shuv/repos/codex-fleet/packages/telemetry/dist/test.js:83:21)\n    at FiberRuntime.runLoop (file:///home/shuv/repos/codex-fleet/node_modules/effect/dist/esm/internal/fiberRuntime.js:1142:34)\n    at FiberRuntime.evaluateEffect (file:///home/shuv/repos/codex-fleet/node_modules/effect/dist/esm/internal/fiberRuntime.js:746:27)\n    at FiberRuntime.evaluateMessageWhileSuspended (file:///home/shuv/repos/codex-fleet/node_modules/effect/dist/esm/internal/fiberRuntime.js:721:16)",
+          "host": "shuvtest",
+          "operation": "git pull origin",
+          "stderr": "** WARNING: connection is not using a post-quantum key exchange algorithm.\r\n** This session may be vulnerable to \"store now, decrypt later\" attacks.\r\n** The server may need to be upgraded. See https://openssh.com/pq.html\r\nfatal: unable to access 'https://does-not-exist.invalid/codex-fleet-user-testing.git/': Could not resolve host: does-not-exist.invalid\n"
+        },
+        "apiElapsedMs": 328,
+        "sshVerification": "TIMEOUT_PULL_EXIT=1; TIMEOUT_PULL_ELAPSED_MS=575; HEAD unchanged",
+        "stateUnchanged": {
+          "headUnchanged": true,
+          "statusUnchanged": true
+        }
+      },
+      "issues": null
+    }
+  ],
+  "frictions": [
+    {
+      "description": "SSH to shuvtest emitted the known post-quantum warning on stderr during both API-backed commands and direct SSH verification.",
+      "resolved": true,
+      "resolution": "Treated it as the documented benign warning and evaluated pass/fail using typed errors, exit codes, repository state, and matching direct git output.",
+      "affectedAssertions": [
+        "VAL-GIT-009",
+        "VAL-GIT-010",
+        "VAL-GIT-011",
+        "VAL-GIT-012"
+      ]
+    },
+    {
+      "description": "With Git 2.53, the conflict sandbox needed an explicit pull strategy before `git pull origin` would reach the real merge-conflict path; otherwise git stopped at `Need to specify how to reconcile divergent branches.`",
+      "resolved": true,
+      "resolution": "Set `git config pull.rebase false` in `repo-under-test` during sandbox reset so the public API exercised an actual content-conflict merge.",
+      "affectedAssertions": [
+        "VAL-GIT-010"
+      ]
+    }
+  ],
+  "blockers": [],
+  "summary": "Tested 4 assertions: 3 passed, 1 failed, 0 blocked. Not-a-repo, auth-failure, and timeout handling matched the contract through the public API plus direct SSH/git verification; merge-conflict handling failed because the API returned `MergeConflict` without the actual conflicted file list."
+}
