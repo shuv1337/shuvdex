@@ -278,10 +278,11 @@ describe("NotARepository error", () => {
 // ---------------------------------------------------------------------------
 describe("MergeConflict error with file list", () => {
   layer(TestLayer)("pull with merge conflicts", (it) => {
-    it.effect("produces MergeConflict with correct file list", () =>
+    it.effect("produces MergeConflict with files from git diff --diff-filter=U", () =>
       Effect.gen(function* () {
         const responsesRef = yield* MockSshResponses;
         yield* Ref.set(responsesRef, [
+          // First call: git pull origin → merge conflict
           {
             _tag: "error" as const,
             value: new CommandFailed({
@@ -297,6 +298,15 @@ describe("MergeConflict error with file list", () => {
                 "Automatic merge failed; fix conflicts and then commit the result.",
               ].join("\n"),
             }),
+          },
+          // Second call: git diff --name-only --diff-filter=U → conflicted file list
+          {
+            _tag: "result" as const,
+            value: {
+              stdout: "src/index.ts\nconfig.yaml\ndocs/README.md\n",
+              stderr: "",
+              exitCode: 0,
+            },
           },
         ]);
 
@@ -321,6 +331,7 @@ describe("MergeConflict error with file list", () => {
       Effect.gen(function* () {
         const responsesRef = yield* MockSshResponses;
         yield* Ref.set(responsesRef, [
+          // First call: git pull origin → merge conflict
           {
             _tag: "error" as const,
             value: new CommandFailed({
@@ -330,6 +341,15 @@ describe("MergeConflict error with file list", () => {
               stdout: "",
               stderr: "CONFLICT (content): Merge conflict in package.json\nAutomatic merge failed\n",
             }),
+          },
+          // Second call: git diff --name-only --diff-filter=U → conflicted file list
+          {
+            _tag: "result" as const,
+            value: {
+              stdout: "package.json\n",
+              stderr: "",
+              exitCode: 0,
+            },
           },
         ]);
 
@@ -343,6 +363,49 @@ describe("MergeConflict error with file list", () => {
           expect(result.left).toBeInstanceOf(MergeConflict);
           const err = result.left as MergeConflict;
           expect(err.files).toEqual(["package.json"]);
+        }
+      }),
+    );
+
+    it.effect("falls back to empty files when git diff fails after conflict", () =>
+      Effect.gen(function* () {
+        const responsesRef = yield* MockSshResponses;
+        yield* Ref.set(responsesRef, [
+          // First call: git pull origin → merge conflict
+          {
+            _tag: "error" as const,
+            value: new CommandFailed({
+              host: "testhost",
+              command: "cd ~/repos/test-repo && git pull origin",
+              exitCode: 1,
+              stdout: "",
+              stderr: "CONFLICT (content): Merge conflict in file.txt\nAutomatic merge failed\n",
+            }),
+          },
+          // Second call: git diff fails too
+          {
+            _tag: "error" as const,
+            value: new CommandFailed({
+              host: "testhost",
+              command: "cd ~/repos/test-repo && git diff --name-only --diff-filter=U",
+              exitCode: 1,
+              stdout: "",
+              stderr: "error running diff\n",
+            }),
+          },
+        ]);
+
+        const gitOps = yield* GitOps;
+        const result = yield* gitOps
+          .pull(testHost, testRepoPath)
+          .pipe(Effect.either);
+
+        expect(result._tag).toBe("Left");
+        if (result._tag === "Left") {
+          expect(result.left).toBeInstanceOf(MergeConflict);
+          const err = result.left as MergeConflict;
+          // Falls back to empty files array when diff command fails
+          expect(err.files).toEqual([]);
         }
       }),
     );

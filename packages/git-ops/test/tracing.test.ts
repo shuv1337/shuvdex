@@ -325,6 +325,7 @@ describe("GitOps OTEL Tracing", () => {
       Effect.gen(function* () {
         const responsesRef = yield* MockSshResponses;
         yield* Ref.set(responsesRef, [
+          // First call: git pull origin → merge conflict
           {
             _tag: "error" as const,
             value: new CommandFailed({
@@ -334,6 +335,15 @@ describe("GitOps OTEL Tracing", () => {
               stdout: "",
               stderr: "CONFLICT (content): Merge conflict in src/index.ts\nAutomatic merge failed\n",
             }),
+          },
+          // Second call: git diff --name-only --diff-filter=U → conflicted file list
+          {
+            _tag: "result" as const,
+            value: {
+              stdout: "src/index.ts\n",
+              stderr: "",
+              exitCode: 0,
+            },
           },
         ]);
 

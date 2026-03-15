@@ -260,4 +260,75 @@ describe("Temp-repo regression tests", () => {
       }),
     );
   });
+
+  layer(TestLayer)("pull with real merge conflict", (it) => {
+    it.effect("produces MergeConflict with files array containing conflicted file names", () =>
+      Effect.gen(function* () {
+        // Set up a bare "remote" repo and two clones to create a real merge conflict
+        const bareDir = mkdtempSync(join(tmpdir(), "git-ops-bare-"));
+        const cloneDir = mkdtempSync(join(tmpdir(), "git-ops-clone-"));
+
+        try {
+          // Create a bare remote repository
+          execSync(`cd ${bareDir} && git init --bare`, { encoding: "utf-8" });
+
+          // Clone the bare repo to our working clone
+          execSync(`git clone ${bareDir} ${cloneDir}`, { encoding: "utf-8" });
+          execSync(
+            `cd ${cloneDir} && git config user.email "test@test.com" && git config user.name "Test"`,
+            { encoding: "utf-8" },
+          );
+
+          // Create initial commit on main
+          execSync(
+            `cd ${cloneDir} && echo "line1" > conflict.txt && git add . && git commit -m "initial" && git push origin HEAD`,
+            { encoding: "utf-8" },
+          );
+
+          // Create a second clone that will push a conflicting change
+          const clone2Dir = mkdtempSync(join(tmpdir(), "git-ops-clone2-"));
+          try {
+            execSync(`git clone ${bareDir} ${clone2Dir}`, { encoding: "utf-8" });
+            execSync(
+              `cd ${clone2Dir} && git config user.email "test2@test.com" && git config user.name "Test2"`,
+              { encoding: "utf-8" },
+            );
+
+            // Push a conflicting change from clone2
+            execSync(
+              `cd ${clone2Dir} && echo "remote-change" > conflict.txt && git add . && git commit -m "remote change" && git push origin HEAD`,
+              { encoding: "utf-8" },
+            );
+
+            // Make a conflicting change in clone1 (without pulling first)
+            execSync(
+              `cd ${cloneDir} && echo "local-change" > conflict.txt && git add . && git commit -m "local change"`,
+              { encoding: "utf-8" },
+            );
+
+            // Now pull should cause a merge conflict
+            const gitOps = yield* GitOps;
+            const result = yield* gitOps
+              .pull(localHost, cloneDir)
+              .pipe(Effect.either);
+
+            expect(result._tag).toBe("Left");
+            if (result._tag === "Left") {
+              const err = result.left;
+              expect(err._tag).toBe("MergeConflict");
+              if (err._tag === "MergeConflict") {
+                expect(err.files).toContain("conflict.txt");
+                expect(err.files.length).toBeGreaterThanOrEqual(1);
+              }
+            }
+          } finally {
+            rmSync(clone2Dir, { recursive: true, force: true });
+          }
+        } finally {
+          rmSync(bareDir, { recursive: true, force: true });
+          rmSync(cloneDir, { recursive: true, force: true });
+        }
+      }),
+    );
+  });
 });

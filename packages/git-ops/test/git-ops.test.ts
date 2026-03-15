@@ -472,6 +472,7 @@ describe("GitOps", () => {
       Effect.gen(function* () {
         const responsesRef = yield* MockSshResponses;
         yield* Ref.set(responsesRef, [
+          // First call: git pull origin → merge conflict
           {
             _tag: "error" as const,
             value: new CommandFailed({
@@ -482,6 +483,15 @@ describe("GitOps", () => {
               stderr:
                 "Auto-merging src/index.ts\nCONFLICT (content): Merge conflict in src/index.ts\nCONFLICT (content): Merge conflict in README.md\nAutomatic merge failed; fix conflicts and then commit the result.\n",
             }),
+          },
+          // Second call: git diff --name-only --diff-filter=U → conflicted file list
+          {
+            _tag: "result" as const,
+            value: {
+              stdout: "src/index.ts\nREADME.md\n",
+              stderr: "",
+              exitCode: 0,
+            },
           },
         ]);
 

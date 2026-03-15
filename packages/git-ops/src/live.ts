@@ -265,7 +265,7 @@ export const GitOpsLive: Layer.Layer<GitOps, never, SshExecutor> = Layer.effect(
             const result = yield* execGit(ssh, host, repoPath, "git pull origin").pipe(
               Effect.catchTag("GitCommandFailed", (err: GitCommandFailed): Effect.Effect<
                 never,
-                GitCommandFailed | MergeConflict
+                GitCommandFailed | MergeConflict | SshError | NotARepository | AuthError | TimeoutError
               > => {
                 // Detect merge conflicts from stderr/exit code
                 const stderr = err.stderr.toLowerCase();
@@ -274,15 +274,30 @@ export const GitOpsLive: Layer.Layer<GitOps, never, SshExecutor> = Layer.effect(
                   stderr.includes("merge conflict") ||
                   stderr.includes("automatic merge failed")
                 ) {
-                  // Extract conflicted file names from stderr
-                  const files = extractConflictFiles(err.stderr);
-                  return Effect.fail(
-                    new MergeConflict({
-                      host: err.host,
-                      files,
-                      stderr: err.stderr,
-                    }),
-                  );
+                  // Query the working tree for conflicted files using git's
+                  // unmerged diff filter, which is more reliable than parsing
+                  // stderr messages.
+                  return Effect.gen(function* () {
+                    const diffResult = yield* execGit(
+                      ssh,
+                      host,
+                      repoPath,
+                      "git diff --name-only --diff-filter=U",
+                    ).pipe(
+                      Effect.catchAll(() => Effect.succeed({ stdout: "", stderr: "", exitCode: 0 })),
+                    );
+                    const files = diffResult.stdout
+                      .trim()
+                      .split("\n")
+                      .filter((f) => f.length > 0);
+                    return yield* Effect.fail(
+                      new MergeConflict({
+                        host: err.host,
+                        files,
+                        stderr: err.stderr,
+                      }),
+                    );
+                  });
                 }
                 // Not a conflict, re-throw as GitCommandFailed
                 return Effect.fail(err);
@@ -379,22 +394,6 @@ export const GitOpsLive: Layer.Layer<GitOps, never, SshExecutor> = Layer.effect(
     });
   }),
 );
-
-/**
- * Extract conflicted file names from git merge conflict stderr output.
- */
-const extractConflictFiles = (stderr: string): Array<string> => {
-  const files: Array<string> = [];
-  const lines = stderr.split("\n");
-  for (const line of lines) {
-    // Match lines like "CONFLICT (content): Merge conflict in <file>"
-    const match = line.match(/CONFLICT\s+\([^)]+\):\s+Merge conflict in\s+(.+)/);
-    if (match?.[1]) {
-      files.push(match[1].trim());
-    }
-  }
-  return files;
-};
 
 /**
  * Extract the push rejection reason from git push stderr output.
