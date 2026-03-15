@@ -1,0 +1,86 @@
+{
+  "groupId": "val-git-010-rerun",
+  "testedAt": "2026-03-15T21:29:31.301Z",
+  "isolation": {
+    "surface": "terminal-node-api",
+    "host": {
+      "hostname": "shuvtest",
+      "connectionType": "ssh",
+      "port": 22,
+      "timeout": 10
+    },
+    "allowedMutableSandbox": "/tmp/codex-fleet-user-testing-val-git-010-rerun",
+    "allowedRemoteHost": "shuvtest",
+    "paths": {
+      "root": "/tmp/codex-fleet-user-testing-val-git-010-rerun",
+      "origin": "/tmp/codex-fleet-user-testing-val-git-010-rerun/origin.git",
+      "repo": "/tmp/codex-fleet-user-testing-val-git-010-rerun/repo-under-test",
+      "peer": "/tmp/codex-fleet-user-testing-val-git-010-rerun/peer"
+    }
+  },
+  "toolsUsed": [
+    "node --input-type=module",
+    "ssh",
+    "git"
+  ],
+  "assertions": [
+    {
+      "id": "VAL-GIT-010",
+      "title": "Handle Merge Conflicts",
+      "status": "fail",
+      "steps": [
+        {
+          "action": "Build the public `@codex-fleet/git-ops` package surface, provision an isolated divergent origin/repo-under-test/peer sandbox under `/tmp/codex-fleet-user-testing-val-git-010-rerun` on `shuvtest`, and set `git config pull.rebase false` in `repo-under-test`.",
+          "expected": "The repo-under-test is one commit ahead of `origin/main` with no existing merge state so a subsequent pull will exercise a real content-conflict path.",
+          "observed": "Setup completed successfully: `repo-under-test` was ahead of `origin/main` by one local commit and `origin/main` still pointed at the base commit before the API call."
+        },
+        {
+          "action": "Call `GitOps.pull(host, repoPath)` through the public package API via `node --input-type=module` from the repo root.",
+          "expected": "The API returns a typed `MergeConflict` error whose `files` list includes the conflicted path (`conflict.txt`).",
+          "observed": "The API failed in 304 ms, but returned `_tag=GitCommandFailed` for `git pull origin` instead of `MergeConflict`, with no conflicted file list in the error payload."
+        },
+        {
+          "action": "Verify the repository directly with raw git/SSH after the API failure.",
+          "expected": "The repo remains in a recoverable merge-conflict state and direct git identifies the same conflicted files the API reported.",
+          "observed": "Direct verification showed `UU conflict.txt`, `git diff --name-only --diff-filter=U` returned `conflict.txt`, `MERGE_HEAD` existed, and local HEAD stayed unchanged, but the API reported no conflicted files."
+        }
+      ],
+      "evidence": {
+        "artifacts": [
+          "git-skill-ops/val-git-010-rerun/build.stdout.txt",
+          "git-skill-ops/val-git-010-rerun/build.stderr.txt",
+          "git-skill-ops/val-git-010-rerun/setup-val-git-010-rerun.remote.sh",
+          "git-skill-ops/val-git-010-rerun/setup.stdout.txt",
+          "git-skill-ops/val-git-010-rerun/setup.stderr.txt",
+          "git-skill-ops/val-git-010-rerun/validate-val-git-010-rerun.mjs",
+          "git-skill-ops/val-git-010-rerun/api-results.json",
+          "git-skill-ops/val-git-010-rerun/api-run.stderr.txt",
+          "git-skill-ops/val-git-010-rerun/verify-val-git-010-rerun.remote.sh",
+          "git-skill-ops/val-git-010-rerun/verify.stdout.txt",
+          "git-skill-ops/val-git-010-rerun/verify.stderr.txt"
+        ],
+        "apiError": {
+          "name": "GitCommandFailed",
+          "_tag": "GitCommandFailed",
+          "message": "Git command failed on shuvtest (exit 1): ** WARNING: connection is not using a post-quantum key exchange algorithm.\r\n** This session may be vulnerable to \"store now, decrypt later\" attacks.\r\n** The server may need to be upgraded. See https://openssh.com/pq.html\r\nFrom /tmp/codex-fleet-user-testing-val-git-010-rerun/origin\n   98d9863..0b4c0cf  main       -> origin/main\n",
+          "stack": "GitCommandFailed: Git command failed on shuvtest (exit 1): ** WARNING: connection is not using a post-quantum key exchange algorithm.\r\n** This session may be vulnerable to \"store now, decrypt later\" attacks.\r\n** The server may need to be upgraded. See https://openssh.com/pq.html\r\nFrom /tmp/codex-fleet-user-testing-val-git-010-rerun/origin\n   98d9863..0b4c0cf  main       -> origin/main\n\n    at file:///home/shuv/repos/codex-fleet/packages/git-ops/dist/live.js:105:28\n    at EffectPrimitive.effect_instruction_i1 (file:///home/shuv/repos/codex-fleet/node_modules/effect/dist/esm/internal/core.js:320:39)\n    at file:///home/shuv/repos/codex-fleet/node_modules/effect/dist/esm/internal/fiberRuntime.js:983:46\n    at effect_internal_function (file:///home/shuv/repos/codex-fleet/node_modules/effect/dist/esm/Utils.js:333:12)\n    at FiberRuntime.Failure (file:///home/shuv/repos/codex-fleet/node_modules/effect/dist/esm/internal/fiberRuntime.js:983:22)\n    at file:///home/shuv/repos/codex-fleet/node_modules/effect/dist/esm/internal/fiberRuntime.js:1151:31\n    at Object.context (file:///home/shuv/repos/codex-fleet/packages/telemetry/dist/test.js:83:21)\n    at FiberRuntime.runLoop (file:///home/shuv/repos/codex-fleet/node_modules/effect/dist/esm/internal/fiberRuntime.js:1142:34)\n    at FiberRuntime.evaluateEffect (file:///home/shuv/repos/codex-fleet/node_modules/effect/dist/esm/internal/fiberRuntime.js:746:27)\n    at FiberRuntime.evaluateMessageWhileSuspended (file:///home/shuv/repos/codex-fleet/node_modules/effect/dist/esm/internal/fiberRuntime.js:721:16)",
+          "host": "shuvtest",
+          "command": "git pull origin",
+          "exitCode": 1,
+          "stderr": "** WARNING: connection is not using a post-quantum key exchange algorithm.\r\n** This session may be vulnerable to \"store now, decrypt later\" attacks.\r\n** The server may need to be upgraded. See https://openssh.com/pq.html\r\nFrom /tmp/codex-fleet-user-testing-val-git-010-rerun/origin\n   98d9863..0b4c0cf  main       -> origin/main\n"
+        },
+        "apiReportedFiles": [],
+        "directGitReportedFiles": [
+          "conflict.txt"
+        ],
+        "directGitVerification": "ROOT=/tmp/codex-fleet-user-testing-val-git-010-rerun\nREPO=/tmp/codex-fleet-user-testing-val-git-010-rerun/repo-under-test\nHEAD=991c7308a4c5a0c17007aebba2405b940f3eb16e\nORIGIN_MAIN=0b4c0cfdab11d2e4711ec26679f73c12ba573ac9\nSTATUS_BEGIN\n## main...origin/main [ahead 1, behind 1]\nUU conflict.txt\nSTATUS_END\nCONFLICTS_BEGIN\nconflict.txt\nCONFLICTS_END\nMERGE_HEAD_PRESENT=yes",
+        "recoverableState": true,
+        "localHeadUnchanged": true
+      },
+      "issues": "The public API did not satisfy the contract. After a real merge-conflict pull, direct git reported `conflict.txt` in a recoverable merge state, but `GitOps.pull` surfaced `_tag=GitCommandFailed` and did not report the conflicted file list."
+    }
+  ],
+  "frictions": [],
+  "blockers": [],
+  "summary": "Tested 1 assertion: 0 passed, 1 failed, 0 blocked. `GitOps.pull` left the repo in a recoverable conflict state with `conflict.txt`, but the public API returned `GitCommandFailed` instead of a `MergeConflict` containing the conflicted file list."
+}
