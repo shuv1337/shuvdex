@@ -1,0 +1,34 @@
+{
+  "featureId": "fix-cli-repo-paths",
+  "reviewedAt": "2026-03-15T23:14:43Z",
+  "commitId": "966199114dc11feeeffcad1761f49e274f157a84",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "fail",
+  "codeReview": {
+    "summary": "Compared the original failed `cli-sync-command` and `cli-activate-deactivate` reviews against fix commit `966199114dc11feeeffcad1761f49e274f157a84`, the worker transcript skeleton, handoff, and current source/tests. The activate-idempotence half is fixed: `activateSkill()` now treats `readlink`'s expanded absolute target as matching a `~/...` repo path (`packages/skill-ops/src/live.ts:113-125,517`), and the new regressions at `apps/cli/test/activate.test.ts:157-189` and `packages/skill-ops/test/skill-ops.test.ts:1267-1296` cover the previously failing case. However the sync-path half is still not fully resolved: `runSyncCommand()` continues to derive the local source path from `parsed.flags.repo` whenever `--local-skill-path` is omitted (`apps/cli/src/cli.ts:573-578`), so the original broken call shape from the prior review—`fleet sync <skill> --repo <remote-path>`—still validates `<remote-path>/<skill>` on the local machine instead of using an independent local default path.",
+    "issues": [
+      {
+        "file": "apps/cli/src/cli.ts",
+        "line": 575,
+        "severity": "blocking",
+        "description": "`--local-skill-path` was added, but `runSyncCommand()` still defaults `localRepoPath` to `parsed.flags.repo` when the new flag is omitted (`apps/cli/src/cli.ts:573-578`). That means the original broken scenario from `cli-sync-command` is still present: `fleet sync <skill> --repo <remote-path>` validates `<remote-path>/<skill>` locally and fails before SSH whenever the remote repo path differs from the local source repo. The command therefore still overloads `--repo` as both the remote destination and an implicit local source path, contrary to the fix requirement and its own help text (`apps/cli/src/cli.ts:200-201`)."
+      },
+      {
+        "file": "apps/cli/test/cli.test.ts",
+        "line": 123,
+        "severity": "non_blocking",
+        "description": "The added CLI coverage only checks `parseArgs()` and `syncHelp()` for `--local-skill-path` (`apps/cli/test/cli.test.ts:123-150,281-289`). There is still no regression test that executes the sync command logic with a custom remote `--repo` and no `--local-skill-path`, which is why the blocking path-separation bug above remained undetected."
+      }
+    ]
+  },
+  "sharedStateObservations": [
+    {
+      "area": "skills",
+      "observation": "The `cli-worker` skill still tells workers to add command parsing with commander.js or yargs even though the repo's documented architecture and this fix both rely on the existing hand-rolled parser in `apps/cli/src/cli.ts`.",
+      "evidence": "`.factory/skills/cli-worker/SKILL.md:62` says to add the parser using commander.js or yargs, while `.factory/library/architecture.md:62-64` says the current CLI uses the hand-rolled parser in `apps/cli/src/cli.ts`. This fix commit also modifies that hand-rolled parser directly in `apps/cli/src/cli.ts`."
+    }
+  ],
+  "addressesFailureFrom": "/home/shuv/repos/codex-fleet/.factory/validation/cli/scrutiny/reviews/cli-sync-command.json",
+  "summary": "Reviewed the prior failed `cli-sync-command` and `cli-activate-deactivate` reports, the fix feature transcript skeleton, handoff, skill guidance, and commit diff for `966199114dc11feeeffcad1761f49e274f157a84`. The activate idempotence bug is fixed, but the sync-path bug is not fully resolved because `fleet sync <skill> --repo <remote-path>` still uses the remote path for local validation unless the caller also supplies `--local-skill-path`. I wrote the review as a fail because one of the original blocking issues remains."
+}

@@ -1,6 +1,6 @@
 {
   "milestone": "cli",
-  "round": 1,
+  "round": 2,
   "status": "fail",
   "validatorsRun": {
     "test": {
@@ -20,92 +20,60 @@
     }
   },
   "reviewsSummary": {
-    "total": 8,
+    "total": 4,
     "passed": 3,
-    "failed": 5,
+    "failed": 1,
     "failedFeatures": [
-      "cli-status-command",
-      "cli-pull-command",
-      "cli-sync-command",
-      "cli-activate-deactivate",
-      "cli-ssh-handling"
+      "fix-cli-repo-paths"
     ]
   },
   "blockingIssues": [
     {
-      "featureId": "cli-status-command",
+      "featureId": "fix-cli-repo-paths",
       "severity": "blocking",
-      "description": "`apps/cli/src/commands/status.ts` renders the registry alias (`host.name`) instead of the configured hostname (`host.hostname`), so text-mode `fleet status` does not satisfy the advertised hostname/status table contract when alias and hostname differ."
-    },
-    {
-      "featureId": "cli-pull-command",
-      "severity": "blocking",
-      "description": "`apps/cli/src/commands/pull.ts` silently drops unknown host filters and reports a 0-host success, so `fleet pull <missing-host>` exits 0 instead of surfacing that the requested host was not found."
-    },
-    {
-      "featureId": "cli-sync-command",
-      "severity": "blocking",
-      "description": "`apps/cli/src/cli.ts` misuses `--repo` as both the remote repo path and the local source path, so `fleet sync <skill> --repo <remote-path>` fails local validation whenever the remote destination differs from the local repo layout."
-    },
-    {
-      "featureId": "cli-sync-command",
-      "severity": "blocking",
-      "description": "`apps/cli/src/commands/sync.ts` also treats an all-unknown host filter as success by operating on an empty host list and returning exit code 0."
-    },
-    {
-      "featureId": "cli-activate-deactivate",
-      "severity": "blocking",
-      "description": "`fleet activate` does not reliably report `already active` with the documented `~/repos/shuvbot-skills` repo path because activation compares the raw `~/...` input to `readlink`'s expanded absolute symlink target, causing repeat activation to print `activated` instead of the required idempotent message."
-    },
-    {
-      "featureId": "cli-ssh-handling",
-      "severity": "blocking",
-      "description": "`apps/cli/test/ssh-handling.test.ts` only exercises `SshExecutorTest`, so the feature still lacks real coverage that the live SSH path preserves no-password-prompt auth flags, key selection, and `~/.ssh/config` delegation for VAL-CLI-021."
+      "description": "The rerun review found that `apps/cli/src/cli.ts` still defaults `localRepoPath` to `parsed.flags.repo` when `--local-skill-path` is omitted, so `fleet sync <skill> --repo <remote-path>` still validates `<remote-path>/<skill>` on the local machine and does not fully resolve the original `cli-sync-command` path-separation defect."
     }
   ],
-  "appliedUpdates": [
-    {
-      "target": "library",
-      "description": "Added `.factory/library/architecture.md` notes that the current CLI uses the hand-rolled parser in `apps/cli/src/cli.ts` and the workspace does not include commander.js or yargs.",
-      "sourceFeature": "cli-sync-command"
-    },
-    {
-      "target": "library",
-      "description": "Added `.factory/library/architecture.md` notes that `SshExecutorTest` returns queued `_tag: \"result\"` values verbatim and higher-layer failure tests must queue explicit typed `_tag: \"error\"` responses.",
-      "sourceFeature": "cli-rollback-tag"
-    }
-  ],
+  "appliedUpdates": [],
   "suggestedGuidanceUpdates": [
     {
       "target": "cli-worker skill",
-      "suggestion": "Replace the commander.js/yargs implementation step with the current hand-rolled parser pattern in `apps/cli/src/cli.ts` so CLI workers follow the repo's actual architecture.",
-      "evidence": "Reviews for `cli-status-command`, `cli-pull-command`, and `cli-sync-command` all flagged that `.factory/skills/cli-worker/SKILL.md` still tells workers to use commander.js or yargs even though the workspace has neither dependency and the shipped CLI is intentionally hand-rolled in `apps/cli/src/cli.ts`.",
+      "suggestion": "Replace the commander.js/yargs parser instruction with the current hand-rolled parser pattern used in `apps/cli/src/cli.ts`.",
+      "evidence": "Both `fix-cli-unknown-host` and `fix-cli-repo-paths` again flagged that `.factory/skills/cli-worker/SKILL.md` still tells workers to use commander.js or yargs even though the CLI is intentionally hand-rolled and `.factory/library/architecture.md` already documents that architecture.",
       "isSystemic": true
     },
     {
       "target": "cli-worker skill",
-      "suggestion": "Update manual verification guidance to use the real CLI entrypoint (`node ./apps/cli/bin/fleet.js` or equivalent package bin) and require isolated sandboxes for write-path commands instead of mutating `~/repos/shuvbot-skills`.",
-      "evidence": "Reviews for `cli-pull-command`, `cli-sync-command`, `cli-activate-deactivate`, and `cli-partial-success` all found stale manual-verification instructions: the skill points to a non-existent `./apps/cli/bin/fleet` path and directs real-host write operations that conflict with mission/library sandbox rules forbidding mutation of `~/repos/shuvbot-skills`.",
+      "suggestion": "Update manual verification and live-test guidance so write-path validation uses isolated sandboxes instead of the shared `~/repos/shuvbot-skills` repo on test hosts, or restrict auth validation to read-only checks.",
+      "evidence": "The `fix-cli-live-ssh-test` review found the new live pull test hard-codes `~/repos/shuvbot-skills` on `shuvtest`, while mission guidance marks existing skills repos on test hosts as read-only. The current skill guidance still encourages `fleet pull shuvtest` style verification, which creates that mismatch.",
       "isSystemic": true
     },
     {
       "target": "cli-worker skill",
-      "suggestion": "Clarify that coverage-only CLI features may start by auditing existing behavior before adding tests, and require `skillFeedback.followedProcedure=false` plus explicit deviations whenever implementation happens before tests or required manual verification is skipped.",
-      "evidence": "Reviews for `cli-status-command`, `cli-help-usage`, `cli-rollback-tag`, `cli-ssh-handling`, and `cli-activate-deactivate` all found mismatches between the written TDD/manual-verification procedure and the recorded work, yet the resulting handoffs still marked `followedProcedure: true` with no deviations.",
+      "suggestion": "Require workers to record deviations whenever they do not actually follow the skill's tests-first/TDD sequence, so scrutiny can trust `skillFeedback.followedProcedure`.",
+      "evidence": "The `fix-cli-status-hostname` review found the worker changed production code before adding the regression test but still reported `skillFeedback.followedProcedure: true`, which makes the current skill-following signal unreliable.",
       "isSystemic": true
     },
     {
       "target": "AGENTS.md",
-      "suggestion": "Resolve the localhost guidance so mission docs match current behavior: user-testing guidance already notes that the shipped live executor still routes localhost through SSH, while AGENTS.md still describes localhost as direct local execution with no SSH.",
-      "evidence": "The `cli-status-command` review identified a contradiction between mission `AGENTS.md` and `.factory/library/user-testing.md`, which can mislead future validators and CLI workers about localhost expectations.",
+      "suggestion": "Update the coding convention guidance to match the current codebase by importing `Schema` from `effect` instead of `@effect/schema`.",
+      "evidence": "The `fix-cli-unknown-host` review found `AGENTS.md` still says to use `Schema` from `@effect/schema`, while `.factory/library/architecture.md` and the current source use `Schema` from `effect`.",
       "isSystemic": true
     }
   ],
   "rejectedObservations": [
     {
-      "observation": "Document the `~/...` versus absolute `readlink` mismatch from `cli-activate-deactivate` as a permanent library note.",
-      "reason": "rejected because this is a feature-specific blocking defect expected to be fixed by follow-up implementation work; encoding it as stable shared-state guidance would fossilize a transient bug rather than durable repository knowledge"
+      "observation": "Add a new library note saying the CLI uses a hand-rolled parser instead of commander.js/yargs.",
+      "reason": "already-documented in `.factory/library/architecture.md`, so this should be handled as a skill update rather than another library entry"
+    },
+    {
+      "observation": "Add a new library note about importing `Schema` from `effect`.",
+      "reason": "already-documented in `.factory/library/architecture.md`; the gap is in mission guidance, so this belongs as an AGENTS.md recommendation instead"
+    },
+    {
+      "observation": "Add a new library note saying shared test-host skill repos are read-only.",
+      "reason": "already-documented in mission `AGENTS.md`, so the remaining issue is conflicting worker-skill guidance rather than missing factual library knowledge"
     }
   ],
-  "previousRound": null
+  "previousRound": ".factory/validation/cli/scrutiny/synthesis.round-1.json"
 }
