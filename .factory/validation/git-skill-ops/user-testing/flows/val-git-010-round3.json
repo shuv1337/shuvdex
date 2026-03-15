@@ -1,0 +1,98 @@
+{
+  "groupId": "val-git-010-round3",
+  "testedAt": "2026-03-15T21:44:29.222Z",
+  "isolation": {
+    "surface": "terminal-node-api",
+    "host": {
+      "hostname": "shuvtest",
+      "connectionType": "ssh",
+      "port": 22,
+      "timeout": 10
+    },
+    "allowedMutableSandbox": "/tmp/codex-fleet-user-testing-val-git-010-round3",
+    "allowedRemoteHost": "shuvtest",
+    "paths": {
+      "root": "/tmp/codex-fleet-user-testing-val-git-010-round3",
+      "origin": "/tmp/codex-fleet-user-testing-val-git-010-round3/origin.git",
+      "repo": "/tmp/codex-fleet-user-testing-val-git-010-round3/repo-under-test",
+      "peer": "/tmp/codex-fleet-user-testing-val-git-010-round3/peer"
+    }
+  },
+  "toolsUsed": [
+    "node --input-type=module",
+    "ssh",
+    "git"
+  ],
+  "assertions": [
+    {
+      "id": "VAL-GIT-010",
+      "title": "Handle Merge Conflicts",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "Build the public `@codex-fleet/git-ops` package surface, provision an isolated divergent origin/repo-under-test/peer sandbox under `/tmp/codex-fleet-user-testing-val-git-010-round3` on `shuvtest`, and set `git config pull.rebase false` in `repo-under-test`.",
+          "expected": "The repo-under-test is one local commit ahead of `origin/main` with no existing merge state so a subsequent pull will exercise a real content-conflict path.",
+          "observed": "Setup completed successfully: `repo-under-test` local HEAD was `0bc6f11df855609ce5ed7adc3eeffb014c6b719d`, peer HEAD was `c184dbea6c461ff330dd05859bd14337719fec14`, tracking `origin/main` in `repo-under-test` remained `be51c3dcfbef086b4ff29a9928c61bb1387ecf93` before the API call, and `git status --short --branch` showed `## main...origin/main [ahead 1]`."
+        },
+        {
+          "action": "Call `GitOps.pull(host, repoPath)` through the public package API via `node --input-type=module` from the repo root.",
+          "expected": "The API returns a typed `MergeConflict` error whose `files` list includes the conflicted path (`conflict.txt`).",
+          "observed": "The API returned `MergeConflict` after 597 ms with conflicted files ['conflict.txt']. Error message: `Merge conflict on shuvtest: conflict.txt`."
+        },
+        {
+          "action": "Verify the repository directly with raw git/SSH after the API call and check recoverability.",
+          "expected": "Direct git reports the same conflicted files as the API, leaves the repo in a recoverable merge-conflict state immediately after pull, and `git merge --abort` restores a clean non-merge state without changing local HEAD.",
+          "observed": "Direct verification showed status `## main...origin/main [ahead 1, behind 1]\nUU conflict.txt`, conflicted files ['conflict.txt'], `MERGE_HEAD_PRESENT=yes`, `git merge --abort` exit `0`, post-abort HEAD `0bc6f11df855609ce5ed7adc3eeffb014c6b719d`, and post-abort status `## main...origin/main [ahead 1, behind 1]`."
+        }
+      ],
+      "evidence": {
+        "artifacts": [
+          "git-skill-ops/val-git-010-round3/build.stdout.txt",
+          "git-skill-ops/val-git-010-round3/build.stderr.txt",
+          "git-skill-ops/val-git-010-round3/setup-val-git-010-round3.remote.sh",
+          "git-skill-ops/val-git-010-round3/setup.stdout.txt",
+          "git-skill-ops/val-git-010-round3/setup.stderr.txt",
+          "git-skill-ops/val-git-010-round3/validate-val-git-010-round3.mjs",
+          "git-skill-ops/val-git-010-round3/api-results.json",
+          "git-skill-ops/val-git-010-round3/api-run.stderr.txt",
+          "git-skill-ops/val-git-010-round3/verify-val-git-010-round3.remote.sh",
+          "git-skill-ops/val-git-010-round3/verify.stdout.txt",
+          "git-skill-ops/val-git-010-round3/verify.stderr.txt"
+        ],
+        "apiError": {
+          "name": "MergeConflict",
+          "_tag": "MergeConflict",
+          "message": "Merge conflict on shuvtest: conflict.txt",
+          "stack": "MergeConflict: Merge conflict on shuvtest: conflict.txt\n    at file:///home/shuv/repos/codex-fleet/packages/git-ops/dist/live.js:203:51\n    at Generator.next (<anonymous>)\n    at file:///home/shuv/repos/codex-fleet/node_modules/effect/dist/esm/internal/fiberRuntime.js:122:67\n    at effect_internal_function (file:///home/shuv/repos/codex-fleet/node_modules/effect/dist/esm/Utils.js:333:12)\n    at Object.Iterator (file:///home/shuv/repos/codex-fleet/node_modules/effect/dist/esm/internal/fiberRuntime.js:122:21)\n    at FiberRuntime.Success (file:///home/shuv/repos/codex-fleet/node_modules/effect/dist/esm/internal/fiberRuntime.js:968:37)\n    at file:///home/shuv/repos/codex-fleet/node_modules/effect/dist/esm/internal/fiberRuntime.js:1151:31\n    at Object.context (file:///home/shuv/repos/codex-fleet/packages/telemetry/dist/test.js:83:21)\n    at FiberRuntime.runLoop (file:///home/shuv/repos/codex-fleet/node_modules/effect/dist/esm/internal/fiberRuntime.js:1142:34)\n    at FiberRuntime.evaluateEffect (file:///home/shuv/repos/codex-fleet/node_modules/effect/dist/esm/internal/fiberRuntime.js:746:27)",
+          "host": "shuvtest",
+          "files": [
+            "conflict.txt"
+          ],
+          "stderr": "** WARNING: connection is not using a post-quantum key exchange algorithm.\r\n** This session may be vulnerable to \"store now, decrypt later\" attacks.\r\n** The server may need to be upgraded. See https://openssh.com/pq.html\r\nFrom /tmp/codex-fleet-user-testing-val-git-010-round3/origin\n   be51c3d..c184dbe  main       -> origin/main\n"
+        },
+        "apiReportedFiles": [
+          "conflict.txt"
+        ],
+        "directGitReportedFiles": [
+          "conflict.txt"
+        ],
+        "directGitVerification": "ROOT=/tmp/codex-fleet-user-testing-val-git-010-round3\nREPO=/tmp/codex-fleet-user-testing-val-git-010-round3/repo-under-test\nHEAD_BEFORE_ABORT=0bc6f11df855609ce5ed7adc3eeffb014c6b719d\nORIGIN_MAIN=c184dbea6c461ff330dd05859bd14337719fec14\nSTATUS_BEFORE_ABORT_BEGIN\n## main...origin/main [ahead 1, behind 1]\nUU conflict.txt\nSTATUS_BEFORE_ABORT_END\nCONFLICTS_BEGIN\nconflict.txt\nCONFLICTS_END\nMERGE_HEAD_PRESENT=yes\nMERGE_ABORT_EXIT=0\nHEAD_AFTER_ABORT=0bc6f11df855609ce5ed7adc3eeffb014c6b719d\nSTATUS_AFTER_ABORT_BEGIN\n## main...origin/main [ahead 1, behind 1]\nSTATUS_AFTER_ABORT_END\nMERGE_HEAD_AFTER_ABORT=no",
+        "recoverableState": true,
+        "recoverabilityVerification": {
+          "mergeAbortExit": 0,
+          "headBeforeAbort": "0bc6f11df855609ce5ed7adc3eeffb014c6b719d",
+          "headAfterAbort": "0bc6f11df855609ce5ed7adc3eeffb014c6b719d",
+          "statusAfterAbort": "## main...origin/main [ahead 1, behind 1]",
+          "mergeHeadPresentBeforeAbort": true,
+          "mergeHeadPresentAfterAbort": false
+        },
+        "localHeadUnchanged": true,
+        "originMainAfterFetch": "c184dbea6c461ff330dd05859bd14337719fec14"
+      },
+      "issues": null
+    }
+  ],
+  "frictions": [],
+  "blockers": [],
+  "summary": "Tested 1 assertion: 1 passed, 0 failed, 0 blocked. GitOps.pull returned MergeConflict with `conflict.txt`; direct git reported the same conflicted file and `git merge --abort` succeeded, leaving the repo recoverable."
+}
