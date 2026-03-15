@@ -105,7 +105,7 @@ export const formatTable = (result: StatusResult): string => {
       host.status === "online"
         ? "[OK]  online"
         : `[FAIL] error: ${host.error ?? "unknown"}`;
-    lines.push(`${host.name.padEnd(15)}${status}`);
+    lines.push(`${host.hostname.padEnd(15)}${status}`);
   }
 
   lines.push("─".repeat(40));

@@ -281,6 +281,19 @@ describe("fleet status", () => {
       expect(output).toContain("HOST");
       expect(output).toContain("STATUS");
     });
+
+    it("displays hostname from config, not registry name", () => {
+      const result: StatusResult = {
+        hosts: [
+          { name: "prod-server", hostname: "192.168.1.100", status: "online" },
+        ],
+        allOnline: true,
+      };
+
+      const output = formatTable(result);
+      expect(output).toContain("192.168.1.100");
+      expect(output).not.toContain("prod-server");
+    });
   });
 
   // --- formatJson ---
