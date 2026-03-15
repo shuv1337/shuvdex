@@ -262,9 +262,12 @@ describe("Temp-repo regression tests", () => {
   });
 
   layer(TestLayer)("pull with real merge conflict", (it) => {
-    it.effect("produces MergeConflict with files array containing conflicted file names", () =>
+    it.effect("produces MergeConflict with files array via git pull without --rebase", () =>
       Effect.gen(function* () {
-        // Set up a bare "remote" repo and two clones to create a real merge conflict
+        // Set up a bare "remote" repo and two clones to create a real merge conflict.
+        // Uses a file name that does NOT contain the word "conflict" to prove
+        // that detection relies on parsing git's "CONFLICT (content)" output
+        // from stdout, not an accidental filename match in stderr.
         const bareDir = mkdtempSync(join(tmpdir(), "git-ops-bare-"));
         const cloneDir = mkdtempSync(join(tmpdir(), "git-ops-clone-"));
 
@@ -279,9 +282,9 @@ describe("Temp-repo regression tests", () => {
             { encoding: "utf-8" },
           );
 
-          // Create initial commit on main
+          // Create initial commit on main — use "data.txt" (no "conflict" in the name)
           execSync(
-            `cd ${cloneDir} && echo "line1" > conflict.txt && git add . && git commit -m "initial" && git push origin HEAD`,
+            `cd ${cloneDir} && echo "line1" > data.txt && git add . && git commit -m "initial" && git push origin HEAD`,
             { encoding: "utf-8" },
           );
 
@@ -296,17 +299,18 @@ describe("Temp-repo regression tests", () => {
 
             // Push a conflicting change from clone2
             execSync(
-              `cd ${clone2Dir} && echo "remote-change" > conflict.txt && git add . && git commit -m "remote change" && git push origin HEAD`,
+              `cd ${clone2Dir} && echo "remote-change" > data.txt && git add . && git commit -m "remote change" && git push origin HEAD`,
               { encoding: "utf-8" },
             );
 
             // Make a conflicting change in clone1 (without pulling first)
             execSync(
-              `cd ${cloneDir} && echo "local-change" > conflict.txt && git add . && git commit -m "local change"`,
+              `cd ${cloneDir} && echo "local-change" > data.txt && git add . && git commit -m "local change"`,
               { encoding: "utf-8" },
             );
 
-            // Now pull should cause a merge conflict
+            // Now pull should cause a merge conflict — uses git pull origin
+            // (not --rebase) so conflict messages appear on stdout
             const gitOps = yield* GitOps;
             const result = yield* gitOps
               .pull(localHost, cloneDir)
@@ -317,7 +321,7 @@ describe("Temp-repo regression tests", () => {
               const err = result.left;
               expect(err._tag).toBe("MergeConflict");
               if (err._tag === "MergeConflict") {
-                expect(err.files).toContain("conflict.txt");
+                expect(err.files).toContain("data.txt");
                 expect(err.files.length).toBeGreaterThanOrEqual(1);
               }
             }

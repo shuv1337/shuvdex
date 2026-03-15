@@ -511,6 +511,50 @@ describe("GitOps", () => {
       }),
     );
 
+    it.effect("fails with MergeConflict when conflict messages are in stdout (standard merge)", () =>
+      Effect.gen(function* () {
+        const responsesRef = yield* MockSshResponses;
+        yield* Ref.set(responsesRef, [
+          // Standard merge (non-rebase): CONFLICT messages go to stdout,
+          // stderr only contains fetch progress
+          {
+            _tag: "error" as const,
+            value: new CommandFailed({
+              host: "testhost",
+              command: "cd ~/repos/test-repo && git pull origin",
+              exitCode: 1,
+              stdout:
+                "Auto-merging src/index.ts\nCONFLICT (content): Merge conflict in src/index.ts\nAutomatic merge failed; fix conflicts and then commit the result.\n",
+              stderr:
+                "From origin\n   a1b2c3d..e4f5a6b  main -> origin/main\n",
+            }),
+          },
+          // Second call: git diff --name-only --diff-filter=U → conflicted file list
+          {
+            _tag: "result" as const,
+            value: {
+              stdout: "src/index.ts\n",
+              stderr: "",
+              exitCode: 0,
+            },
+          },
+        ]);
+
+        const gitOps = yield* GitOps;
+        const result = yield* gitOps
+          .pull(testHost, testRepoPath)
+          .pipe(Effect.either);
+
+        expect(result._tag).toBe("Left");
+        if (result._tag === "Left") {
+          expect(result.left).toBeInstanceOf(MergeConflict);
+          const err = result.left as MergeConflict;
+          expect(err.host).toBe("testhost");
+          expect(err.files).toEqual(["src/index.ts"]);
+        }
+      }),
+    );
+
     it.effect("fails with GitCommandFailed for non-conflict errors", () =>
       Effect.gen(function* () {
         const responsesRef = yield* MockSshResponses;

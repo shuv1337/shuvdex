@@ -262,21 +262,33 @@ export const GitOpsLive: Layer.Layer<GitOps, never, SshExecutor> = Layer.effect(
           attributes: { host: host.hostname, operation: "pull", repoPath },
         })(
           Effect.gen(function* () {
-            const result = yield* execGit(ssh, host, repoPath, "git pull origin").pipe(
-              Effect.catchTag("GitCommandFailed", (err: GitCommandFailed): Effect.Effect<
+            // Run git pull via SSH directly (not through execGit) so we can
+            // inspect both stdout and stderr from CommandFailed.  Standard
+            // merge conflicts from `git pull origin` (non-rebase) output
+            // "CONFLICT (content)" and "Automatic merge failed" on stdout,
+            // while stderr only contains fetch progress.  execGit drops
+            // stdout when mapping to GitCommandFailed, so we handle the
+            // conflict detection here at the CommandFailed level.
+            const gitCommand = "git pull origin";
+            const fullCommand = `cd ${repoPath} && ${gitCommand}`;
+
+            const result = yield* ssh.executeCommand(host, fullCommand).pipe(
+              Effect.catchTag("CommandFailed", (err): Effect.Effect<
                 never,
                 GitCommandFailed | MergeConflict | SshError | NotARepository | AuthError | TimeoutError
               > => {
-                // Detect merge conflicts from stderr/exit code
-                const stderr = err.stderr.toLowerCase();
+                // Check both stdout and stderr for conflict indicators.
+                // Standard merge: CONFLICT messages go to stdout.
+                // Rebase merge: CONFLICT messages may go to stderr.
+                const combined = `${err.stdout ?? ""}\n${err.stderr}`.toLowerCase();
                 if (
-                  stderr.includes("conflict") ||
-                  stderr.includes("merge conflict") ||
-                  stderr.includes("automatic merge failed")
+                  combined.includes("conflict (content)") ||
+                  combined.includes("merge conflict") ||
+                  combined.includes("automatic merge failed")
                 ) {
                   // Query the working tree for conflicted files using git's
                   // unmerged diff filter, which is more reliable than parsing
-                  // stderr messages.
+                  // output messages.
                   return Effect.gen(function* () {
                     const diffResult = yield* execGit(
                       ssh,
@@ -299,9 +311,54 @@ export const GitOpsLive: Layer.Layer<GitOps, never, SshExecutor> = Layer.effect(
                     );
                   });
                 }
-                // Not a conflict, re-throw as GitCommandFailed
-                return Effect.fail(err);
+                // Apply the same error classification as execGit for non-conflict errors
+                if (isNotARepository(err.stderr)) {
+                  return Effect.fail(
+                    new NotARepository({ host: err.host, path: repoPath }),
+                  );
+                }
+                if (isAuthFailure(err.stderr)) {
+                  return Effect.fail(
+                    new AuthError({ host: err.host, stderr: err.stderr }),
+                  );
+                }
+                if (isNetworkTimeout(err.stderr)) {
+                  return Effect.fail(
+                    new TimeoutError({
+                      host: err.host,
+                      operation: gitCommand,
+                      stderr: err.stderr,
+                    }),
+                  );
+                }
+                return Effect.fail(
+                  new GitCommandFailed({
+                    host: err.host,
+                    command: gitCommand,
+                    exitCode: err.exitCode,
+                    stderr: err.stderr,
+                  }),
+                );
               }),
+              // Map SSH-level connection/command timeouts to TimeoutError
+              Effect.catchTag("ConnectionTimeout", (err) =>
+                Effect.fail(
+                  new TimeoutError({
+                    host: err.host,
+                    operation: gitCommand,
+                    stderr: `SSH connection timed out after ${err.timeoutMs}ms`,
+                  }),
+                ),
+              ),
+              Effect.catchTag("CommandTimeout", (err) =>
+                Effect.fail(
+                  new TimeoutError({
+                    host: err.host,
+                    operation: gitCommand,
+                    stderr: `Command timed out after ${err.timeoutMs}ms`,
+                  }),
+                ),
+              ),
             );
 
             const summary = result.stdout.trim();
