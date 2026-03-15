@@ -120,6 +120,10 @@ function extractErrorMessage(cause: unknown): string {
     return String(c.error);
   }
 
+  if (c._tag === "Interrupt") {
+    return "interrupted";
+  }
+
   if (c._tag === "Sequential" || c._tag === "Parallel") {
     const left = extractErrorMessage(c.left);
     if (left !== "unknown error") return left;

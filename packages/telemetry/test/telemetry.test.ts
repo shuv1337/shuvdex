@@ -1,6 +1,6 @@
 import { it, expect, layer } from "@effect/vitest";
 import { describe } from "vitest";
-import { Effect, Ref } from "effect";
+import { Effect, Ref, Cause, Exit, Fiber } from "effect";
 import {
   Telemetry,
   TelemetryTest,
@@ -172,6 +172,91 @@ describe("Telemetry", () => {
           // Child should have the parent's span as its parent
           expect(child!.parentSpanId).toBeDefined();
           expect(child!.parentSpanId).toBe(parent!.spanId);
+        }),
+    );
+
+    it.effect(
+      "records durationMs attribute when effect dies (defect)",
+      () =>
+        Effect.gen(function* () {
+          const exit = yield* withSpan("defect.duration", {
+            attributes: { host: "shuvtest" },
+          })(Effect.die(new Error("unexpected defect"))).pipe(
+            Effect.exit,
+          );
+
+          // The effect should have died
+          expect(Exit.isFailure(exit)).toBe(true);
+          if (Exit.isFailure(exit)) {
+            expect(Cause.isDie(exit.cause)).toBe(true);
+          }
+
+          const spans = yield* CollectedSpans;
+          const collected = yield* Ref.get(spans);
+          const span = collected.find(
+            (s) => s.name === "defect.duration",
+          );
+          expect(span).toBeDefined();
+          expect(span!.status).toBe("error");
+          // durationMs must be recorded even for defects
+          const durationMs = span!.attributes["durationMs"];
+          expect(durationMs).toBeDefined();
+          expect(typeof durationMs).toBe("number");
+          expect(Number.isInteger(durationMs)).toBe(true);
+          expect(durationMs as number).toBeGreaterThanOrEqual(0);
+        }),
+    );
+
+    it.effect(
+      "records durationMs attribute when effect is interrupted",
+      () =>
+        Effect.gen(function* () {
+          const fiber = yield* withSpan("interrupt.duration", {
+            attributes: { host: "shuvtest" },
+          })(Effect.never).pipe(Effect.fork);
+
+          // Give the fiber time to start
+          yield* Effect.yieldNow();
+
+          // Interrupt the fiber and wait for it to finish
+          const exit = yield* Fiber.interrupt(fiber);
+          expect(Exit.isInterrupted(exit)).toBe(true);
+
+          const spans = yield* CollectedSpans;
+          const collected = yield* Ref.get(spans);
+          const span = collected.find(
+            (s) => s.name === "interrupt.duration",
+          );
+          expect(span).toBeDefined();
+          expect(span!.status).toBe("error");
+          // durationMs must be recorded even for interruptions
+          const durationMs = span!.attributes["durationMs"];
+          expect(durationMs).toBeDefined();
+          expect(typeof durationMs).toBe("number");
+          expect(Number.isInteger(durationMs)).toBe(true);
+          expect(durationMs as number).toBeGreaterThanOrEqual(0);
+        }),
+    );
+
+    it.effect(
+      "records error details in span on defect",
+      () =>
+        Effect.gen(function* () {
+          yield* withSpan("defect.error.details", {
+            attributes: { host: "shuvtest" },
+          })(Effect.die(new Error("null pointer exception"))).pipe(
+            Effect.exit,
+          );
+
+          const spans = yield* CollectedSpans;
+          const collected = yield* Ref.get(spans);
+          const span = collected.find(
+            (s) => s.name === "defect.error.details",
+          );
+          expect(span).toBeDefined();
+          expect(span!.status).toBe("error");
+          expect(span!.error).toBeDefined();
+          expect(span!.error).toContain("null pointer exception");
         }),
     );
   });

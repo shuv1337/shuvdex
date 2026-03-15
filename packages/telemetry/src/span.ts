@@ -34,16 +34,16 @@ export const withSpan =
   <A, E, R>(effect: Effect.Effect<A, E, R>): Effect.Effect<A, E, R> => {
     const attributes: Record<string, unknown> = options?.attributes ?? {};
 
-    return Effect.gen(function* () {
+    return Effect.suspend(() => {
       const startTime = Date.now();
-      const result = yield* Effect.either(effect);
-      const durationMs = Math.round(Date.now() - startTime);
-      yield* Effect.annotateCurrentSpan("durationMs", durationMs);
-
-      if (result._tag === "Left") {
-        return yield* Effect.fail(result.left);
-      }
-      return result.right;
+      return effect.pipe(
+        Effect.ensuring(
+          Effect.suspend(() => {
+            const durationMs = Math.round(Date.now() - startTime);
+            return Effect.annotateCurrentSpan("durationMs", durationMs);
+          }),
+        ),
+      );
     }).pipe(
       Effect.withSpan(name, {
         attributes,
