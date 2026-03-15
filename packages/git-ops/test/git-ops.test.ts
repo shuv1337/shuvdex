@@ -643,9 +643,8 @@ describe("GitOps", () => {
         const callsAfter = yield* Ref.get(callsRef);
         const lastCall = callsAfter[countBefore];
         expect(lastCall.command).toContain("cd ~/repos/test-repo");
-        expect(lastCall.command).toContain("git tag v1.0.0");
-        // Should NOT contain a ref since none was specified
-        expect(lastCall.command).not.toContain("git tag v1.0.0 ");
+        // Tag name is shell-quoted for safety
+        expect(lastCall.command).toContain("git tag -- 'v1.0.0'");
       }),
     );
 
@@ -660,7 +659,8 @@ describe("GitOps", () => {
 
         const callsAfter = yield* Ref.get(callsRef);
         const lastCall = callsAfter[countBefore];
-        expect(lastCall.command).toContain("git tag v1.0.0 abc1234");
+        // Both tag name and ref are shell-quoted for safety
+        expect(lastCall.command).toContain("git tag -- 'v1.0.0' 'abc1234'");
       }),
     );
 
@@ -708,7 +708,8 @@ describe("GitOps", () => {
         const callsAfter = yield* Ref.get(callsRef);
         const lastCall = callsAfter[countBefore];
         expect(lastCall.command).toContain("cd ~/repos/test-repo");
-        expect(lastCall.command).toContain("git checkout main");
+        // Ref is shell-quoted for safety
+        expect(lastCall.command).toContain("git checkout -- 'main'");
       }),
     );
 
@@ -747,8 +748,9 @@ describe("GitOps", () => {
 
         const callsAfter = yield* Ref.get(callsRef);
         const lastCall = callsAfter[countBefore];
+        // SHA is shell-quoted for safety
         expect(lastCall.command).toContain(
-          "git checkout a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2",
+          "git checkout -- 'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2'",
         );
       }),
     );

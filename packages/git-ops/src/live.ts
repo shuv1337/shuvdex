@@ -21,6 +21,19 @@ import {
 } from "./errors.js";
 
 /**
+ * Escape a string for safe inclusion in a single-quoted shell argument.
+ *
+ * Uses POSIX-compliant single quoting: wraps the value in single quotes and
+ * escapes any embedded single quotes using the `'\''` idiom (end quote,
+ * escaped single quote, re-open quote).
+ *
+ * This prevents shell injection via metacharacters, command substitution,
+ * variable expansion, pipes, semicolons, newlines, etc.
+ */
+const shellQuote = (value: string): string =>
+  `'${value.replace(/'/g, "'\\''")}'`;
+
+/**
  * Check whether the stderr indicates the directory is not a git repository.
  */
 const isNotARepository = (stderr: string): boolean => {
@@ -299,7 +312,11 @@ export const GitOpsLive: Layer.Layer<GitOps, never, SshExecutor> = Layer.effect(
           attributes: { host: host.hostname, operation: "createTag", repoPath, "git.tagName": name },
         })(
           Effect.gen(function* () {
-            const command = ref ? `git tag ${name} ${ref}` : `git tag ${name}`;
+            // Use -- separator to prevent flag injection from leading dashes,
+            // and shellQuote to prevent shell metacharacter injection.
+            const command = ref
+              ? `git tag -- ${shellQuote(name)} ${shellQuote(ref)}`
+              : `git tag -- ${shellQuote(name)}`;
             yield* execGit(ssh, host, repoPath, command);
             yield* Effect.annotateCurrentSpan("git.tagName", name);
             if (ref) {
@@ -313,7 +330,9 @@ export const GitOpsLive: Layer.Layer<GitOps, never, SshExecutor> = Layer.effect(
           attributes: { host: host.hostname, operation: "checkoutRef", repoPath, "git.ref": ref },
         })(
           Effect.gen(function* () {
-            yield* execGit(ssh, host, repoPath, `git checkout ${ref}`);
+            // Use -- separator to prevent flag injection from leading dashes,
+            // and shellQuote to prevent shell metacharacter injection.
+            yield* execGit(ssh, host, repoPath, `git checkout -- ${shellQuote(ref)}`);
             yield* Effect.annotateCurrentSpan("git.ref", ref);
           }),
         ),

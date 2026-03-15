@@ -7,6 +7,19 @@
 import { Data } from "effect";
 
 /**
+ * Redact credentials from URLs in a string.
+ *
+ * Replaces `user:password@` patterns in URLs with `<redacted>@`,
+ * covering HTTPS credentials and token-based authentication.
+ *
+ * Examples:
+ *   https://user:secret@host/repo → https://<redacted>@host/repo
+ *   https://x-access-token:ghs_abc@host/repo → https://<redacted>@host/repo
+ */
+const redactCredentials = (text: string): string =>
+  text.replace(/(?<=\/\/)[^@/\s]+:[^@/\s]+(?=@)/g, "<redacted>");
+
+/**
  * Error returned when a git command fails on a remote host.
  * Contains the raw stderr and exit code for diagnostics.
  */
@@ -66,11 +79,17 @@ export class PushRejected extends Data.TaggedError("PushRejected")<{
  * Error returned when a git remote operation fails due to
  * authentication failure (e.g., invalid SSH key, permission denied).
  * Distinct from network errors to allow targeted handling.
+ *
+ * The stderr field is automatically redacted to remove any credentials
+ * embedded in URLs (e.g., https://user:password@host/repo).
  */
 export class AuthError extends Data.TaggedError("AuthError")<{
   readonly host: string;
   readonly stderr: string;
 }> {
+  constructor(props: { readonly host: string; readonly stderr: string }) {
+    super({ host: props.host, stderr: redactCredentials(props.stderr) });
+  }
   get message(): string {
     return `Authentication failed for git remote on ${this.host}`;
   }
