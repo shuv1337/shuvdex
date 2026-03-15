@@ -4,7 +4,7 @@
 import { Context, Effect } from "effect";
 import type { HostConfig } from "@codex-fleet/core";
 import type { SshError } from "@codex-fleet/ssh";
-import type { SkillCommandFailed, SkillRepoNotFound, SkillNotFound, SyncFailed, ChecksumMismatch, ActivationFailed } from "./errors.js";
+import type { SkillCommandFailed, SkillRepoNotFound, SkillNotFound, SyncFailed, ChecksumMismatch, ActivationFailed, DriftCheckFailed } from "./errors.js";
 
 /**
  * Status of a skill on a remote host.
@@ -63,6 +63,59 @@ export interface ActivationResult {
   readonly alreadyInState: boolean;
   /** Current status after the operation */
   readonly status: SkillStatus;
+}
+
+/**
+ * Drift status of a host relative to the reference commit.
+ */
+export type DriftStatus = "in_sync" | "drifted" | "unreachable";
+
+/**
+ * Drift direction relative to the reference commit.
+ * - "ahead" means the host has commits beyond the reference
+ * - "behind" means the host is missing commits that are in the reference
+ * - "diverged" means the host has both commits ahead and behind (branches diverged)
+ */
+export type DriftDirection = "ahead" | "behind" | "diverged";
+
+/**
+ * Per-host drift information.
+ */
+export interface HostDriftInfo {
+  /** Host name */
+  readonly host: string;
+  /** Whether the host is in sync, drifted, or unreachable */
+  readonly status: DriftStatus;
+  /** Current HEAD SHA on the host (undefined if unreachable) */
+  readonly sha?: string;
+  /** Drift direction relative to reference (only present when drifted) */
+  readonly direction?: DriftDirection;
+  /** Number of commits the host is ahead of reference (only present when drifted) */
+  readonly ahead?: number;
+  /** Number of commits the host is behind reference (only present when drifted) */
+  readonly behind?: number;
+  /** Error message if the host is unreachable */
+  readonly error?: string;
+}
+
+/**
+ * Overall drift report across all hosts.
+ */
+export interface DriftReport {
+  /** The reference commit SHA that all hosts are compared against */
+  readonly referenceSha: string;
+  /** The host name used as the reference source */
+  readonly referenceHost: string;
+  /** Per-host drift information */
+  readonly hosts: ReadonlyArray<HostDriftInfo>;
+  /** Whether any hosts are drifted */
+  readonly hasDrift: boolean;
+  /** Count of drifted hosts */
+  readonly driftedCount: number;
+  /** Count of in-sync hosts */
+  readonly inSyncCount: number;
+  /** Count of unreachable hosts */
+  readonly unreachableCount: number;
 }
 
 /**
@@ -203,6 +256,28 @@ export interface SkillOpsService {
   ) => Effect.Effect<
     ActivationResult,
     SshError | SkillCommandFailed | ActivationFailed
+  >;
+
+  /**
+   * Check for drift across multiple hosts by comparing their HEAD commits
+   * to a reference host. Queries HEAD from all configured hosts in parallel,
+   * compares each to the reference, and reports which hosts are drifted.
+   *
+   * An unreachable host does NOT cause the entire operation to fail —
+   * it is reported as "unreachable" in the drift report.
+   *
+   * @param hosts - Array of [name, config] tuples for all hosts to check
+   * @param repoPath - Absolute path to the git repository on each host
+   * @param referenceHostName - Name of the host to use as the reference (its HEAD is the "truth")
+   * @returns Effect yielding a DriftReport with per-host drift status
+   */
+  readonly checkDrift: (
+    hosts: ReadonlyArray<readonly [string, HostConfig]>,
+    repoPath: string,
+    referenceHostName: string,
+  ) => Effect.Effect<
+    DriftReport,
+    DriftCheckFailed
   >;
 }
 

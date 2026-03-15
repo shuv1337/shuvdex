@@ -10,13 +10,16 @@ import {
   SyncFailed,
   ChecksumMismatch,
   ActivationFailed,
+  DriftCheckFailed,
 } from "../src/index.js";
+import type { DriftReport, HostDriftInfo } from "../src/index.js";
 import {
   SshExecutorTest,
   MockSshResponses,
   RecordedSshCalls,
   CommandFailed,
 } from "@codex-fleet/ssh";
+import { GitOpsLive } from "@codex-fleet/git-ops";
 import { TelemetryTest, CollectedSpans } from "@codex-fleet/telemetry";
 import type { HostConfig } from "@codex-fleet/core";
 import { mkdtemp, mkdir, writeFile, chmod, rm } from "node:fs/promises";
@@ -39,9 +42,13 @@ const testRepoPath = "~/repos/shuvbot-skills";
 const testActiveDir = "~/.codex/skills";
 
 /**
- * Combined test layer: mock SSH + test telemetry + SkillOps backed by mock SSH.
+ * Combined test layer: mock SSH + test telemetry + GitOps + SkillOps backed by mock SSH.
  */
-const SkillOpsTestLayer = SkillOpsLive.pipe(Layer.provide(SshExecutorTest));
+const GitOpsTestLayer = GitOpsLive.pipe(Layer.provide(SshExecutorTest));
+const SkillOpsTestLayer = SkillOpsLive.pipe(
+  Layer.provide(SshExecutorTest),
+  Layer.provide(GitOpsTestLayer),
+);
 const TestLayer = Layer.mergeAll(SshExecutorTest, TelemetryTest, SkillOpsTestLayer);
 
 describe("SkillOps", () => {
@@ -1871,6 +1878,641 @@ describe("SkillOps activation OTEL tracing", () => {
         const deactivateSpan = spans.find((s) => s.name === "skill.deactivateSkill");
         expect(deactivateSpan).toBeDefined();
         expect(deactivateSpan!.status).toBe("error");
+      }),
+    );
+  });
+});
+
+// ──────────────────────────────────────────────────────────────
+// Drift detection tests
+// ──────────────────────────────────────────────────────────────
+
+/**
+ * Multiple test host configurations for drift detection.
+ */
+const hostA: HostConfig = {
+  hostname: "host-a",
+  connectionType: "ssh",
+  port: 22,
+  user: "user",
+  timeout: 30,
+};
+const hostB: HostConfig = {
+  hostname: "host-b",
+  connectionType: "ssh",
+  port: 22,
+  user: "user",
+  timeout: 30,
+};
+const hostC: HostConfig = {
+  hostname: "host-c",
+  connectionType: "ssh",
+  port: 22,
+  user: "user",
+  timeout: 30,
+};
+
+const allHosts: ReadonlyArray<readonly [string, HostConfig]> = [
+  ["host-a", hostA],
+  ["host-b", hostB],
+  ["host-c", hostC],
+];
+
+const repoPath = "~/repos/shuvbot-skills";
+const refSha = "a".repeat(40);
+const driftedSha = "b".repeat(40);
+const aheadSha = "c".repeat(40);
+
+describe("SkillOps checkDrift", () => {
+  layer(TestLayer)("drift detection", (it) => {
+    it.effect("returns all hosts in_sync when all HEADs match reference", () =>
+      Effect.gen(function* () {
+        const responsesRef = yield* MockSshResponses;
+        yield* Ref.set(responsesRef, [
+          // getHead for host-a (reference): cd ... && git rev-parse HEAD
+          {
+            _tag: "result" as const,
+            value: { stdout: `${refSha}\n`, stderr: "", exitCode: 0 },
+          },
+          // getHead for host-b
+          {
+            _tag: "result" as const,
+            value: { stdout: `${refSha}\n`, stderr: "", exitCode: 0 },
+          },
+          // getHead for host-c
+          {
+            _tag: "result" as const,
+            value: { stdout: `${refSha}\n`, stderr: "", exitCode: 0 },
+          },
+        ]);
+
+        const skillOps = yield* SkillOps;
+        const report = yield* skillOps.checkDrift(allHosts, repoPath, "host-a");
+
+        expect(report.referenceSha).toBe(refSha);
+        expect(report.referenceHost).toBe("host-a");
+        expect(report.hasDrift).toBe(false);
+        expect(report.driftedCount).toBe(0);
+        expect(report.inSyncCount).toBe(3);
+        expect(report.unreachableCount).toBe(0);
+        expect(report.hosts).toHaveLength(3);
+
+        for (const h of report.hosts) {
+          expect(h.status).toBe("in_sync");
+          expect(h.sha).toBe(refSha);
+        }
+      }),
+    );
+
+    it.effect("reports per-host drift status when a host has different HEAD", () =>
+      Effect.gen(function* () {
+        const responsesRef = yield* MockSshResponses;
+        // Responses are consumed FIFO: host-a getHead, then host-b getHead
+        // + rev-list (grouped), then host-c getHead
+        yield* Ref.set(responsesRef, [
+          // 1. getHead for host-a (reference)
+          {
+            _tag: "result" as const,
+            value: { stdout: `${refSha}\n`, stderr: "", exitCode: 0 },
+          },
+          // 2. getHead for host-b (drifted)
+          {
+            _tag: "result" as const,
+            value: { stdout: `${driftedSha}\n`, stderr: "", exitCode: 0 },
+          },
+          // 3. git rev-list for host-b: 2 behind, 0 ahead
+          {
+            _tag: "result" as const,
+            value: { stdout: "2\t0\n", stderr: "", exitCode: 0 },
+          },
+          // 4. getHead for host-c (in sync)
+          {
+            _tag: "result" as const,
+            value: { stdout: `${refSha}\n`, stderr: "", exitCode: 0 },
+          },
+        ]);
+
+        const skillOps = yield* SkillOps;
+        const report = yield* skillOps.checkDrift(allHosts, repoPath, "host-a");
+
+        expect(report.hasDrift).toBe(true);
+        expect(report.driftedCount).toBe(1);
+        expect(report.inSyncCount).toBe(2);
+        expect(report.unreachableCount).toBe(0);
+
+        const hostBResult = report.hosts.find((h) => h.host === "host-b")!;
+        expect(hostBResult.status).toBe("drifted");
+        expect(hostBResult.sha).toBe(driftedSha);
+        expect(hostBResult.direction).toBe("behind");
+        expect(hostBResult.behind).toBe(2);
+        expect(hostBResult.ahead).toBe(0);
+      }),
+    );
+
+    it.effect("drifted hosts include SHA and direction (ahead)", () =>
+      Effect.gen(function* () {
+        const responsesRef = yield* MockSshResponses;
+        yield* Ref.set(responsesRef, [
+          // 1. getHead for host-a (reference)
+          {
+            _tag: "result" as const,
+            value: { stdout: `${refSha}\n`, stderr: "", exitCode: 0 },
+          },
+          // 2. getHead for host-b (ahead)
+          {
+            _tag: "result" as const,
+            value: { stdout: `${aheadSha}\n`, stderr: "", exitCode: 0 },
+          },
+          // 3. git rev-list for host-b: 0 behind, 3 ahead
+          {
+            _tag: "result" as const,
+            value: { stdout: "0\t3\n", stderr: "", exitCode: 0 },
+          },
+          // 4. getHead for host-c (in sync)
+          {
+            _tag: "result" as const,
+            value: { stdout: `${refSha}\n`, stderr: "", exitCode: 0 },
+          },
+        ]);
+
+        const skillOps = yield* SkillOps;
+        const report = yield* skillOps.checkDrift(allHosts, repoPath, "host-a");
+
+        const hostBResult = report.hosts.find((h) => h.host === "host-b")!;
+        expect(hostBResult.status).toBe("drifted");
+        expect(hostBResult.sha).toBe(aheadSha);
+        expect(hostBResult.direction).toBe("ahead");
+        expect(hostBResult.ahead).toBe(3);
+        expect(hostBResult.behind).toBe(0);
+      }),
+    );
+
+    it.effect("reports diverged direction when host is both ahead and behind", () =>
+      Effect.gen(function* () {
+        const responsesRef = yield* MockSshResponses;
+        yield* Ref.set(responsesRef, [
+          // 1. getHead for host-a (reference)
+          {
+            _tag: "result" as const,
+            value: { stdout: `${refSha}\n`, stderr: "", exitCode: 0 },
+          },
+          // 2. getHead for host-b (diverged)
+          {
+            _tag: "result" as const,
+            value: { stdout: `${driftedSha}\n`, stderr: "", exitCode: 0 },
+          },
+          // 3. git rev-list for host-b: 1 behind, 2 ahead (diverged)
+          {
+            _tag: "result" as const,
+            value: { stdout: "1\t2\n", stderr: "", exitCode: 0 },
+          },
+          // 4. getHead for host-c (in sync)
+          {
+            _tag: "result" as const,
+            value: { stdout: `${refSha}\n`, stderr: "", exitCode: 0 },
+          },
+        ]);
+
+        const skillOps = yield* SkillOps;
+        const report = yield* skillOps.checkDrift(allHosts, repoPath, "host-a");
+
+        const hostBResult = report.hosts.find((h) => h.host === "host-b")!;
+        expect(hostBResult.status).toBe("drifted");
+        expect(hostBResult.direction).toBe("diverged");
+        expect(hostBResult.ahead).toBe(2);
+        expect(hostBResult.behind).toBe(1);
+      }),
+    );
+
+    it.effect("unreachable host does not fail entire operation", () =>
+      Effect.gen(function* () {
+        const responsesRef = yield* MockSshResponses;
+        yield* Ref.set(responsesRef, [
+          // getHead for host-a (reference)
+          {
+            _tag: "result" as const,
+            value: { stdout: `${refSha}\n`, stderr: "", exitCode: 0 },
+          },
+          // getHead for host-b (unreachable)
+          {
+            _tag: "error" as const,
+            value: new CommandFailed({
+              host: "host-b",
+              command: "cd ~/repos/shuvbot-skills && git rev-parse HEAD",
+              exitCode: 255,
+              stdout: "",
+              stderr: "ssh: connect to host host-b port 22: Connection refused",
+            }),
+          },
+          // getHead for host-c (in sync)
+          {
+            _tag: "result" as const,
+            value: { stdout: `${refSha}\n`, stderr: "", exitCode: 0 },
+          },
+        ]);
+
+        const skillOps = yield* SkillOps;
+        const report = yield* skillOps.checkDrift(allHosts, repoPath, "host-a");
+
+        expect(report.hasDrift).toBe(false);
+        expect(report.unreachableCount).toBe(1);
+        expect(report.inSyncCount).toBe(2);
+        expect(report.driftedCount).toBe(0);
+
+        const hostBResult = report.hosts.find((h) => h.host === "host-b")!;
+        expect(hostBResult.status).toBe("unreachable");
+        expect(hostBResult.sha).toBeUndefined();
+        expect(hostBResult.error).toBeDefined();
+        expect(hostBResult.error!.length).toBeGreaterThan(0);
+      }),
+    );
+
+    it.effect("multiple hosts drifted with different SHAs", () =>
+      Effect.gen(function* () {
+        const shaBehind = "d".repeat(40);
+
+        const responsesRef = yield* MockSshResponses;
+        // Responses are consumed FIFO: host-a getHead, then host-b (getHead + rev-list),
+        // then host-c (getHead + rev-list)
+        yield* Ref.set(responsesRef, [
+          // 1. getHead for host-a (reference)
+          {
+            _tag: "result" as const,
+            value: { stdout: `${refSha}\n`, stderr: "", exitCode: 0 },
+          },
+          // 2. getHead for host-b (drifted ahead)
+          {
+            _tag: "result" as const,
+            value: { stdout: `${aheadSha}\n`, stderr: "", exitCode: 0 },
+          },
+          // 3. git rev-list for host-b: ahead
+          {
+            _tag: "result" as const,
+            value: { stdout: "0\t5\n", stderr: "", exitCode: 0 },
+          },
+          // 4. getHead for host-c (drifted behind)
+          {
+            _tag: "result" as const,
+            value: { stdout: `${shaBehind}\n`, stderr: "", exitCode: 0 },
+          },
+          // 5. git rev-list for host-c: behind
+          {
+            _tag: "result" as const,
+            value: { stdout: "3\t0\n", stderr: "", exitCode: 0 },
+          },
+        ]);
+
+        const skillOps = yield* SkillOps;
+        const report = yield* skillOps.checkDrift(allHosts, repoPath, "host-a");
+
+        expect(report.hasDrift).toBe(true);
+        expect(report.driftedCount).toBe(2);
+        expect(report.inSyncCount).toBe(1);
+
+        const hostBResult = report.hosts.find((h) => h.host === "host-b")!;
+        expect(hostBResult.direction).toBe("ahead");
+        expect(hostBResult.ahead).toBe(5);
+
+        const hostCResult = report.hosts.find((h) => h.host === "host-c")!;
+        expect(hostCResult.direction).toBe("behind");
+        expect(hostCResult.behind).toBe(3);
+      }),
+    );
+
+    it.effect("fails with DriftCheckFailed when reference host is unreachable", () =>
+      Effect.gen(function* () {
+        const responsesRef = yield* MockSshResponses;
+        yield* Ref.set(responsesRef, [
+          // getHead for host-a (reference, fails)
+          {
+            _tag: "error" as const,
+            value: new CommandFailed({
+              host: "host-a",
+              command: "cd ~/repos/shuvbot-skills && git rev-parse HEAD",
+              exitCode: 255,
+              stdout: "",
+              stderr: "Connection refused",
+            }),
+          },
+        ]);
+
+        const skillOps = yield* SkillOps;
+        const result = yield* skillOps
+          .checkDrift(allHosts, repoPath, "host-a")
+          .pipe(Effect.either);
+
+        expect(result._tag).toBe("Left");
+        if (result._tag === "Left") {
+          expect(result.left).toBeInstanceOf(DriftCheckFailed);
+          const err = result.left as DriftCheckFailed;
+          expect(err.referenceHost).toBe("host-a");
+          expect(err.cause.length).toBeGreaterThan(0);
+        }
+      }),
+    );
+
+    it.effect("fails with DriftCheckFailed when reference host not in hosts list", () =>
+      Effect.gen(function* () {
+        const skillOps = yield* SkillOps;
+        const result = yield* skillOps
+          .checkDrift(allHosts, repoPath, "nonexistent-host")
+          .pipe(Effect.either);
+
+        expect(result._tag).toBe("Left");
+        if (result._tag === "Left") {
+          expect(result.left).toBeInstanceOf(DriftCheckFailed);
+          const err = result.left as DriftCheckFailed;
+          expect(err.referenceHost).toBe("nonexistent-host");
+          expect(err.cause).toContain("not found");
+        }
+      }),
+    );
+
+    it.effect("reference host is reported as in_sync in the result", () =>
+      Effect.gen(function* () {
+        const responsesRef = yield* MockSshResponses;
+        yield* Ref.set(responsesRef, [
+          // getHead for host-a (reference)
+          {
+            _tag: "result" as const,
+            value: { stdout: `${refSha}\n`, stderr: "", exitCode: 0 },
+          },
+          // getHead for host-b
+          {
+            _tag: "result" as const,
+            value: { stdout: `${refSha}\n`, stderr: "", exitCode: 0 },
+          },
+          // getHead for host-c
+          {
+            _tag: "result" as const,
+            value: { stdout: `${refSha}\n`, stderr: "", exitCode: 0 },
+          },
+        ]);
+
+        const skillOps = yield* SkillOps;
+        const report = yield* skillOps.checkDrift(allHosts, repoPath, "host-a");
+
+        const refHost = report.hosts.find((h) => h.host === "host-a")!;
+        expect(refHost.status).toBe("in_sync");
+        expect(refHost.sha).toBe(refSha);
+      }),
+    );
+
+    it.effect("handles rev-list failure gracefully (reports as diverged with zero counts)", () =>
+      Effect.gen(function* () {
+        const responsesRef = yield* MockSshResponses;
+        yield* Ref.set(responsesRef, [
+          // 1. getHead for host-a (reference)
+          {
+            _tag: "result" as const,
+            value: { stdout: `${refSha}\n`, stderr: "", exitCode: 0 },
+          },
+          // 2. getHead for host-b (drifted)
+          {
+            _tag: "result" as const,
+            value: { stdout: `${driftedSha}\n`, stderr: "", exitCode: 0 },
+          },
+          // 3. git rev-list fails for host-b (e.g., shallow clone, missing ancestry)
+          {
+            _tag: "error" as const,
+            value: new CommandFailed({
+              host: "host-b",
+              command: "git rev-list ...",
+              exitCode: 128,
+              stdout: "",
+              stderr: "fatal: bad revision",
+            }),
+          },
+          // 4. getHead for host-c (in sync)
+          {
+            _tag: "result" as const,
+            value: { stdout: `${refSha}\n`, stderr: "", exitCode: 0 },
+          },
+        ]);
+
+        const skillOps = yield* SkillOps;
+        const report = yield* skillOps.checkDrift(allHosts, repoPath, "host-a");
+
+        // Even though rev-list failed, drift should still be detected
+        expect(report.hasDrift).toBe(true);
+
+        const hostBResult = report.hosts.find((h) => h.host === "host-b")!;
+        expect(hostBResult.status).toBe("drifted");
+        expect(hostBResult.sha).toBe(driftedSha);
+        // Fallback to diverged with 0 counts
+        expect(hostBResult.direction).toBe("diverged");
+        expect(hostBResult.ahead).toBe(0);
+        expect(hostBResult.behind).toBe(0);
+      }),
+    );
+
+    it.effect("works with single host (reference only)", () =>
+      Effect.gen(function* () {
+        const singleHost: ReadonlyArray<readonly [string, HostConfig]> = [
+          ["host-a", hostA],
+        ];
+
+        const responsesRef = yield* MockSshResponses;
+        yield* Ref.set(responsesRef, [
+          // getHead for host-a (reference)
+          {
+            _tag: "result" as const,
+            value: { stdout: `${refSha}\n`, stderr: "", exitCode: 0 },
+          },
+        ]);
+
+        const skillOps = yield* SkillOps;
+        const report = yield* skillOps.checkDrift(singleHost, repoPath, "host-a");
+
+        expect(report.hasDrift).toBe(false);
+        expect(report.hosts).toHaveLength(1);
+        expect(report.hosts[0].status).toBe("in_sync");
+        expect(report.inSyncCount).toBe(1);
+        expect(report.driftedCount).toBe(0);
+        expect(report.unreachableCount).toBe(0);
+      }),
+    );
+
+    it.effect("mixed unreachable and drifted hosts", () =>
+      Effect.gen(function* () {
+        const responsesRef = yield* MockSshResponses;
+        // Responses consumed FIFO: host-a getHead, host-b getHead (error),
+        // host-c getHead + rev-list
+        yield* Ref.set(responsesRef, [
+          // 1. getHead for host-a (reference)
+          {
+            _tag: "result" as const,
+            value: { stdout: `${refSha}\n`, stderr: "", exitCode: 0 },
+          },
+          // 2. getHead for host-b (unreachable)
+          {
+            _tag: "error" as const,
+            value: new CommandFailed({
+              host: "host-b",
+              command: "...",
+              exitCode: 255,
+              stdout: "",
+              stderr: "Connection timed out",
+            }),
+          },
+          // 3. getHead for host-c (drifted)
+          {
+            _tag: "result" as const,
+            value: { stdout: `${driftedSha}\n`, stderr: "", exitCode: 0 },
+          },
+          // 4. git rev-list for host-c
+          {
+            _tag: "result" as const,
+            value: { stdout: "4\t0\n", stderr: "", exitCode: 0 },
+          },
+        ]);
+
+        const skillOps = yield* SkillOps;
+        const report = yield* skillOps.checkDrift(allHosts, repoPath, "host-a");
+
+        expect(report.hasDrift).toBe(true);
+        expect(report.driftedCount).toBe(1);
+        expect(report.unreachableCount).toBe(1);
+        expect(report.inSyncCount).toBe(1);
+
+        const hostBResult = report.hosts.find((h) => h.host === "host-b")!;
+        expect(hostBResult.status).toBe("unreachable");
+
+        const hostCResult = report.hosts.find((h) => h.host === "host-c")!;
+        expect(hostCResult.status).toBe("drifted");
+        expect(hostCResult.direction).toBe("behind");
+        expect(hostCResult.behind).toBe(4);
+      }),
+    );
+  });
+});
+
+describe("DriftCheckFailed error", () => {
+  it("has correct _tag and fields", () => {
+    const err = new DriftCheckFailed({
+      referenceHost: "host-a",
+      cause: "Connection refused",
+    });
+    expect(err._tag).toBe("DriftCheckFailed");
+    expect(err.referenceHost).toBe("host-a");
+    expect(err.cause).toBe("Connection refused");
+    expect(err.message).toContain("host-a");
+    expect(err.message).toContain("Connection refused");
+  });
+});
+
+describe("SkillOps checkDrift OTEL tracing", () => {
+  layer(TestLayer)("span creation", (it) => {
+    it.effect("creates span for checkDrift with correct attributes", () =>
+      Effect.gen(function* () {
+        const spansRef = yield* CollectedSpans;
+        yield* Ref.set(spansRef, []);
+
+        const responsesRef = yield* MockSshResponses;
+        yield* Ref.set(responsesRef, [
+          // getHead for host-a (reference)
+          {
+            _tag: "result" as const,
+            value: { stdout: `${refSha}\n`, stderr: "", exitCode: 0 },
+          },
+          // getHead for host-b
+          {
+            _tag: "result" as const,
+            value: { stdout: `${refSha}\n`, stderr: "", exitCode: 0 },
+          },
+          // getHead for host-c
+          {
+            _tag: "result" as const,
+            value: { stdout: `${refSha}\n`, stderr: "", exitCode: 0 },
+          },
+        ]);
+
+        const skillOps = yield* SkillOps;
+        yield* skillOps.checkDrift(allHosts, repoPath, "host-a");
+
+        const spans = yield* Ref.get(spansRef);
+        const driftSpan = spans.find((s) => s.name === "skill.checkDrift");
+        expect(driftSpan).toBeDefined();
+        expect(driftSpan!.attributes.operation).toBe("checkDrift");
+        expect(driftSpan!.attributes.referenceHost).toBe("host-a");
+        expect(driftSpan!.attributes.repoPath).toBe(repoPath);
+        expect(driftSpan!.attributes.hostCount).toBe(3);
+        expect(driftSpan!.status).toBe("ok");
+      }),
+    );
+
+    it.effect("records drift summary in span attributes", () =>
+      Effect.gen(function* () {
+        const spansRef = yield* CollectedSpans;
+        yield* Ref.set(spansRef, []);
+
+        const responsesRef = yield* MockSshResponses;
+        yield* Ref.set(responsesRef, [
+          // 1. getHead for host-a (reference)
+          {
+            _tag: "result" as const,
+            value: { stdout: `${refSha}\n`, stderr: "", exitCode: 0 },
+          },
+          // 2. getHead for host-b (drifted)
+          {
+            _tag: "result" as const,
+            value: { stdout: `${driftedSha}\n`, stderr: "", exitCode: 0 },
+          },
+          // 3. rev-list for host-b
+          {
+            _tag: "result" as const,
+            value: { stdout: "1\t0\n", stderr: "", exitCode: 0 },
+          },
+          // 4. getHead for host-c (in sync)
+          {
+            _tag: "result" as const,
+            value: { stdout: `${refSha}\n`, stderr: "", exitCode: 0 },
+          },
+        ]);
+
+        const skillOps = yield* SkillOps;
+        yield* skillOps.checkDrift(allHosts, repoPath, "host-a");
+
+        const spans = yield* Ref.get(spansRef);
+        const driftSpan = spans.find((s) => s.name === "skill.checkDrift");
+        expect(driftSpan).toBeDefined();
+        expect(driftSpan!.attributes["drift.referenceSha"]).toBe(refSha);
+        expect(driftSpan!.attributes["drift.driftedCount"]).toBe(1);
+        expect(driftSpan!.attributes["drift.inSyncCount"]).toBe(2);
+        expect(driftSpan!.attributes["drift.unreachableCount"]).toBe(0);
+        expect(driftSpan!.attributes["drift.hasDrift"]).toBe(true);
+      }),
+    );
+
+    it.effect("records error span when drift check fails", () =>
+      Effect.gen(function* () {
+        const spansRef = yield* CollectedSpans;
+        yield* Ref.set(spansRef, []);
+
+        const responsesRef = yield* MockSshResponses;
+        yield* Ref.set(responsesRef, [
+          // getHead for host-a (reference, fails)
+          {
+            _tag: "error" as const,
+            value: new CommandFailed({
+              host: "host-a",
+              command: "...",
+              exitCode: 255,
+              stdout: "",
+              stderr: "Connection refused",
+            }),
+          },
+        ]);
+
+        const skillOps = yield* SkillOps;
+        yield* skillOps
+          .checkDrift(allHosts, repoPath, "host-a")
+          .pipe(Effect.either);
+
+        const spans = yield* Ref.get(spansRef);
+        const driftSpan = spans.find((s) => s.name === "skill.checkDrift");
+        expect(driftSpan).toBeDefined();
+        expect(driftSpan!.status).toBe("error");
       }),
     );
   });

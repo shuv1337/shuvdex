@@ -91,6 +91,19 @@ export class ActivationFailed extends Data.TaggedError("ActivationFailed")<{
 }
 
 /**
+ * Error returned when drift detection itself fails (e.g., the reference host
+ * is unreachable so no baseline can be established).
+ */
+export class DriftCheckFailed extends Data.TaggedError("DriftCheckFailed")<{
+  readonly referenceHost: string;
+  readonly cause: string;
+}> {
+  get message(): string {
+    return `Drift check failed: could not get reference HEAD from ${this.referenceHost}: ${this.cause}`;
+  }
+}
+
+/**
  * Union of all skill operation error types.
  */
 export type SkillOpsError =
@@ -99,4 +112,5 @@ export type SkillOpsError =
   | SkillNotFound
   | SyncFailed
   | ChecksumMismatch
-  | ActivationFailed;
+  | ActivationFailed
+  | DriftCheckFailed;

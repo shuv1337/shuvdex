@@ -9,10 +9,11 @@
 import { Effect, Layer } from "effect";
 import type { HostConfig } from "@codex-fleet/core";
 import { SshExecutor, CommandFailed } from "@codex-fleet/ssh";
+import { GitOps } from "@codex-fleet/git-ops";
 import { withSpan } from "@codex-fleet/telemetry";
 import { SkillOps } from "./types.js";
-import type { SkillInfo, SkillStatus, SyncResult, VerifySyncResult, ActivationResult } from "./types.js";
-import { SkillCommandFailed, SkillRepoNotFound, SkillNotFound, SyncFailed, ActivationFailed } from "./errors.js";
+import type { SkillInfo, SkillStatus, SyncResult, VerifySyncResult, ActivationResult, HostDriftInfo, DriftReport } from "./types.js";
+import { SkillCommandFailed, SkillRepoNotFound, SkillNotFound, SyncFailed, ActivationFailed, DriftCheckFailed } from "./errors.js";
 import { execFile } from "node:child_process";
 import { access, constants } from "node:fs/promises";
 
@@ -59,10 +60,11 @@ const execSkillCmd = (
  *
  * All operations create OTEL spans with host, operation, and path attributes.
  */
-export const SkillOpsLive: Layer.Layer<SkillOps, never, SshExecutor> = Layer.effect(
+export const SkillOpsLive: Layer.Layer<SkillOps, never, SshExecutor | GitOps> = Layer.effect(
   SkillOps,
   Effect.gen(function* () {
     const ssh = yield* SshExecutor;
+    const gitOps = yield* GitOps;
 
     return SkillOps.of({
       listSkills: (host: HostConfig, repoPath: string, activeDir: string) =>
@@ -519,6 +521,164 @@ export const SkillOpsLive: Layer.Layer<SkillOps, never, SshExecutor> = Layer.eff
               alreadyInState: false,
               status: "inactive" as const,
             } satisfies ActivationResult;
+          }),
+        ),
+
+      checkDrift: (
+        hosts: ReadonlyArray<readonly [string, HostConfig]>,
+        repoPath: string,
+        referenceHostName: string,
+      ) =>
+        withSpan("skill.checkDrift", {
+          attributes: {
+            operation: "checkDrift",
+            repoPath,
+            referenceHost: referenceHostName,
+            hostCount: hosts.length,
+          },
+        })(
+          Effect.gen(function* () {
+            // Find the reference host config
+            const referenceEntry = hosts.find(([name]) => name === referenceHostName);
+            if (!referenceEntry) {
+              return yield* Effect.fail(
+                new DriftCheckFailed({
+                  referenceHost: referenceHostName,
+                  cause: `Host "${referenceHostName}" not found in the provided hosts list`,
+                }),
+              );
+            }
+
+            const [, referenceConfig] = referenceEntry;
+
+            // Get the reference HEAD SHA first — if this fails, the whole operation fails
+            const referenceSha = yield* gitOps.getHead(referenceConfig, repoPath).pipe(
+              Effect.catchAll((err: unknown) =>
+                Effect.fail(
+                  new DriftCheckFailed({
+                    referenceHost: referenceHostName,
+                    cause: String(err),
+                  }),
+                ),
+              ),
+            );
+
+            yield* Effect.annotateCurrentSpan("drift.referenceSha", referenceSha);
+
+            // Query HEAD from all other hosts in parallel.
+            // Unreachable hosts don't fail the operation — they are reported as "unreachable".
+            // Query HEAD from all hosts sequentially to ensure deterministic
+            // processing order. Each host's getHead + optional rev-list runs
+            // as a unit before moving to the next host.
+            const hostResults: Array<HostDriftInfo> = [];
+            for (const [name, config] of hosts) {
+              if (name === referenceHostName) {
+                // Reference host is always in_sync with itself
+                hostResults.push({
+                  host: name,
+                  status: "in_sync",
+                  sha: referenceSha,
+                });
+                continue;
+              }
+
+              // Try to get HEAD from this host
+              const headResult = yield* gitOps.getHead(config, repoPath).pipe(
+                Effect.map((sha) => ({ _tag: "ok" as const, sha })),
+                Effect.catchAll((err: unknown) =>
+                  Effect.succeed({
+                    _tag: "error" as const,
+                    error: String(err),
+                  }),
+                ),
+              );
+
+              if (headResult._tag === "error") {
+                hostResults.push({
+                  host: name,
+                  status: "unreachable",
+                  error: headResult.error,
+                });
+                continue;
+              }
+
+              const hostSha = headResult.sha;
+
+              // Same SHA means in_sync
+              if (hostSha === referenceSha) {
+                hostResults.push({
+                  host: name,
+                  status: "in_sync",
+                  sha: hostSha,
+                });
+                continue;
+              }
+
+              // Different SHA — determine direction and behind/ahead counts.
+              // Use `git rev-list --left-right --count` to find ahead/behind.
+              const countResult = yield* execSkillCmd(
+                ssh,
+                config,
+                `cd ${repoPath} && git rev-list --left-right --count ${referenceSha}...${hostSha}`,
+              ).pipe(
+                Effect.map((result) => {
+                  const parts = result.stdout.trim().split(/\s+/);
+                  const behind = parseInt(parts[0] ?? "0", 10) || 0;
+                  const ahead = parseInt(parts[1] ?? "0", 10) || 0;
+                  return { behind, ahead };
+                }),
+                Effect.catchAll(() =>
+                  // If rev-list fails (e.g., SHAs don't share ancestry),
+                  // report as diverged with unknown counts
+                  Effect.succeed({ behind: 0, ahead: 0 }),
+                ),
+              );
+
+              const { behind, ahead } = countResult;
+
+              // Determine drift direction
+              let direction: "ahead" | "behind" | "diverged";
+              if (ahead > 0 && behind > 0) {
+                direction = "diverged";
+              } else if (ahead > 0) {
+                direction = "ahead";
+              } else if (behind > 0) {
+                direction = "behind";
+              } else {
+                // Edge case: counts are both 0 but SHAs differ (shouldn't happen
+                // with valid repos, but handle gracefully)
+                direction = "diverged";
+              }
+
+              hostResults.push({
+                host: name,
+                status: "drifted",
+                sha: hostSha,
+                direction,
+                ahead,
+                behind,
+              });
+            }
+
+            // Calculate summary counts
+            const driftedCount = hostResults.filter((h) => h.status === "drifted").length;
+            const inSyncCount = hostResults.filter((h) => h.status === "in_sync").length;
+            const unreachableCount = hostResults.filter((h) => h.status === "unreachable").length;
+
+            yield* Effect.annotateCurrentSpan("drift.driftedCount", driftedCount);
+            yield* Effect.annotateCurrentSpan("drift.inSyncCount", inSyncCount);
+            yield* Effect.annotateCurrentSpan("drift.unreachableCount", unreachableCount);
+            yield* Effect.annotateCurrentSpan("drift.hasDrift", driftedCount > 0);
+
+            return {
+              referenceSha,
+              referenceHost: referenceHostName,
+              hosts: hostResults,
+              hasDrift: driftedCount > 0,
+              driftedCount,
+              inSyncCount,
+              unreachableCount,
+            } satisfies DriftReport;
           }),
         ),
     });
