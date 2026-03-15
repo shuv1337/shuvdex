@@ -34,6 +34,11 @@ class CommandFailed extends Data.TaggedError("CommandFailed")<{
 }> {}
 ```
 
+### Git CLI Validation Notes
+
+- When changing git command construction for shell-safety, do not rely only on mocked SSH command-string assertions.
+- Also verify the actual git CLI semantics in an isolated temporary repo; small argument-shape changes such as inserting `--` can change a ref checkout into pathspec mode.
+
 ### OTEL Instrumentation
 
 All operations create spans via `@effect/opentelemetry`:

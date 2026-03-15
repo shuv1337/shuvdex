@@ -1,6 +1,6 @@
 {
   "milestone": "git-skill-ops",
-  "round": 1,
+  "round": 2,
   "status": "fail",
   "validatorsRun": {
     "test": {
@@ -20,95 +20,46 @@
     }
   },
   "reviewsSummary": {
-    "total": 7,
-    "passed": 0,
-    "failed": 7,
+    "total": 4,
+    "passed": 2,
+    "failed": 2,
     "failedFeatures": [
-      "git-ops-read-operations",
-      "git-ops-write-operations",
-      "git-ops-error-handling",
-      "skill-ops-discovery",
-      "skill-ops-sync",
-      "skill-ops-activation",
-      "skill-ops-drift"
+      "fix-git-ops-security",
+      "fix-git-ops-errors"
     ]
   },
   "blockingIssues": [
     {
-      "featureId": "git-ops-read-operations",
+      "featureId": "fix-git-ops-security",
       "severity": "blocking",
-      "description": "`getBranch()` catches every `GitCommandFailed` from `git symbolic-ref --short HEAD` and returns `HEAD`, masking real git failures as detached HEAD instead of surfacing an error."
+      "description": "`checkoutRef()` now runs `git checkout -- <ref>`, which switches Git into pathspec mode and breaks ordinary branch/tag/SHA checkout instead of safely checking out refs."
     },
     {
-      "featureId": "git-ops-write-operations",
+      "featureId": "fix-git-ops-security; fix-git-ops-errors",
       "severity": "blocking",
-      "description": "`createTag()` assembles `git tag ${name} ${ref}` by raw string interpolation before handing it to the remote shell, so caller-controlled names/refs can break execution or execute unintended shell fragments."
-    },
-    {
-      "featureId": "git-ops-write-operations",
-      "severity": "blocking",
-      "description": "`checkoutRef()` passes `git checkout ${ref}` straight through to the remote shell with no quoting or escaping, making the API unsafe for arbitrary branch/tag/SHA input."
-    },
-    {
-      "featureId": "git-ops-error-handling",
-      "severity": "blocking",
-      "description": "The implementation exports `NetworkTimeout` instead of the feature's promised `TimeoutError`, so the public API does not match the contract callers are expected to use."
-    },
-    {
-      "featureId": "git-ops-error-handling",
-      "severity": "blocking",
-      "description": "`AuthError` preserves raw `stderr` without any redaction path, so auth-failure output can leak credentials or sensitive repository URLs."
-    },
-    {
-      "featureId": "skill-ops-discovery",
-      "severity": "blocking",
-      "description": "`checkSymlink()` converts SSH and command failures into `inactive`, causing `getSkillStatus()` and `listSkills()` to silently misreport transport or permission failures as legitimate inactive state."
-    },
-    {
-      "featureId": "skill-ops-sync",
-      "severity": "blocking",
-      "description": "`verifySync()` hard-codes GNU `sha256sum` locally and remotely, which is not portable to the documented macOS host and breaks checksum verification across the supported fleet."
-    },
-    {
-      "featureId": "skill-ops-sync",
-      "severity": "blocking",
-      "description": "`syncSkill()` rebuilds its own rsync SSH command and drops `HostConfig.keyPath`, so valid keyed host configurations can fail during the actual file transfer."
-    },
-    {
-      "featureId": "skill-ops-activation",
-      "severity": "blocking",
-      "description": "`activateSkill()` treats any non-broken symlink as already active without verifying it points at `repoPath/skillName`, so a stale or wrong target can remain in place."
-    },
-    {
-      "featureId": "skill-ops-drift",
-      "severity": "blocking",
-      "description": "`checkDrift()` computes ahead/behind counts on the drifted host using the reference host's SHA; if that SHA has not been fetched locally, Git errors and the implementation falls back to `diverged` with zero counts instead of reporting the required behind/ahead details."
+      "description": "`redactCredentials()` still stops at the first `@` inside a credential segment, so auth-failure stderr can leak password suffixes such as `ssw0rd` from URLs like `https://admin:p@ssw0rd@git.example.com/repo.git`."
     }
   ],
-  "appliedUpdates": [],
+  "appliedUpdates": [
+    {
+      "target": "library",
+      "description": "Added an architecture note that shell-safety fixes for git command construction must be verified with isolated real git-behavior checks, not only mocked SSH command-string assertions.",
+      "sourceFeature": "fix-git-ops-security"
+    }
+  ],
   "suggestedGuidanceUpdates": [
     {
       "target": "backend-worker skill",
-      "suggestion": "Require workers to mark `skillFeedback.followedProcedure=false` whenever they implement before creating/running red tests or skip required manual SSH verification, and require the specific deviation to be recorded in the handoff.",
-      "evidence": "Six milestone reviews (`git-ops-write-operations`, `git-ops-error-handling`, `skill-ops-discovery`, `skill-ops-sync`, `skill-ops-activation`, and `skill-ops-drift`) found transcript skeletons showing implementation before tests and/or missing manual verification while the handoffs still marked `followedProcedure: true`.",
-      "isSystemic": true
-    },
-    {
-      "target": "AGENTS.md",
-      "suggestion": "Clarify whether git/skill validation on `shuvtest` may mutate isolated remote repos for milestone and user-testing flows, or whether all remote validation must remain read-only.",
-      "evidence": "`git-ops-write-operations` requires a manual pull on `shuvtest`, `skill-ops-drift` requires creating drift on a test host, but `.factory/library/user-testing.md` currently says remote SSH validation against `shuvtest` must stay read-only and must not modify remote hosts.",
+      "suggestion": "Require workers to mark `skillFeedback.followedProcedure=false` whenever implementation starts before tests or required manual SSH verification is skipped, and require the deviation to be recorded in the handoff.",
+      "evidence": "All four rerun reviews (`fix-git-ops-security`, `fix-git-ops-errors`, `fix-skill-ops-portability`, and `fix-skill-ops-edge-cases`) observed transcript/handoff mismatches where workers reported `followedProcedure: true` despite code-before-tests and/or missing manual SSH verification.",
       "isSystemic": true
     }
   ],
   "rejectedObservations": [
     {
-      "observation": "Multiple reviews separately reported backend-worker TDD/verification adherence mismatches.",
+      "observation": "Three additional rerun reviews repeated the same backend-worker procedure/handoff mismatch already captured in the synthesized guidance recommendation.",
       "reason": "duplicate"
-    },
-    {
-      "observation": "Document a repo-wide convention in shared guidance for reusing `packages/ssh/src/live.ts` transport options when invoking `rsync`/`scp` directly.",
-      "reason": "ambiguous"
     }
   ],
-  "previousRound": null
+  "previousRound": "/home/shuv/repos/codex-fleet/.factory/validation/git-skill-ops/scrutiny/synthesis.round1.json"
 }
