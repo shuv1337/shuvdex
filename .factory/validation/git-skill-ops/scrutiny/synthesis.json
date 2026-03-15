@@ -1,6 +1,6 @@
 {
   "milestone": "git-skill-ops",
-  "round": 2,
+  "round": 3,
   "status": "fail",
   "validatorsRun": {
     "test": {
@@ -20,46 +20,29 @@
     }
   },
   "reviewsSummary": {
-    "total": 4,
-    "passed": 2,
-    "failed": 2,
+    "total": 1,
+    "passed": 0,
+    "failed": 1,
     "failedFeatures": [
-      "fix-git-ops-security",
-      "fix-git-ops-errors"
+      "fix-git-ops-checkout-redact"
     ]
   },
   "blockingIssues": [
     {
-      "featureId": "fix-git-ops-security",
+      "featureId": "fix-git-ops-checkout-redact",
       "severity": "blocking",
-      "description": "`checkoutRef()` now runs `git checkout -- <ref>`, which switches Git into pathspec mode and breaks ordinary branch/tag/SHA checkout instead of safely checking out refs."
-    },
-    {
-      "featureId": "fix-git-ops-security; fix-git-ops-errors",
-      "severity": "blocking",
-      "description": "`redactCredentials()` still stops at the first `@` inside a credential segment, so auth-failure stderr can leak password suffixes such as `ssw0rd` from URLs like `https://admin:p@ssw0rd@git.example.com/repo.git`."
+      "description": "`checkoutRef()` still trusts shell quoting to block leading-dash refs, but a temp-repo repro showed `git checkout '--detach'` is parsed as the real `--detach` option, so arbitrary option injection remains possible."
     }
   ],
-  "appliedUpdates": [
-    {
-      "target": "library",
-      "description": "Added an architecture note that shell-safety fixes for git command construction must be verified with isolated real git-behavior checks, not only mocked SSH command-string assertions.",
-      "sourceFeature": "fix-git-ops-security"
-    }
-  ],
+  "appliedUpdates": [],
   "suggestedGuidanceUpdates": [
     {
       "target": "backend-worker skill",
-      "suggestion": "Require workers to mark `skillFeedback.followedProcedure=false` whenever implementation starts before tests or required manual SSH verification is skipped, and require the deviation to be recorded in the handoff.",
-      "evidence": "All four rerun reviews (`fix-git-ops-security`, `fix-git-ops-errors`, `fix-skill-ops-portability`, and `fix-skill-ops-edge-cases`) observed transcript/handoff mismatches where workers reported `followedProcedure: true` despite code-before-tests and/or missing manual SSH verification.",
+      "suggestion": "Clarify that isolated temp-repo git CLI validation is an acceptable semantic verification path for git command-construction fixes, and require workers to record deviations whenever they skip SSH verification or implement before tests.",
+      "evidence": "The `fix-git-ops-checkout-redact` review found source edits landed before tests, the handoff still reported `skillFeedback.followedProcedure: true` without deviations, and the only successful semantic check was the temp-repo git CLI repro already documented in `.factory/library/architecture.md`.",
       "isSystemic": true
     }
   ],
-  "rejectedObservations": [
-    {
-      "observation": "Three additional rerun reviews repeated the same backend-worker procedure/handoff mismatch already captured in the synthesized guidance recommendation.",
-      "reason": "duplicate"
-    }
-  ],
-  "previousRound": "/home/shuv/repos/codex-fleet/.factory/validation/git-skill-ops/scrutiny/synthesis.round1.json"
+  "rejectedObservations": [],
+  "previousRound": "/home/shuv/repos/codex-fleet/.factory/validation/git-skill-ops/scrutiny/synthesis.round2.json"
 }

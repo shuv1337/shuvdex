@@ -1,0 +1,28 @@
+{
+  "featureId": "fix-git-ops-checkout-redact",
+  "reviewedAt": "2026-03-15T20:29:29Z",
+  "commitId": "75ea791",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "fail",
+  "codeReview": {
+    "summary": "The rerun fixes the two prior blockers: `checkoutRef()` again works for real branches/tags/SHAs and `AuthError` redaction now fully hides credentials containing `@`. However, the new implementation still introduces a blocking regression by relying on shell quoting alone for leading-dash refs, so the feature cannot yet be accepted.",
+    "issues": [
+      {
+        "file": "packages/git-ops/src/live.ts",
+        "line": 348,
+        "severity": "blocking",
+        "description": "`checkoutRef()` now emits `git checkout ${shellQuote(ref)}` and the surrounding comment claims single quotes prevent flag injection, but shell quotes are stripped before `git` parses argv. A local temp-repo repro with the emitted command `git checkout '--detach'` exited 0 and detached HEAD (`git symbolic-ref --short -q HEAD` then exited 1 with `## HEAD (no branch)`), proving the quoted argument is still treated as the real `--detach` option rather than a literal ref. The updated assertion in `packages/git-ops/test/security.test.ts:337-341` therefore blesses an unsafe command shape, and the new temp-repo coverage only exercises ordinary branches/tags/SHAs, not leading-dash refs."
+      }
+    ]
+  },
+  "sharedStateObservations": [
+    {
+      "area": "skills",
+      "observation": "The backend-worker skill still does not line up with how git-ops safety reruns are being validated, and workers continue to report `followedProcedure: true` even when they skip the documented SSH manual-verification step and edit source before tests.",
+      "evidence": "`/home/shuv/repos/codex-fleet/.factory/skills/backend-worker/SKILL.md` step 2 requires tests before implementation and step 6 prescribes SSH manual verification for SSH-related features. In the transcript skeleton for worker session `50d4c2ac-412b-4487-b77e-2e08a9f611f7`, the edits to `packages/git-ops/src/live.ts` and `packages/git-ops/src/errors.ts` occur before the later test updates/addition, and the handoff `/home/shuv/.factory/missions/53d67669-5ba8-4745-9fd5-71906b40773d/handoffs/2026-03-15T20-25-08-558Z__fix-git-ops-checkout-redact__50d4c2ac-412b-4487-b77e-2e08a9f611f7.json` lists only `npm test -- --filter @codex-fleet/git-ops`, `npm run typecheck`, and `npm run lint` while `skillFeedback.followedProcedure` remains true. `.factory/library/architecture.md` already documents isolated temp-repo git CLI validation as the correct semantic check here, so the skill should explicitly allow that path and require deviations/manual-verification omissions to be recorded."
+    }
+  ],
+  "addressesFailureFrom": "/home/shuv/repos/codex-fleet/.factory/validation/git-skill-ops/scrutiny/reviews/fix-git-ops-security.json; /home/shuv/repos/codex-fleet/.factory/validation/git-skill-ops/scrutiny/reviews/fix-git-ops-errors.json",
+  "summary": "Reviewed the rerun handoff, transcript skeleton, prior failed reviews, and commit `75ea791`. The commit clears the earlier blockers around pathspec checkout and `@`-in-password redaction, but the feature still fails scrutiny because `checkoutRef()` now trusts shell quoting to neutralize leading-dash refs, and a temp-repo repro shows `git checkout '--detach'` is parsed as the real option rather than a literal ref."
+}
