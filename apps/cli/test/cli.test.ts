@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseArgs, mainHelp, statusHelp } from "../src/cli.js";
+import { parseArgs, mainHelp, statusHelp, pullHelp } from "../src/cli.js";
 
 describe("parseArgs", () => {
   it("parses status command", () => {
@@ -69,6 +69,46 @@ describe("parseArgs", () => {
     const result = parseArgs(["node", "fleet", "foobar"]);
     expect(result.command).toBe("foobar");
   });
+
+  it("parses pull command with positional hosts", () => {
+    const result = parseArgs(["node", "fleet", "pull", "shuvtest", "shuvbot"]);
+    expect(result.command).toBe("pull");
+    expect(result.positional).toEqual(["shuvtest", "shuvbot"]);
+  });
+
+  it("parses pull command with no hosts", () => {
+    const result = parseArgs(["node", "fleet", "pull"]);
+    expect(result.command).toBe("pull");
+    expect(result.positional).toEqual([]);
+  });
+
+  it("parses --repo flag", () => {
+    const result = parseArgs([
+      "node",
+      "fleet",
+      "pull",
+      "--repo",
+      "/custom/repo/path",
+    ]);
+    expect(result.command).toBe("pull");
+    expect(result.flags.repo).toBe("/custom/repo/path");
+  });
+
+  it("parses -r as repo shorthand", () => {
+    const result = parseArgs([
+      "node",
+      "fleet",
+      "pull",
+      "-r",
+      "/custom/repo",
+    ]);
+    expect(result.flags.repo).toBe("/custom/repo");
+  });
+
+  it("defaults repo to ~/repos/shuvbot-skills", () => {
+    const result = parseArgs(["node", "fleet", "pull"]);
+    expect(result.flags.repo).toBe("~/repos/shuvbot-skills");
+  });
 });
 
 describe("help text", () => {
@@ -89,6 +129,15 @@ describe("help text", () => {
     const help = statusHelp();
     expect(help).toContain("fleet status");
     expect(help).toContain("--json");
+    expect(help).toContain("--config");
+  });
+
+  it("pullHelp describes the command", () => {
+    const help = pullHelp();
+    expect(help).toContain("fleet pull");
+    expect(help).toContain("hosts");
+    expect(help).toContain("--json");
+    expect(help).toContain("--repo");
     expect(help).toContain("--config");
   });
 });

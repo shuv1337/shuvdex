@@ -11,13 +11,24 @@
 import { Effect, Layer } from "effect";
 import { loadConfig } from "@codex-fleet/core";
 import { SshExecutorLive } from "@codex-fleet/ssh";
+import { GitOpsLive } from "@codex-fleet/git-ops";
 import { TelemetryLive } from "@codex-fleet/telemetry";
 import { runStatus, formatTable, formatJson } from "./commands/status.js";
+import {
+  runPull,
+  formatPullTable,
+  formatPullJson,
+} from "./commands/pull.js";
 
 /**
  * Default config path if not specified.
  */
 const DEFAULT_CONFIG_PATH = "fleet.yaml";
+
+/**
+ * Default skills repo path on remote hosts.
+ */
+const DEFAULT_REPO_PATH = "~/repos/shuvbot-skills";
 
 /**
  * Parse CLI arguments into a structured command object.
@@ -28,6 +39,7 @@ export interface ParsedArgs {
     readonly json: boolean;
     readonly help: boolean;
     readonly config: string;
+    readonly repo: string;
   };
   readonly positional: ReadonlyArray<string>;
 }
@@ -37,6 +49,7 @@ export const parseArgs = (argv: ReadonlyArray<string>): ParsedArgs => {
   let json = false;
   let help = false;
   let config = DEFAULT_CONFIG_PATH;
+  let repo = DEFAULT_REPO_PATH;
   const positional: Array<string> = [];
 
   const args = argv.slice(2); // skip node + script
@@ -51,6 +64,9 @@ export const parseArgs = (argv: ReadonlyArray<string>): ParsedArgs => {
     } else if (arg === "--config" || arg === "-c") {
       i++;
       config = args[i] ?? DEFAULT_CONFIG_PATH;
+    } else if (arg === "--repo" || arg === "-r") {
+      i++;
+      repo = args[i] ?? DEFAULT_REPO_PATH;
     } else if (!arg.startsWith("-") && command === undefined) {
       command = arg;
     } else if (!arg.startsWith("-")) {
@@ -59,7 +75,7 @@ export const parseArgs = (argv: ReadonlyArray<string>): ParsedArgs => {
     i++;
   }
 
-  return { command, flags: { json, help, config }, positional };
+  return { command, flags: { json, help, config, repo }, positional };
 };
 
 /**
@@ -101,6 +117,30 @@ Exit codes:
 `;
 
 /**
+ * Show pull command help text.
+ */
+export const pullHelp = (): string =>
+  `Usage: fleet pull [hosts...] [options]
+
+Pull latest changes from the remote origin on specified hosts.
+If no hosts are specified, pulls on all configured hosts.
+
+Arguments:
+  hosts                Host names to pull on (default: all)
+
+Options:
+  --json               Output as JSON
+  --repo, -r <path>    Path to git repo on remote hosts (default: ~/repos/shuvbot-skills)
+  --config, -c <path>  Path to fleet config file (default: fleet.yaml)
+  --help, -h           Show help
+
+Exit codes:
+  0  All hosts pulled successfully
+  1  All hosts failed
+  2  Partial success (some hosts succeeded, some failed)
+`;
+
+/**
  * Run the CLI with the given argv.
  * Returns the exit code.
  */
@@ -130,6 +170,14 @@ export const run = (
           return 0;
         }
         return yield* runStatusCommand(parsed);
+      }
+
+      case "pull": {
+        if (parsed.flags.help) {
+          yield* Effect.sync(() => process.stdout.write(pullHelp()));
+          return 0;
+        }
+        return yield* runPullCommand(parsed);
       }
 
       default: {
@@ -177,6 +225,63 @@ const runStatusCommand = (
     yield* Effect.sync(() => process.stdout.write(output + "\n"));
 
     return result.allOnline ? 0 : 1;
+  }).pipe(
+    Effect.catchAll(() => Effect.succeed(1)),
+  );
+
+/**
+ * Execute the pull subcommand end-to-end.
+ *
+ * Exit codes:
+ * - 0: All hosts pulled successfully
+ * - 1: All hosts failed or config error
+ * - 2: Partial success
+ */
+const runPullCommand = (
+  parsed: ParsedArgs,
+): Effect.Effect<number, never, never> =>
+  Effect.gen(function* () {
+    // Load config
+    const registry = yield* loadConfig(parsed.flags.config).pipe(
+      Effect.catchAll((err) =>
+        Effect.gen(function* () {
+          yield* Effect.sync(() =>
+            process.stderr.write(`Error: ${err.message}\n`),
+          );
+          return yield* Effect.fail("config-error" as const);
+        }),
+      ),
+    );
+
+    // Build live layer: SSH + Telemetry + GitOps
+    const liveLayer = Layer.provideMerge(
+      GitOpsLive,
+      Layer.merge(SshExecutorLive, TelemetryLive),
+    );
+
+    // Host filter from positional args (empty = all hosts)
+    const filterHosts =
+      parsed.positional.length > 0 ? parsed.positional : undefined;
+
+    const result = yield* runPull(
+      registry,
+      parsed.flags.repo,
+      filterHosts,
+    ).pipe(Effect.provide(liveLayer));
+
+    // Format and print output
+    const output = parsed.flags.json
+      ? formatPullJson(result)
+      : formatPullTable(result);
+
+    yield* Effect.sync(() => process.stdout.write(output + "\n"));
+
+    // Exit code: 0 = all ok, 1 = all failed, 2 = partial
+    if (result.allSucceeded) {
+      return 0;
+    }
+    const okCount = result.hosts.filter((h) => h.status === "ok").length;
+    return okCount > 0 ? 2 : 1;
   }).pipe(
     Effect.catchAll(() => Effect.succeed(1)),
   );
