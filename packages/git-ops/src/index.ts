@@ -21,6 +21,8 @@ export {
   MergeConflict,
   PushRejected,
   AuthError,
+  TimeoutError,
+  /** @deprecated Use `TimeoutError` instead. */
   NetworkTimeout,
 } from "./errors.js";
 export type { GitOpsError } from "./errors.js";

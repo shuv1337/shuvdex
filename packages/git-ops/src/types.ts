@@ -10,7 +10,7 @@ import type {
   MergeConflict,
   PushRejected,
   AuthError,
-  NetworkTimeout,
+  TimeoutError,
 } from "./errors.js";
 
 /**
@@ -49,7 +49,7 @@ export interface GitOpsService {
   readonly getHead: (
     host: HostConfig,
     repoPath: string,
-  ) => Effect.Effect<string, SshError | GitCommandFailed | NotARepository | AuthError | NetworkTimeout>;
+  ) => Effect.Effect<string, SshError | GitCommandFailed | NotARepository | AuthError | TimeoutError>;
 
   /**
    * Get the current branch name, or "HEAD" if in detached HEAD state.
@@ -61,7 +61,7 @@ export interface GitOpsService {
   readonly getBranch: (
     host: HostConfig,
     repoPath: string,
-  ) => Effect.Effect<string, SshError | GitCommandFailed | NotARepository | AuthError | NetworkTimeout>;
+  ) => Effect.Effect<string, SshError | GitCommandFailed | NotARepository | AuthError | TimeoutError>;
 
   /**
    * Check whether the repository has uncommitted changes
@@ -74,7 +74,7 @@ export interface GitOpsService {
   readonly isDirty: (
     host: HostConfig,
     repoPath: string,
-  ) => Effect.Effect<boolean, SshError | GitCommandFailed | NotARepository | AuthError | NetworkTimeout>;
+  ) => Effect.Effect<boolean, SshError | GitCommandFailed | NotARepository | AuthError | TimeoutError>;
 
   /**
    * List all tag names in the repository.
@@ -86,7 +86,7 @@ export interface GitOpsService {
   readonly listTags: (
     host: HostConfig,
     repoPath: string,
-  ) => Effect.Effect<Array<string>, SshError | GitCommandFailed | NotARepository | AuthError | NetworkTimeout>;
+  ) => Effect.Effect<Array<string>, SshError | GitCommandFailed | NotARepository | AuthError | TimeoutError>;
 
   /**
    * Fetch and merge changes from the remote origin.
@@ -102,7 +102,7 @@ export interface GitOpsService {
   readonly pull: (
     host: HostConfig,
     repoPath: string,
-  ) => Effect.Effect<PullResult, SshError | GitCommandFailed | NotARepository | MergeConflict | AuthError | NetworkTimeout>;
+  ) => Effect.Effect<PullResult, SshError | GitCommandFailed | NotARepository | MergeConflict | AuthError | TimeoutError>;
 
   /**
    * Push local commits to the remote origin.
@@ -117,7 +117,7 @@ export interface GitOpsService {
   readonly push: (
     host: HostConfig,
     repoPath: string,
-  ) => Effect.Effect<PushResult, SshError | GitCommandFailed | NotARepository | PushRejected | AuthError | NetworkTimeout>;
+  ) => Effect.Effect<PushResult, SshError | GitCommandFailed | NotARepository | PushRejected | AuthError | TimeoutError>;
 
   /**
    * Create a lightweight tag at the specified ref (defaults to HEAD).
@@ -133,7 +133,7 @@ export interface GitOpsService {
     repoPath: string,
     name: string,
     ref?: string,
-  ) => Effect.Effect<void, SshError | GitCommandFailed | NotARepository | AuthError | NetworkTimeout>;
+  ) => Effect.Effect<void, SshError | GitCommandFailed | NotARepository | AuthError | TimeoutError>;
 
   /**
    * Checkout a specific branch, tag, or SHA.
@@ -149,7 +149,7 @@ export interface GitOpsService {
     host: HostConfig,
     repoPath: string,
     ref: string,
-  ) => Effect.Effect<void, SshError | GitCommandFailed | NotARepository | AuthError | NetworkTimeout>;
+  ) => Effect.Effect<void, SshError | GitCommandFailed | NotARepository | AuthError | TimeoutError>;
 }
 
 /**

@@ -17,7 +17,7 @@ import {
   MergeConflict,
   PushRejected,
   AuthError,
-  NetworkTimeout,
+  TimeoutError,
 } from "./errors.js";
 
 /**
@@ -80,11 +80,11 @@ const isNetworkTimeout = (stderr: string): boolean => {
  * exit codes are re-mapped to specific typed errors:
  * - NotARepository when the path is not a git repo
  * - AuthError when remote auth fails
- * - NetworkTimeout when a remote operation times out
+ * - TimeoutError when a remote operation times out
  * - GitCommandFailed for all other failures
  *
  * SSH-level timeouts (ConnectionTimeout, CommandTimeout) are also
- * mapped to NetworkTimeout for remote operations.
+ * mapped to TimeoutError for remote operations.
  */
 const execGit = (
   ssh: SshExecutor["Type"],
@@ -93,13 +93,13 @@ const execGit = (
   gitCommand: string,
 ): Effect.Effect<
   { readonly stdout: string; readonly stderr: string; readonly exitCode: number },
-  SshError | GitCommandFailed | NotARepository | AuthError | NetworkTimeout
+  SshError | GitCommandFailed | NotARepository | AuthError | TimeoutError
 > => {
   const fullCommand = `cd ${repoPath} && ${gitCommand}`;
   return ssh.executeCommand(host, fullCommand).pipe(
     Effect.catchTag("CommandFailed", (err: CommandFailed): Effect.Effect<
       never,
-      GitCommandFailed | NotARepository | AuthError | NetworkTimeout
+      GitCommandFailed | NotARepository | AuthError | TimeoutError
     > => {
       // Detect not-a-repository from stderr
       if (isNotARepository(err.stderr)) {
@@ -122,7 +122,7 @@ const execGit = (
       // Detect network timeouts from stderr
       if (isNetworkTimeout(err.stderr)) {
         return Effect.fail(
-          new NetworkTimeout({
+          new TimeoutError({
             host: err.host,
             operation: gitCommand,
             stderr: err.stderr,
@@ -138,10 +138,10 @@ const execGit = (
         }),
       );
     }),
-    // Map SSH-level connection/command timeouts to NetworkTimeout
+    // Map SSH-level connection/command timeouts to TimeoutError
     Effect.catchTag("ConnectionTimeout", (err) =>
       Effect.fail(
-        new NetworkTimeout({
+        new TimeoutError({
           host: err.host,
           operation: gitCommand,
           stderr: `SSH connection timed out after ${err.timeoutMs}ms`,
@@ -150,7 +150,7 @@ const execGit = (
     ),
     Effect.catchTag("CommandTimeout", (err) =>
       Effect.fail(
-        new NetworkTimeout({
+        new TimeoutError({
           host: err.host,
           operation: gitCommand,
           stderr: `Command timed out after ${err.timeoutMs}ms`,
@@ -194,10 +194,19 @@ export const GitOpsLive: Layer.Layer<GitOps, never, SshExecutor> = Layer.effect(
               repoPath,
               "git symbolic-ref --short HEAD",
             ).pipe(
-              Effect.catchTag("GitCommandFailed", () =>
-                // Detached HEAD: symbolic-ref fails, return sentinel value
-                Effect.succeed({ stdout: "HEAD\n", stderr: "", exitCode: 0 }),
-              ),
+              Effect.catchTag("GitCommandFailed", (err) => {
+                // Only catch the specific detached-HEAD case where
+                // `git symbolic-ref` fails because HEAD is not a symbolic ref.
+                // Propagate all other GitCommandFailed errors.
+                const lower = err.stderr.toLowerCase();
+                if (
+                  lower.includes("not a symbolic ref") ||
+                  lower.includes("ref head is not a symbolic ref")
+                ) {
+                  return Effect.succeed({ stdout: "HEAD\n", stderr: "", exitCode: 0 });
+                }
+                return Effect.fail(err);
+              }),
             );
             const branch = result.stdout.trim();
             yield* Effect.annotateCurrentSpan("git.branch", branch);

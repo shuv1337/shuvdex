@@ -8,7 +8,7 @@ import {
   NotARepository,
   MergeConflict,
   AuthError,
-  NetworkTimeout,
+  TimeoutError,
 } from "../src/index.js";
 import {
   SshExecutorTest,
@@ -457,8 +457,8 @@ describe("AuthError", () => {
     );
   });
 
-  layer(TestLayer)("AuthError is distinct from NetworkTimeout", (it) => {
-    it.effect("auth failure does NOT produce NetworkTimeout", () =>
+  layer(TestLayer)("AuthError is distinct from TimeoutError", (it) => {
+    it.effect("auth failure does NOT produce TimeoutError", () =>
       Effect.gen(function* () {
         const responsesRef = yield* MockSshResponses;
         yield* Ref.set(responsesRef, [
@@ -481,8 +481,8 @@ describe("AuthError", () => {
 
         expect(result._tag).toBe("Left");
         if (result._tag === "Left") {
-          // Specifically NOT a NetworkTimeout
-          expect(result.left).not.toBeInstanceOf(NetworkTimeout);
+          // Specifically NOT a TimeoutError
+          expect(result.left).not.toBeInstanceOf(TimeoutError);
           expect(result.left).toBeInstanceOf(AuthError);
         }
       }),
@@ -491,16 +491,16 @@ describe("AuthError", () => {
 });
 
 // ---------------------------------------------------------------------------
-// NetworkTimeout error detection
+// TimeoutError error detection
 // ---------------------------------------------------------------------------
-describe("NetworkTimeout error", () => {
+describe("TimeoutError", () => {
   it("has correct _tag and fields", () => {
-    const err = new NetworkTimeout({
+    const err = new TimeoutError({
       host: "testhost",
       operation: "git pull origin",
       stderr: "fatal: unable to access: Connection timed out",
     });
-    expect(err._tag).toBe("NetworkTimeout");
+    expect(err._tag).toBe("TimeoutError");
     expect(err.host).toBe("testhost");
     expect(err.operation).toBe("git pull origin");
     expect(err.message).toContain("testhost");
@@ -508,7 +508,7 @@ describe("NetworkTimeout error", () => {
   });
 
   layer(TestLayer)("pull with connection timeout in stderr", (it) => {
-    it.effect("produces NetworkTimeout error", () =>
+    it.effect("produces TimeoutError", () =>
       Effect.gen(function* () {
         const responsesRef = yield* MockSshResponses;
         yield* Ref.set(responsesRef, [
@@ -531,9 +531,9 @@ describe("NetworkTimeout error", () => {
 
         expect(result._tag).toBe("Left");
         if (result._tag === "Left") {
-          expect(result.left).toBeInstanceOf(NetworkTimeout);
-          const err = result.left as NetworkTimeout;
-          expect(err._tag).toBe("NetworkTimeout");
+          expect(result.left).toBeInstanceOf(TimeoutError);
+          const err = result.left as TimeoutError;
+          expect(err._tag).toBe("TimeoutError");
           expect(err.host).toBe("testhost");
           expect(err.operation).toContain("git pull");
         }
@@ -542,7 +542,7 @@ describe("NetworkTimeout error", () => {
   });
 
   layer(TestLayer)("push with network unreachable", (it) => {
-    it.effect("produces NetworkTimeout error", () =>
+    it.effect("produces TimeoutError", () =>
       Effect.gen(function* () {
         const responsesRef = yield* MockSshResponses;
         yield* Ref.set(responsesRef, [
@@ -565,14 +565,14 @@ describe("NetworkTimeout error", () => {
 
         expect(result._tag).toBe("Left");
         if (result._tag === "Left") {
-          expect(result.left).toBeInstanceOf(NetworkTimeout);
+          expect(result.left).toBeInstanceOf(TimeoutError);
         }
       }),
     );
   });
 
   layer(TestLayer)("pull with DNS resolution failure", (it) => {
-    it.effect("produces NetworkTimeout error", () =>
+    it.effect("produces TimeoutError", () =>
       Effect.gen(function* () {
         const responsesRef = yield* MockSshResponses;
         yield* Ref.set(responsesRef, [
@@ -595,14 +595,14 @@ describe("NetworkTimeout error", () => {
 
         expect(result._tag).toBe("Left");
         if (result._tag === "Left") {
-          expect(result.left).toBeInstanceOf(NetworkTimeout);
+          expect(result.left).toBeInstanceOf(TimeoutError);
         }
       }),
     );
   });
 
-  layer(TestLayer)("SSH-level ConnectionTimeout maps to NetworkTimeout", (it) => {
-    it.effect("produces NetworkTimeout from SSH ConnectionTimeout", () =>
+  layer(TestLayer)("SSH-level ConnectionTimeout maps to TimeoutError", (it) => {
+    it.effect("produces TimeoutError from SSH ConnectionTimeout", () =>
       Effect.gen(function* () {
         const responsesRef = yield* MockSshResponses;
         yield* Ref.set(responsesRef, [
@@ -622,9 +622,9 @@ describe("NetworkTimeout error", () => {
 
         expect(result._tag).toBe("Left");
         if (result._tag === "Left") {
-          expect(result.left).toBeInstanceOf(NetworkTimeout);
-          const err = result.left as NetworkTimeout;
-          expect(err._tag).toBe("NetworkTimeout");
+          expect(result.left).toBeInstanceOf(TimeoutError);
+          const err = result.left as TimeoutError;
+          expect(err._tag).toBe("TimeoutError");
           expect(err.host).toBe("testhost");
           expect(err.stderr).toContain("timed out");
           expect(err.stderr).toContain("10000");
@@ -633,8 +633,8 @@ describe("NetworkTimeout error", () => {
     );
   });
 
-  layer(TestLayer)("SSH-level CommandTimeout maps to NetworkTimeout", (it) => {
-    it.effect("produces NetworkTimeout from SSH CommandTimeout", () =>
+  layer(TestLayer)("SSH-level CommandTimeout maps to TimeoutError", (it) => {
+    it.effect("produces TimeoutError from SSH CommandTimeout", () =>
       Effect.gen(function* () {
         const responsesRef = yield* MockSshResponses;
         yield* Ref.set(responsesRef, [
@@ -655,8 +655,8 @@ describe("NetworkTimeout error", () => {
 
         expect(result._tag).toBe("Left");
         if (result._tag === "Left") {
-          expect(result.left).toBeInstanceOf(NetworkTimeout);
-          const err = result.left as NetworkTimeout;
+          expect(result.left).toBeInstanceOf(TimeoutError);
+          const err = result.left as TimeoutError;
           expect(err.host).toBe("testhost");
           expect(err.stderr).toContain("timed out");
           expect(err.stderr).toContain("30000");
@@ -666,7 +666,7 @@ describe("NetworkTimeout error", () => {
   });
 
   layer(TestLayer)("timeout does not corrupt repository", (it) => {
-    it.effect("NetworkTimeout does not include repo-modifying side effects", () =>
+    it.effect("TimeoutError does not include repo-modifying side effects", () =>
       Effect.gen(function* () {
         // Verify that when a timeout occurs, no partial write happened.
         // We simulate a timeout and check that no SSH calls beyond the
@@ -708,7 +708,7 @@ describe("Error type discrimination", () => {
       new NotARepository({ host: "h", path: "p" })._tag,
       new MergeConflict({ host: "h", files: [], stderr: "" })._tag,
       new AuthError({ host: "h", stderr: "" })._tag,
-      new NetworkTimeout({ host: "h", operation: "op", stderr: "" })._tag,
+      new TimeoutError({ host: "h", operation: "op", stderr: "" })._tag,
     ]);
     expect(tags.size).toBe(5);
   });
@@ -719,7 +719,7 @@ describe("Error type discrimination", () => {
       new NotARepository({ host: "h", path: "p" }),
       new MergeConflict({ host: "h", files: ["a.txt"], stderr: "" }),
       new AuthError({ host: "h", stderr: "" }),
-      new NetworkTimeout({ host: "h", operation: "op", stderr: "" }),
+      new TimeoutError({ host: "h", operation: "op", stderr: "" }),
     ];
 
     for (const err of errors) {
@@ -736,12 +736,186 @@ describe("Error type discrimination", () => {
         case "AuthError":
           expect(err.host).toBe("h");
           break;
-        case "NetworkTimeout":
+        case "TimeoutError":
           expect(err.operation).toBe("op");
           break;
       }
     }
   });
+});
+
+// ---------------------------------------------------------------------------
+// Regression: getBranch propagates non-detached-HEAD errors
+// ---------------------------------------------------------------------------
+describe("getBranch error propagation", () => {
+  layer(TestLayer)("getBranch propagates GitCommandFailed for non-detached-HEAD errors", (it) => {
+    it.effect("propagates GitCommandFailed when stderr does not indicate detached HEAD", () =>
+      Effect.gen(function* () {
+        const responsesRef = yield* MockSshResponses;
+        // Simulate a generic git failure that is NOT detached HEAD
+        yield* Ref.set(responsesRef, [
+          {
+            _tag: "error" as const,
+            value: new CommandFailed({
+              host: "testhost",
+              command: "cd ~/repos/test-repo && git symbolic-ref --short HEAD",
+              exitCode: 1,
+              stdout: "",
+              stderr: "error: some unexpected git error\n",
+            }),
+          },
+        ]);
+
+        const gitOps = yield* GitOps;
+        const result = yield* gitOps
+          .getBranch(testHost, testRepoPath)
+          .pipe(Effect.either);
+
+        expect(result._tag).toBe("Left");
+        if (result._tag === "Left") {
+          expect(result.left).toBeInstanceOf(GitCommandFailed);
+          const err = result.left as GitCommandFailed;
+          expect(err._tag).toBe("GitCommandFailed");
+          expect(err.stderr).toContain("some unexpected git error");
+        }
+      }),
+    );
+
+    it.effect("propagates GitCommandFailed for ambiguous argument errors", () =>
+      Effect.gen(function* () {
+        const responsesRef = yield* MockSshResponses;
+        yield* Ref.set(responsesRef, [
+          {
+            _tag: "error" as const,
+            value: new CommandFailed({
+              host: "testhost",
+              command: "cd ~/repos/test-repo && git symbolic-ref --short HEAD",
+              exitCode: 128,
+              stdout: "",
+              stderr: "fatal: ambiguous argument 'HEAD': unknown revision\n",
+            }),
+          },
+        ]);
+
+        const gitOps = yield* GitOps;
+        const result = yield* gitOps
+          .getBranch(testHost, testRepoPath)
+          .pipe(Effect.either);
+
+        expect(result._tag).toBe("Left");
+        if (result._tag === "Left") {
+          expect(result.left).toBeInstanceOf(GitCommandFailed);
+        }
+      }),
+    );
+
+    it.effect("still returns 'HEAD' for actual detached HEAD (ref is not a symbolic ref)", () =>
+      Effect.gen(function* () {
+        const responsesRef = yield* MockSshResponses;
+        yield* Ref.set(responsesRef, [
+          {
+            _tag: "error" as const,
+            value: new CommandFailed({
+              host: "testhost",
+              command: "cd ~/repos/test-repo && git symbolic-ref --short HEAD",
+              exitCode: 128,
+              stdout: "",
+              stderr: "fatal: ref HEAD is not a symbolic ref\n",
+            }),
+          },
+        ]);
+
+        const gitOps = yield* GitOps;
+        const branch = yield* gitOps.getBranch(testHost, testRepoPath);
+
+        expect(branch).toBe("HEAD");
+      }),
+    );
+
+    it.effect("propagates AuthError through getBranch", () =>
+      Effect.gen(function* () {
+        const responsesRef = yield* MockSshResponses;
+        yield* Ref.set(responsesRef, [
+          {
+            _tag: "error" as const,
+            value: new CommandFailed({
+              host: "testhost",
+              command: "cd ~/repos/test-repo && git symbolic-ref --short HEAD",
+              exitCode: 128,
+              stdout: "",
+              stderr: "Permission denied (publickey).\n",
+            }),
+          },
+        ]);
+
+        const gitOps = yield* GitOps;
+        const result = yield* gitOps
+          .getBranch(testHost, testRepoPath)
+          .pipe(Effect.either);
+
+        expect(result._tag).toBe("Left");
+        if (result._tag === "Left") {
+          expect(result.left).toBeInstanceOf(AuthError);
+        }
+      }),
+    );
+
+    it.effect("propagates TimeoutError through getBranch", () =>
+      Effect.gen(function* () {
+        const responsesRef = yield* MockSshResponses;
+        yield* Ref.set(responsesRef, [
+          {
+            _tag: "error" as const,
+            value: new ConnectionTimeout({
+              host: "testhost",
+              timeoutMs: 5000,
+            }),
+          },
+        ]);
+
+        const gitOps = yield* GitOps;
+        const result = yield* gitOps
+          .getBranch(testHost, testRepoPath)
+          .pipe(Effect.either);
+
+        expect(result._tag).toBe("Left");
+        if (result._tag === "Left") {
+          expect(result.left).toBeInstanceOf(TimeoutError);
+          const err = result.left as TimeoutError;
+          expect(err._tag).toBe("TimeoutError");
+        }
+      }),
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Regression: TimeoutError export and backward compatibility
+// ---------------------------------------------------------------------------
+describe("TimeoutError contract compliance", () => {
+  it("TimeoutError is exported and has _tag 'TimeoutError'", () => {
+    const err = new TimeoutError({
+      host: "testhost",
+      operation: "git pull",
+      stderr: "timed out",
+    });
+    expect(err._tag).toBe("TimeoutError");
+    expect(err).toBeInstanceOf(TimeoutError);
+  });
+
+  it("TimeoutError can be used with Effect.catchTag", () =>
+    Effect.gen(function* () {
+      const effect = Effect.fail(
+        new TimeoutError({ host: "h", operation: "op", stderr: "timeout" }),
+      ).pipe(
+        Effect.catchTag("TimeoutError", (err) =>
+          Effect.succeed(`caught: ${err.operation}`),
+        ),
+      );
+      const result = yield* effect;
+      expect(result).toBe("caught: op");
+    }).pipe(Effect.runPromise),
+  );
 });
 
 // ---------------------------------------------------------------------------
@@ -813,7 +987,7 @@ describe("OTEL spans for error handling", () => {
       }),
     );
 
-    it.effect("records error status for NetworkTimeout", () =>
+    it.effect("records error status for TimeoutError", () =>
       Effect.gen(function* () {
         const responsesRef = yield* MockSshResponses;
         yield* Ref.set(responsesRef, [

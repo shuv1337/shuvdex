@@ -100,7 +100,7 @@ export class AuthError extends Data.TaggedError("AuthError")<{
  * times out due to network issues. The local repository state
  * is not corrupted by a timeout.
  */
-export class NetworkTimeout extends Data.TaggedError("NetworkTimeout")<{
+export class TimeoutError extends Data.TaggedError("TimeoutError")<{
   readonly host: string;
   readonly operation: string;
   readonly stderr: string;
@@ -111,6 +111,13 @@ export class NetworkTimeout extends Data.TaggedError("NetworkTimeout")<{
 }
 
 /**
+ * @deprecated Use `TimeoutError` instead. Alias kept for backward compatibility.
+ */
+export const NetworkTimeout = TimeoutError;
+/** @deprecated Use `TimeoutError` instead. */
+export type NetworkTimeout = TimeoutError;
+
+/**
  * Union of all git operation error types.
  */
 export type GitOpsError =
@@ -119,4 +126,4 @@ export type GitOpsError =
   | MergeConflict
   | PushRejected
   | AuthError
-  | NetworkTimeout;
+  | TimeoutError;
