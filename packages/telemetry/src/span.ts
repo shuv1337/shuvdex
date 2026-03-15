@@ -34,11 +34,21 @@ export const withSpan =
   <A, E, R>(effect: Effect.Effect<A, E, R>): Effect.Effect<A, E, R> => {
     const attributes: Record<string, unknown> = options?.attributes ?? {};
 
-    return effect.pipe(
+    return Effect.gen(function* () {
+      const startTime = Date.now();
+      const result = yield* Effect.either(effect);
+      const durationMs = Math.round(Date.now() - startTime);
+      yield* Effect.annotateCurrentSpan("durationMs", durationMs);
+
+      if (result._tag === "Left") {
+        return yield* Effect.fail(result.left);
+      }
+      return result.right;
+    }).pipe(
       Effect.withSpan(name, {
         attributes,
       }),
-    );
+    ) as Effect.Effect<A, E, R>;
   };
 
 /**

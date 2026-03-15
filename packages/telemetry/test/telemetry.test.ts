@@ -107,6 +107,51 @@ describe("Telemetry", () => {
     );
 
     it.effect(
+      "records durationMs attribute as a non-negative integer",
+      () =>
+        Effect.gen(function* () {
+          yield* withSpan("duration.test", {
+            attributes: { host: "shuvtest" },
+          })(Effect.succeed("ok"));
+
+          const spans = yield* CollectedSpans;
+          const collected = yield* Ref.get(spans);
+          const span = collected.find((s) => s.name === "duration.test");
+          expect(span).toBeDefined();
+          // durationMs should be present and a non-negative integer
+          const durationMs = span!.attributes["durationMs"];
+          expect(durationMs).toBeDefined();
+          expect(typeof durationMs).toBe("number");
+          expect(Number.isInteger(durationMs)).toBe(true);
+          expect(durationMs as number).toBeGreaterThanOrEqual(0);
+          // Should be less than 5 seconds (reasonable upper bound)
+          expect(durationMs as number).toBeLessThan(5000);
+        }),
+    );
+
+    it.effect(
+      "records durationMs attribute even when effect fails",
+      () =>
+        Effect.gen(function* () {
+          yield* withSpan("duration.fail.test", {
+            attributes: { host: "shuvtest" },
+          })(Effect.fail(new Error("test failure"))).pipe(Effect.either);
+
+          const spans = yield* CollectedSpans;
+          const collected = yield* Ref.get(spans);
+          const span = collected.find(
+            (s) => s.name === "duration.fail.test",
+          );
+          expect(span).toBeDefined();
+          const durationMs = span!.attributes["durationMs"];
+          expect(durationMs).toBeDefined();
+          expect(typeof durationMs).toBe("number");
+          expect(Number.isInteger(durationMs)).toBe(true);
+          expect(durationMs as number).toBeGreaterThanOrEqual(0);
+        }),
+    );
+
+    it.effect(
       "maintains parent-child relationships across nested spans",
       () =>
         Effect.gen(function* () {
