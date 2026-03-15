@@ -1,0 +1,39 @@
+{
+  "featureId": "git-ops-write-operations",
+  "reviewedAt": "2026-03-15T19:40:00Z",
+  "commitId": "19cc262",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "fail",
+  "codeReview": {
+    "summary": "The feature adds the requested write operations, typed conflict/rejection errors, and solid happy-path/tracing coverage, but it is not safe to ship because createTag() and checkoutRef() build remote shell commands by interpolating unescaped user input.",
+    "issues": [
+      {
+        "file": "packages/git-ops/src/live.ts",
+        "line": 302,
+        "severity": "blocking",
+        "description": "createTag() assembles `git tag ${name} ${ref}` by raw string interpolation before handing it to the SSH shell. Tag names and refs come from API callers, so values containing spaces, shell metacharacters, or leading dashes can either fail unexpectedly or execute unintended commands on the remote host. The added tests only cover safe literals (`v1.0.0`, `abc1234`) and do not catch this."
+      },
+      {
+        "file": "packages/git-ops/src/live.ts",
+        "line": 316,
+        "severity": "blocking",
+        "description": "checkoutRef() passes `git checkout ${ref}` straight through to the remote shell with no quoting/escaping. That makes the new API unsafe for arbitrary branch/tag/SHA input and can also break valid refs that need shell escaping. Coverage in packages/git-ops/test/git-ops.test.ts only exercises simple refs like `main`, `feature/test`, and a hex SHA, so this regression is currently untested."
+      }
+    ]
+  },
+  "sharedStateObservations": [
+    {
+      "area": "skills",
+      "observation": "The backend-worker skill says to write tests before implementation, but the transcript shows source edits in packages/git-ops/src/errors.ts, src/types.ts, src/index.ts, and src/live.ts before any test-file edits, while the handoff still reports `skillFeedback.followedProcedure: true`. Shared state around skill adherence is therefore unreliable for this run.",
+      "evidence": "backend-worker SKILL.md section '2. Write Tests First (TDD)' vs transcript skeleton for workerSessionId f9670156-41f9-4124-948a-fda09580b1f9, which records edits to source files before later edits to packages/git-ops/test/git-ops.test.ts and packages/git-ops/test/tracing.test.ts; handoff file /home/shuv/.factory/missions/53d67669-5ba8-4745-9fd5-71906b40773d/handoffs/2026-03-15T18-54-50-653Z__git-ops-write-operations__f9670156-41f9-4124-948a-fda09580b1f9.json lines 153-156 mark followedProcedure=true with no deviations."
+    },
+    {
+      "area": "conventions",
+      "observation": "Mission guidance is inconsistent about whether validators may perform mutating remote git checks for this feature. The feature definition asks for a manual pull on shuvtest, but shared testing guidance says remote SSH validation against shuvtest must stay read-only.",
+      "evidence": "/home/shuv/.factory/missions/53d67669-5ba8-4745-9fd5-71906b40773d/features.json lines 915-917 require 'Manual: test pull on shuvtest, verify HEAD advances', while /home/shuv/repos/codex-fleet/.factory/library/user-testing.md lines 59-64 say 'Remote SSH validation must stay read-only against shuvtest; do not create or modify files on remote hosts.'"
+    }
+  ],
+  "addressesFailureFrom": null,
+  "summary": "Review failed: the new write APIs for tagging and checkout interpolate caller-supplied values directly into remote shell commands, which is a blocking correctness/security issue despite otherwise good unit and tracing coverage."
+}

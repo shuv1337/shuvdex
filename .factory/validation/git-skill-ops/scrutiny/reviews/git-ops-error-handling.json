@@ -1,0 +1,39 @@
+{
+  "featureId": "git-ops-error-handling",
+  "reviewedAt": "2026-03-15T19:37:08Z",
+  "commitId": "f3b9c79",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "fail",
+  "codeReview": {
+    "summary": "The feature adds distinct handling for non-repository paths, auth failures, and timeout-like failures, and it extends tests substantially. However, it does not fully match the feature contract because the public API exposes `NetworkTimeout` instead of the promised `TimeoutError`, and auth failures still preserve raw stderr without any redaction path.",
+    "issues": [
+      {
+        "file": "packages/git-ops/src/errors.ts",
+        "line": 84,
+        "severity": "blocking",
+        "description": "The feature contract says timeouts must surface as `TimeoutError`, but the implementation introduces and exports `NetworkTimeout` instead. `packages/git-ops/src/index.ts:18-25` and `packages/git-ops/src/types.ts:49-152` propagate that name through the public API, so callers cannot catch the promised error type."
+      },
+      {
+        "file": "packages/git-ops/src/live.ts",
+        "line": 103,
+        "severity": "blocking",
+        "description": "`AuthError` is built with the raw `err.stderr`, and `packages/git-ops/src/errors.ts:70-76` exposes that stderr on the typed error. There is no sanitization/redaction before storing or propagating auth-failure output, so URLs or credentials echoed by git/remote helpers can leak, which conflicts with the auth-error requirement to avoid credential exposure."
+      }
+    ]
+  },
+  "sharedStateObservations": [
+    {
+      "area": "skills",
+      "observation": "The backend-worker skill requires TDD (write tests first, then run them red before implementation), but this worker edited `packages/git-ops/src/errors.ts`, `src/index.ts`, `src/live.ts`, and `src/types.ts` before creating `packages/git-ops/test/error-handling.test.ts`. The handoff still reports `skillFeedback.followedProcedure: true`, so the shared skill-feedback record is inaccurate.",
+      "evidence": "Transcript skeleton shows source-file Edit steps before the later Create step for `packages/git-ops/test/error-handling.test.ts`; the handoff JSON for session `3ea84808-4fec-4362-9e32-8766522c0866` marks `followedProcedure` true despite that sequence."
+    },
+    {
+      "area": "skills",
+      "observation": "The backend-worker skill's manual verification step for SSH-related features was skipped, even though the feature metadata also asked for a manual non-repository-path check.",
+      "evidence": "`backend-worker/SKILL.md` step 6 calls for manual SSH verification. The handoff lists only automated commands in `verification.commandsRun`, leaves `interactiveChecks` empty, and does not record the feature's manual non-git-path verification step from `features.json`."
+    }
+  ],
+  "addressesFailureFrom": null,
+  "summary": "Reviewed commit `f3b9c79` and the worker transcript/handoff for `git-ops-error-handling`. The implementation meaningfully improves typed error handling, but it misses the promised timeout error name and leaves auth stderr unsanitized, so the feature should not pass as implemented."
+}

@@ -1,0 +1,34 @@
+{
+  "featureId": "skill-ops-discovery",
+  "reviewedAt": "2026-03-15T19:37:18Z",
+  "commitId": "c7e0418",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "fail",
+  "codeReview": {
+    "summary": "The feature adds the requested discovery surface and good baseline tests, but it masks real SSH/command failures as an \"inactive\" skill state. That can silently misreport host state and makes discovery unreliable under transport or permission failures.",
+    "issues": [
+      {
+        "file": "packages/skill-ops/src/live.ts",
+        "line": 181,
+        "severity": "blocking",
+        "description": "`checkSymlink()` catches every SSH failure and returns `inactive` instead of propagating an error. Because both `getSkillStatus()` and `listSkills()` depend on this helper, a connection reset, auth failure, or active-dir permission problem is reported as a legitimate inactive skill rather than an unknown/failed status. This contradicts the public error types (`getSkillStatus` advertises `SshError | SkillCommandFailed`) and can produce false fleet state. The behavior is also locked in by `packages/skill-ops/test/skill-ops.test.ts:418-439`, which explicitly expects SSH failures to become `inactive`."
+      },
+      {
+        "file": "packages/skill-ops/src/live.ts",
+        "line": 73,
+        "severity": "non_blocking",
+        "description": "The discovery commands interpolate `repoPath`, `activeDir`, and `skillName` directly into remote shell strings (`test -d`, `find`, and the symlink checks) without any quoting/escaping. Valid paths with spaces or shell metacharacters will fail or execute unintended shell fragments. The added tests only assert unquoted happy-path commands (`packages/skill-ops/test/skill-ops.test.ts:325-360` and `:442-455`), so this input class is currently uncovered."
+      }
+    ]
+  },
+  "sharedStateObservations": [
+    {
+      "area": "skills",
+      "observation": "The `backend-worker` skill says to write the package test file before implementation and run the package tests in a failing red state first, but this worker created the discovery source files before creating `packages/skill-ops/test/skill-ops.test.ts`. The handoff still reports `skillFeedback.followedProcedure: true`, so the shared skill/procedure feedback is not accurately reflecting what happened.",
+      "evidence": "`.factory/skills/backend-worker/SKILL.md:28-30,49-51` require test-first TDD. The transcript skeleton for session `36ec382e-7ff7-47f7-b59d-5ba2d554e995` shows \"Now I have a complete understanding. Let me create all the source files\" followed by creates of `packages/skill-ops/src/errors.ts`, `src/types.ts`, and `src/live.ts`, and only later \"Now let me write the comprehensive test file\" for `packages/skill-ops/test/skill-ops.test.ts`. The handoff JSON records `skillFeedback.followedProcedure: true`."
+    }
+  ],
+  "addressesFailureFrom": null,
+  "summary": "Reviewed commit `c7e0418` and the worker transcript for `skill-ops-discovery`. The feature is close, but discovery currently hides SSH/command failures by reporting skills as inactive, so the review fails on correctness grounds. I also noted that the recorded skill feedback says the worker followed the backend-worker TDD procedure even though the transcript shows implementation before tests."
+}
