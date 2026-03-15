@@ -316,9 +316,9 @@ describe("fleet tag", () => {
       const output = formatTagTable(result);
       expect(output).toContain("shuvtest");
       expect(output).toContain("shuvbot");
-      expect(output).toContain("✓");
+      expect(output).toContain("[OK]");
       expect(output).toContain("tag 'v1.0.0' created");
-      expect(output).toContain("2/2 hosts tagged successfully");
+      expect(output).toContain("2 succeeded, 0 failed");
     });
 
     it("displays error hosts with error message", () => {
@@ -343,11 +343,11 @@ describe("fleet tag", () => {
 
       const output = formatTagTable(result);
       expect(output).toContain("shuvtest");
-      expect(output).toContain("✓");
+      expect(output).toContain("[OK]");
       expect(output).toContain("shuvbot");
-      expect(output).toContain("✗");
+      expect(output).toContain("[FAIL]");
       expect(output).toContain("tag 'v1.0.0' already exists");
-      expect(output).toContain("1/2 hosts tagged successfully");
+      expect(output).toContain("1 succeeded, 1 failed");
     });
 
     it("shows header row", () => {

@@ -135,19 +135,20 @@ export const formatDeactivateTable = (
     if (host.status === "ok") {
       const detail = host.alreadyInState ? "not active" : "deactivated";
       lines.push(
-        `${host.name.padEnd(15)}${"✓ ok".padEnd(16)}${detail}`,
+        `${host.name.padEnd(15)}${"[OK]  ok".padEnd(20)}${detail}`,
       );
     } else {
       lines.push(
-        `${host.name.padEnd(15)}${"✗ failed".padEnd(16)}${host.error}`,
+        `${host.name.padEnd(15)}${"[FAIL] failed".padEnd(20)}${host.error}`,
       );
     }
   }
 
   lines.push("─".repeat(60));
   const okCount = result.hosts.filter((h) => h.status === "ok").length;
+  const failCount = result.hosts.length - okCount;
   lines.push(
-    `${okCount}/${result.hosts.length} hosts deactivated successfully`,
+    `${okCount} succeeded, ${failCount} failed`,
   );
 
   return lines.join("\n");

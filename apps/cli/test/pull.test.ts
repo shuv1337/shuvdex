@@ -271,8 +271,8 @@ describe("fleet pull", () => {
       const output = formatPullTable(result);
       expect(output).toContain("shuvtest");
       expect(output).toContain("shuvbot");
-      expect(output).toContain("✓");
-      expect(output).toContain("2/2 hosts pulled successfully");
+      expect(output).toContain("[OK]");
+      expect(output).toContain("2 succeeded, 0 failed");
     });
 
     it("displays error hosts with error message", () => {
@@ -297,11 +297,11 @@ describe("fleet pull", () => {
 
       const output = formatPullTable(result);
       expect(output).toContain("shuvtest");
-      expect(output).toContain("✓");
+      expect(output).toContain("[OK]");
       expect(output).toContain("shuvbot");
-      expect(output).toContain("✗");
+      expect(output).toContain("[FAIL]");
       expect(output).toContain("Connection refused");
-      expect(output).toContain("1/2 hosts pulled successfully");
+      expect(output).toContain("1 succeeded, 1 failed");
     });
 
     it("shows header row", () => {

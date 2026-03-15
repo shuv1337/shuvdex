@@ -429,7 +429,12 @@ const runStatusCommand = (
 
     yield* Effect.sync(() => process.stdout.write(output + "\n"));
 
-    return result.allOnline ? 0 : 1;
+    // Exit code: 0 = all online, 1 = all failed, 2 = partial
+    if (result.allOnline) {
+      return 0;
+    }
+    const onlineCount = result.hosts.filter((h) => h.status === "online").length;
+    return onlineCount > 0 ? 2 : 1;
   }).pipe(
     Effect.catchAll(() => Effect.succeed(1)),
   );

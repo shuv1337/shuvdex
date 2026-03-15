@@ -120,21 +120,22 @@ export const formatPullTable = (result: PullCommandResult): string => {
 
   for (const host of result.hosts) {
     if (host.status === "ok") {
-      const status = host.updated ? "✓ updated" : "✓ up to date";
+      const detail = host.updated ? "updated" : "up to date";
       lines.push(
-        `${host.name.padEnd(15)}${status.padEnd(16)}${host.summary}`,
+        `${host.name.padEnd(15)}${`[OK]  ${detail}`.padEnd(20)}${host.summary}`,
       );
     } else {
       lines.push(
-        `${host.name.padEnd(15)}${"✗ failed".padEnd(16)}${host.error}`,
+        `${host.name.padEnd(15)}${"[FAIL] failed".padEnd(20)}${host.error}`,
       );
     }
   }
 
   lines.push("─".repeat(60));
   const okCount = result.hosts.filter((h) => h.status === "ok").length;
+  const failCount = result.hosts.length - okCount;
   lines.push(
-    `${okCount}/${result.hosts.length} hosts pulled successfully`,
+    `${okCount} succeeded, ${failCount} failed`,
   );
 
   return lines.join("\n");

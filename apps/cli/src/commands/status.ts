@@ -103,8 +103,8 @@ export const formatTable = (result: StatusResult): string => {
   for (const host of result.hosts) {
     const status =
       host.status === "online"
-        ? "✓ online"
-        : `✗ error: ${host.error ?? "unknown"}`;
+        ? "[OK]  online"
+        : `[FAIL] error: ${host.error ?? "unknown"}`;
     lines.push(`${host.name.padEnd(15)}${status}`);
   }
 
@@ -112,8 +112,9 @@ export const formatTable = (result: StatusResult): string => {
   const onlineCount = result.hosts.filter(
     (h) => h.status === "online",
   ).length;
+  const failedCount = result.hosts.length - onlineCount;
   lines.push(
-    `${onlineCount}/${result.hosts.length} hosts online`,
+    `${onlineCount} succeeded, ${failedCount} failed`,
   );
 
   return lines.join("\n");

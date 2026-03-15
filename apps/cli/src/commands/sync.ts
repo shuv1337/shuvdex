@@ -164,19 +164,20 @@ export const formatSyncTable = (result: SyncCommandResult): string => {
   for (const host of result.hosts) {
     if (host.status === "ok") {
       lines.push(
-        `${host.name.padEnd(15)}${"✓ synced".padEnd(16)}${host.filesTransferred} file(s)`,
+        `${host.name.padEnd(15)}${"[OK]  synced".padEnd(20)}${host.filesTransferred} file(s)`,
       );
     } else {
       lines.push(
-        `${host.name.padEnd(15)}${"✗ failed".padEnd(16)}${host.error}`,
+        `${host.name.padEnd(15)}${"[FAIL] failed".padEnd(20)}${host.error}`,
       );
     }
   }
 
   lines.push("─".repeat(60));
   const okCount = result.hosts.filter((h) => h.status === "ok").length;
+  const failCount = result.hosts.length - okCount;
   lines.push(
-    `${okCount}/${result.hosts.length} hosts synced successfully`,
+    `${okCount} succeeded, ${failCount} failed`,
   );
 
   return lines.join("\n");

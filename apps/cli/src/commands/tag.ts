@@ -129,19 +129,20 @@ export const formatTagTable = (result: TagCommandResult): string => {
   for (const host of result.hosts) {
     if (host.status === "ok") {
       lines.push(
-        `${host.name.padEnd(15)}${"✓ ok".padEnd(16)}tag '${host.tagName}' created`,
+        `${host.name.padEnd(15)}${"[OK]  ok".padEnd(20)}tag '${host.tagName}' created`,
       );
     } else {
       lines.push(
-        `${host.name.padEnd(15)}${"✗ failed".padEnd(16)}${host.error}`,
+        `${host.name.padEnd(15)}${"[FAIL] failed".padEnd(20)}${host.error}`,
       );
     }
   }
 
   lines.push("─".repeat(60));
   const okCount = result.hosts.filter((h) => h.status === "ok").length;
+  const failCount = result.hosts.length - okCount;
   lines.push(
-    `${okCount}/${result.hosts.length} hosts tagged successfully`,
+    `${okCount} succeeded, ${failCount} failed`,
   );
 
   return lines.join("\n");
