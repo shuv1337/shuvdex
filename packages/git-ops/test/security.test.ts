@@ -333,9 +333,12 @@ describe("checkoutRef shell injection prevention", () => {
         const callsAfter = yield* Ref.get(callsRef);
         const lastCall = callsAfter[countBefore];
         const cmd = lastCall.command;
-        // Must use -- separator AND quote the ref
-        expect(cmd).toContain("git checkout --");
-        expect(cmd).toContain("'--force'");
+        // shellQuote wraps the value in single quotes, which prevents the
+        // shell from interpreting '--force' as a flag — it becomes a literal
+        // string argument to git checkout.
+        expect(cmd).toContain("git checkout '--force'");
+        // Must NOT use pathspec separator '--' which breaks branch/tag/SHA checkout
+        expect(cmd).not.toContain("git checkout -- ");
       }),
     );
 
@@ -430,6 +433,32 @@ describe("AuthError credential redaction", () => {
     });
     expect(err.stderr).not.toContain("ghs_abcdef12345");
     expect(err.stderr).toContain("github.com");
+  });
+
+  it("redacts credentials when password contains @ character", () => {
+    const err = new AuthError({
+      host: "testhost",
+      stderr: "fatal: Authentication failed for 'https://admin:p@ssw0rd@git.example.com/repo.git'\n",
+    });
+    // Must NOT contain any part of the password (including the @ inside it)
+    expect(err.stderr).not.toContain("p@ssw0rd");
+    expect(err.stderr).not.toContain("admin:");
+    expect(err.stderr).not.toContain("admin:p");
+    // Host must still be present for debugging
+    expect(err.stderr).toContain("git.example.com");
+    // The redacted placeholder must be present
+    expect(err.stderr).toContain("<redacted>@git.example.com");
+  });
+
+  it("redacts credentials when password contains multiple @ characters", () => {
+    const err = new AuthError({
+      host: "testhost",
+      stderr: "https://user:p@@ss@host.com/repo.git\n",
+    });
+    expect(err.stderr).not.toContain("user:");
+    expect(err.stderr).not.toContain("p@@ss");
+    expect(err.stderr).toContain("host.com");
+    expect(err.stderr).toContain("<redacted>@host.com");
   });
 
   layer(TestLayer)("AuthError from execGit redacts credentials", (it) => {

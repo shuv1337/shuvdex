@@ -339,9 +339,13 @@ export const GitOpsLive: Layer.Layer<GitOps, never, SshExecutor> = Layer.effect(
           attributes: { host: host.hostname, operation: "checkoutRef", repoPath, "git.ref": ref },
         })(
           Effect.gen(function* () {
-            // Use -- separator to prevent flag injection from leading dashes,
-            // and shellQuote to prevent shell metacharacter injection.
-            yield* execGit(ssh, host, repoPath, `git checkout -- ${shellQuote(ref)}`);
+            // shellQuote wraps the ref in single quotes which prevents both
+            // shell metacharacter injection AND flag injection (leading dashes
+            // inside single quotes are literal, not flags).
+            // NOTE: Do NOT use `--` here — for `git checkout`, `--` is a
+            // pathspec separator that tells git to treat the argument as a
+            // file path rather than a branch/tag/SHA, which breaks checkout.
+            yield* execGit(ssh, host, repoPath, `git checkout ${shellQuote(ref)}`);
             yield* Effect.annotateCurrentSpan("git.ref", ref);
           }),
         ),

@@ -9,15 +9,18 @@ import { Data } from "effect";
 /**
  * Redact credentials from URLs in a string.
  *
- * Replaces `user:password@` patterns in URLs with `<redacted>@`,
- * covering HTTPS credentials and token-based authentication.
+ * Matches the `protocol://credentials@host` pattern and replaces the
+ * credentials portion with `<redacted>`. Uses a greedy match up to the
+ * last `@` before the host so that passwords containing `@` characters
+ * are fully redacted.
  *
  * Examples:
  *   https://user:secret@host/repo → https://<redacted>@host/repo
  *   https://x-access-token:ghs_abc@host/repo → https://<redacted>@host/repo
+ *   https://admin:p@ssw0rd@git.example.com → https://<redacted>@git.example.com
  */
 const redactCredentials = (text: string): string =>
-  text.replace(/(?<=\/\/)[^@/\s]+:[^@/\s]+(?=@)/g, "<redacted>");
+  text.replace(/((?:https?|git):\/\/)[^\s]+?@(?=[^@\s/]*[./])/g, "$1<redacted>@");
 
 /**
  * Error returned when a git command fails on a remote host.

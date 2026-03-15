@@ -709,7 +709,9 @@ describe("GitOps", () => {
         const lastCall = callsAfter[countBefore];
         expect(lastCall.command).toContain("cd ~/repos/test-repo");
         // Ref is shell-quoted for safety
-        expect(lastCall.command).toContain("git checkout -- 'main'");
+        expect(lastCall.command).toContain("git checkout 'main'");
+        // Must NOT contain pathspec separator '--' which breaks branch/tag/SHA checkout
+        expect(lastCall.command).not.toContain("git checkout --");
       }),
     );
 
@@ -750,7 +752,7 @@ describe("GitOps", () => {
         const lastCall = callsAfter[countBefore];
         // SHA is shell-quoted for safety
         expect(lastCall.command).toContain(
-          "git checkout -- 'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2'",
+          "git checkout 'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2'",
         );
       }),
     );
