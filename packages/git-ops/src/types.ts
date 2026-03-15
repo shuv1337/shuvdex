@@ -4,7 +4,14 @@
 import { Context, Effect } from "effect";
 import type { HostConfig } from "@codex-fleet/core";
 import type { SshError } from "@codex-fleet/ssh";
-import type { GitCommandFailed, MergeConflict, PushRejected } from "./errors.js";
+import type {
+  GitCommandFailed,
+  NotARepository,
+  MergeConflict,
+  PushRejected,
+  AuthError,
+  NetworkTimeout,
+} from "./errors.js";
 
 /**
  * Result of a pull operation.
@@ -42,7 +49,7 @@ export interface GitOpsService {
   readonly getHead: (
     host: HostConfig,
     repoPath: string,
-  ) => Effect.Effect<string, SshError | GitCommandFailed>;
+  ) => Effect.Effect<string, SshError | GitCommandFailed | NotARepository | AuthError | NetworkTimeout>;
 
   /**
    * Get the current branch name, or "HEAD" if in detached HEAD state.
@@ -54,7 +61,7 @@ export interface GitOpsService {
   readonly getBranch: (
     host: HostConfig,
     repoPath: string,
-  ) => Effect.Effect<string, SshError | GitCommandFailed>;
+  ) => Effect.Effect<string, SshError | GitCommandFailed | NotARepository | AuthError | NetworkTimeout>;
 
   /**
    * Check whether the repository has uncommitted changes
@@ -67,7 +74,7 @@ export interface GitOpsService {
   readonly isDirty: (
     host: HostConfig,
     repoPath: string,
-  ) => Effect.Effect<boolean, SshError | GitCommandFailed>;
+  ) => Effect.Effect<boolean, SshError | GitCommandFailed | NotARepository | AuthError | NetworkTimeout>;
 
   /**
    * List all tag names in the repository.
@@ -79,36 +86,38 @@ export interface GitOpsService {
   readonly listTags: (
     host: HostConfig,
     repoPath: string,
-  ) => Effect.Effect<Array<string>, SshError | GitCommandFailed>;
+  ) => Effect.Effect<Array<string>, SshError | GitCommandFailed | NotARepository | AuthError | NetworkTimeout>;
 
   /**
    * Fetch and merge changes from the remote origin.
    *
    * Detects merge conflicts and returns them as a typed MergeConflict error
-   * with the list of conflicted files.
+   * with the list of conflicted files. Also detects auth failures and
+   * network timeouts as distinct typed errors.
    *
    * @param host - The host configuration to connect to
    * @param repoPath - Absolute path to the git repository on the remote host
-   * @returns Effect yielding PullResult or failing with MergeConflict
+   * @returns Effect yielding PullResult or failing with typed error
    */
   readonly pull: (
     host: HostConfig,
     repoPath: string,
-  ) => Effect.Effect<PullResult, SshError | GitCommandFailed | MergeConflict>;
+  ) => Effect.Effect<PullResult, SshError | GitCommandFailed | NotARepository | MergeConflict | AuthError | NetworkTimeout>;
 
   /**
    * Push local commits to the remote origin.
    *
    * Detects push rejections and returns them as a typed PushRejected error.
+   * Also detects auth failures and network timeouts as distinct typed errors.
    *
    * @param host - The host configuration to connect to
    * @param repoPath - Absolute path to the git repository on the remote host
-   * @returns Effect yielding PushResult or failing with PushRejected
+   * @returns Effect yielding PushResult or failing with typed error
    */
   readonly push: (
     host: HostConfig,
     repoPath: string,
-  ) => Effect.Effect<PushResult, SshError | GitCommandFailed | PushRejected>;
+  ) => Effect.Effect<PushResult, SshError | GitCommandFailed | NotARepository | PushRejected | AuthError | NetworkTimeout>;
 
   /**
    * Create a lightweight tag at the specified ref (defaults to HEAD).
@@ -117,14 +126,14 @@ export interface GitOpsService {
    * @param repoPath - Absolute path to the git repository on the remote host
    * @param name - The tag name to create
    * @param ref - Optional ref to tag (defaults to HEAD)
-   * @returns Effect yielding void or failing with GitCommandFailed
+   * @returns Effect yielding void or failing with typed error
    */
   readonly createTag: (
     host: HostConfig,
     repoPath: string,
     name: string,
     ref?: string,
-  ) => Effect.Effect<void, SshError | GitCommandFailed>;
+  ) => Effect.Effect<void, SshError | GitCommandFailed | NotARepository | AuthError | NetworkTimeout>;
 
   /**
    * Checkout a specific branch, tag, or SHA.
@@ -134,13 +143,13 @@ export interface GitOpsService {
    * @param host - The host configuration to connect to
    * @param repoPath - Absolute path to the git repository on the remote host
    * @param ref - The branch, tag, or SHA to checkout
-   * @returns Effect yielding void or failing with GitCommandFailed
+   * @returns Effect yielding void or failing with typed error
    */
   readonly checkoutRef: (
     host: HostConfig,
     repoPath: string,
     ref: string,
-  ) => Effect.Effect<void, SshError | GitCommandFailed>;
+  ) => Effect.Effect<void, SshError | GitCommandFailed | NotARepository | AuthError | NetworkTimeout>;
 }
 
 /**

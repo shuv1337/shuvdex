@@ -15,7 +15,14 @@ export type { GitOpsService, PullResult, PushResult } from "./types.js";
 export { GitOps } from "./types.js";
 
 // Errors
-export { GitCommandFailed, MergeConflict, PushRejected } from "./errors.js";
+export {
+  GitCommandFailed,
+  NotARepository,
+  MergeConflict,
+  PushRejected,
+  AuthError,
+  NetworkTimeout,
+} from "./errors.js";
 export type { GitOpsError } from "./errors.js";
 
 // Layers

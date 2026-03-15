@@ -22,6 +22,19 @@ export class GitCommandFailed extends Data.TaggedError("GitCommandFailed")<{
 }
 
 /**
+ * Error returned when a git operation is attempted on a directory
+ * that is not a git repository.
+ */
+export class NotARepository extends Data.TaggedError("NotARepository")<{
+  readonly host: string;
+  readonly path: string;
+}> {
+  get message(): string {
+    return `Not a git repository on ${this.host}: ${this.path}`;
+  }
+}
+
+/**
  * Error returned when a git pull results in merge conflicts.
  * Contains the list of conflicted files.
  */
@@ -50,6 +63,41 @@ export class PushRejected extends Data.TaggedError("PushRejected")<{
 }
 
 /**
+ * Error returned when a git remote operation fails due to
+ * authentication failure (e.g., invalid SSH key, permission denied).
+ * Distinct from network errors to allow targeted handling.
+ */
+export class AuthError extends Data.TaggedError("AuthError")<{
+  readonly host: string;
+  readonly stderr: string;
+}> {
+  get message(): string {
+    return `Authentication failed for git remote on ${this.host}`;
+  }
+}
+
+/**
+ * Error returned when a git remote operation (pull, push, fetch)
+ * times out due to network issues. The local repository state
+ * is not corrupted by a timeout.
+ */
+export class NetworkTimeout extends Data.TaggedError("NetworkTimeout")<{
+  readonly host: string;
+  readonly operation: string;
+  readonly stderr: string;
+}> {
+  get message(): string {
+    return `Network timeout during ${this.operation} on ${this.host}`;
+  }
+}
+
+/**
  * Union of all git operation error types.
  */
-export type GitOpsError = GitCommandFailed | MergeConflict | PushRejected;
+export type GitOpsError =
+  | GitCommandFailed
+  | NotARepository
+  | MergeConflict
+  | PushRejected
+  | AuthError
+  | NetworkTimeout;

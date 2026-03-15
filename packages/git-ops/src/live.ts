@@ -11,14 +11,67 @@ import type { SshError } from "@codex-fleet/ssh";
 import { withSpan } from "@codex-fleet/telemetry";
 import { GitOps } from "./types.js";
 import type { PullResult, PushResult } from "./types.js";
-import { GitCommandFailed, MergeConflict, PushRejected } from "./errors.js";
+import {
+  GitCommandFailed,
+  NotARepository,
+  MergeConflict,
+  PushRejected,
+  AuthError,
+  NetworkTimeout,
+} from "./errors.js";
+
+/**
+ * Check whether the stderr indicates the directory is not a git repository.
+ */
+const isNotARepository = (stderr: string): boolean => {
+  const lower = stderr.toLowerCase();
+  return (
+    lower.includes("not a git repository") ||
+    lower.includes("not a git repo")
+  );
+};
+
+/**
+ * Check whether the stderr indicates an authentication failure on a git remote.
+ */
+const isAuthFailure = (stderr: string): boolean => {
+  const lower = stderr.toLowerCase();
+  return (
+    lower.includes("permission denied") ||
+    lower.includes("authentication failed") ||
+    lower.includes("could not read from remote repository") ||
+    lower.includes("invalid credentials") ||
+    lower.includes("fatal: authentication failed")
+  );
+};
+
+/**
+ * Check whether stderr indicates a network timeout during a remote git operation.
+ */
+const isNetworkTimeout = (stderr: string): boolean => {
+  const lower = stderr.toLowerCase();
+  return (
+    lower.includes("connection timed out") ||
+    lower.includes("operation timed out") ||
+    lower.includes("failed to connect") ||
+    lower.includes("could not resolve host") ||
+    lower.includes("network is unreachable") ||
+    lower.includes("timed out")
+  );
+};
 
 /**
  * Execute a git command in a repository on a remote host.
  *
  * Wraps the SSH execution so that CommandFailed errors from non-zero
- * exit codes are re-mapped to GitCommandFailed for clearer error typing
- * at the git-ops layer.
+ * exit codes are re-mapped to specific typed errors:
+ * - NotARepository when the path is not a git repo
+ * - AuthError when remote auth fails
+ * - NetworkTimeout when a remote operation times out
+ * - GitCommandFailed for all other failures
+ *
+ * SSH-level timeouts (ConnectionTimeout, CommandTimeout) are also
+ * mapped to NetworkTimeout for remote operations.
  */
 const execGit = (
   ssh: SshExecutor["Type"],
@@ -27,17 +80,67 @@ const execGit = (
   gitCommand: string,
 ): Effect.Effect<
   { readonly stdout: string; readonly stderr: string; readonly exitCode: number },
-  SshError | GitCommandFailed
+  SshError | GitCommandFailed | NotARepository | AuthError | NetworkTimeout
 > => {
   const fullCommand = `cd ${repoPath} && ${gitCommand}`;
   return ssh.executeCommand(host, fullCommand).pipe(
-    Effect.catchTag("CommandFailed", (err: CommandFailed) =>
-      Effect.fail(
+    Effect.catchTag("CommandFailed", (err: CommandFailed): Effect.Effect<
+      never,
+      GitCommandFailed | NotARepository | AuthError | NetworkTimeout
+    > => {
+      // Detect not-a-repository from stderr
+      if (isNotARepository(err.stderr)) {
+        return Effect.fail(
+          new NotARepository({
+            host: err.host,
+            path: repoPath,
+          }),
+        );
+      }
+      // Detect auth failures from stderr
+      if (isAuthFailure(err.stderr)) {
+        return Effect.fail(
+          new AuthError({
+            host: err.host,
+            stderr: err.stderr,
+          }),
+        );
+      }
+      // Detect network timeouts from stderr
+      if (isNetworkTimeout(err.stderr)) {
+        return Effect.fail(
+          new NetworkTimeout({
+            host: err.host,
+            operation: gitCommand,
+            stderr: err.stderr,
+          }),
+        );
+      }
+      return Effect.fail(
         new GitCommandFailed({
           host: err.host,
           command: gitCommand,
           exitCode: err.exitCode,
           stderr: err.stderr,
+        }),
+      );
+    }),
+    // Map SSH-level connection/command timeouts to NetworkTimeout
+    Effect.catchTag("ConnectionTimeout", (err) =>
+      Effect.fail(
+        new NetworkTimeout({
+          host: err.host,
+          operation: gitCommand,
+          stderr: `SSH connection timed out after ${err.timeoutMs}ms`,
+        }),
+      ),
+    ),
+    Effect.catchTag("CommandTimeout", (err) =>
+      Effect.fail(
+        new NetworkTimeout({
+          host: err.host,
+          operation: gitCommand,
+          stderr: `Command timed out after ${err.timeoutMs}ms`,
         }),
       ),
     ),
@@ -94,20 +197,7 @@ export const GitOpsLive: Layer.Layer<GitOps, never, SshExecutor> = Layer.effect(
           attributes: { host: host.hostname, operation: "isDirty", repoPath },
         })(
           Effect.gen(function* () {
-            const result = yield* ssh
-              .executeCommand(host, `cd ${repoPath} && git status --porcelain`)
-              .pipe(
-                Effect.catchTag("CommandFailed", (err: CommandFailed) =>
-                  Effect.fail(
-                    new GitCommandFailed({
-                      host: err.host,
-                      command: "git status --porcelain",
-                      exitCode: err.exitCode,
-                      stderr: err.stderr,
-                    }),
-                  ),
-                ),
-              );
+            const result = yield* execGit(ssh, host, repoPath, "git status --porcelain");
             const dirty = result.stdout.trim().length > 0;
             yield* Effect.annotateCurrentSpan("git.dirty", dirty);
             return dirty;

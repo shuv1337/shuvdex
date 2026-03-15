@@ -115,7 +115,7 @@ describe("GitOps", () => {
               command: "cd ~/repos/test-repo && git rev-parse HEAD",
               exitCode: 128,
               stdout: "",
-              stderr: "fatal: not a git repository\n",
+              stderr: "fatal: ambiguous argument 'HEAD': unknown revision\n",
             }),
           },
         ]);
@@ -131,7 +131,7 @@ describe("GitOps", () => {
           const err = result.left as GitCommandFailed;
           expect(err.host).toBe("testhost");
           expect(err.exitCode).toBe(128);
-          expect(err.stderr).toContain("not a git repository");
+          expect(err.stderr).toContain("ambiguous argument");
         }
       }),
     );
@@ -510,9 +510,9 @@ describe("GitOps", () => {
             value: new CommandFailed({
               host: "testhost",
               command: "cd ~/repos/test-repo && git pull origin",
-              exitCode: 128,
+              exitCode: 1,
               stdout: "",
-              stderr: "fatal: not a git repository\n",
+              stderr: "fatal: refusing to merge unrelated histories\n",
             }),
           },
         ]);
@@ -610,9 +610,9 @@ describe("GitOps", () => {
             value: new CommandFailed({
               host: "testhost",
               command: "cd ~/repos/test-repo && git push origin",
-              exitCode: 128,
+              exitCode: 1,
               stdout: "",
-              stderr: "fatal: not a git repository\n",
+              stderr: "fatal: the remote end hung up unexpectedly\n",
             }),
           },
         ]);
