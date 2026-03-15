@@ -1,7 +1,7 @@
 {
   "milestone": "foundation",
-  "round": 2,
-  "status": "fail",
+  "round": 3,
+  "status": "pass",
   "validatorsRun": {
     "test": {
       "passed": true,
@@ -20,35 +20,27 @@
     }
   },
   "reviewsSummary": {
-    "total": 2,
+    "total": 1,
     "passed": 1,
-    "failed": 1,
-    "failedFeatures": [
-      "fix-telemetry-duration"
-    ]
+    "failed": 0,
+    "failedFeatures": []
   },
-  "blockingIssues": [
-    {
-      "featureId": "fix-telemetry-duration",
-      "severity": "blocking",
-      "description": "packages/telemetry/src/span.ts still misses the required durationMs attribute on defect and interruption paths because withSpan measures duration around Effect.either(effect), which only converts typed failures before annotateCurrentSpan runs."
-    }
-  ],
+  "blockingIssues": [],
   "appliedUpdates": [],
   "suggestedGuidanceUpdates": [
     {
       "target": "backend-worker skill",
-      "suggestion": "Require workers to mark skillFeedback.followedProcedure=false whenever they claim a TDD-first flow but edit implementation before creating and running failing tests, including on fix reruns.",
-      "evidence": "The fix-ssh-timeout-scope review found the worker transcript edited packages/ssh/src/*.ts before creating the new timeout-scope test file, while the handoff still reported skillFeedback.followedProcedure: true.",
+      "suggestion": "Require workers to mark skillFeedback.followedProcedure=false whenever they edit implementation before creating and running the new failing tests, including on fix reruns.",
+      "evidence": "The fix-telemetry-duration-finalizer review found the worker updated packages/telemetry/src/span.ts before adding the new defect/interruption tests, while the handoff still reported skillFeedback.followedProcedure: true.",
       "isSystemic": true
     },
     {
       "target": "validation-contract.md",
       "suggestion": "Align VAL-INFRA-012 with the implemented telemetry contract so it explicitly states whether durationMs is a required span attribute.",
-      "evidence": "The fix-telemetry-duration review again found shared guidance inconsistency: validation-contract.md omits durationMs while features.json and .factory/library/architecture.md require it.",
+      "evidence": "The fix-telemetry-duration-finalizer review found the validation contract still omits durationMs while .factory/library/architecture.md and the telemetry feature definitions treat durationMs as a required standard span attribute.",
       "isSystemic": false
     }
   ],
   "rejectedObservations": [],
-  "previousRound": ".factory/validation/foundation/scrutiny/synthesis.round-1.json"
+  "previousRound": ".factory/validation/foundation/scrutiny/synthesis.round-2.json"
 }
