@@ -1,0 +1,48 @@
+{
+  "milestone": "git-skill-ops",
+  "round": 3,
+  "status": "fail",
+  "validatorsRun": {
+    "test": {
+      "passed": true,
+      "command": "npm test",
+      "exitCode": 0
+    },
+    "typecheck": {
+      "passed": true,
+      "command": "npm run typecheck",
+      "exitCode": 0
+    },
+    "lint": {
+      "passed": true,
+      "command": "npm run lint",
+      "exitCode": 0
+    }
+  },
+  "reviewsSummary": {
+    "total": 1,
+    "passed": 0,
+    "failed": 1,
+    "failedFeatures": [
+      "fix-git-ops-checkout-redact"
+    ]
+  },
+  "blockingIssues": [
+    {
+      "featureId": "fix-git-ops-checkout-redact",
+      "severity": "blocking",
+      "description": "`checkoutRef()` still trusts shell quoting to block leading-dash refs, but a temp-repo repro showed `git checkout '--detach'` is parsed as the real `--detach` option, so arbitrary option injection remains possible."
+    }
+  ],
+  "appliedUpdates": [],
+  "suggestedGuidanceUpdates": [
+    {
+      "target": "backend-worker skill",
+      "suggestion": "Clarify that isolated temp-repo git CLI validation is an acceptable semantic verification path for git command-construction fixes, and require workers to record deviations whenever they skip SSH verification or implement before tests.",
+      "evidence": "The `fix-git-ops-checkout-redact` review found source edits landed before tests, the handoff still reported `skillFeedback.followedProcedure: true` without deviations, and the only successful semantic check was the temp-repo git CLI repro already documented in `.factory/library/architecture.md`.",
+      "isSystemic": true
+    }
+  ],
+  "rejectedObservations": [],
+  "previousRound": "/home/shuv/repos/codex-fleet/.factory/validation/git-skill-ops/scrutiny/synthesis.round2.json"
+}
