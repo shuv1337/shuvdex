@@ -18,6 +18,87 @@ import { execFile } from "node:child_process";
 import { access, constants } from "node:fs/promises";
 
 /**
+ * Detect which SHA-256 hash command is available on the local machine.
+ * Linux typically has `sha256sum`; macOS ships with `shasum -a 256`.
+ * The result is cached after the first probe.
+ */
+let _localHashCmd: string | undefined;
+
+/**
+ * Reset the cached local hash command. Exported for testing purposes only.
+ * @internal
+ */
+export const _resetLocalHashCmdCache = (): void => {
+  _localHashCmd = undefined;
+};
+
+const detectLocalHashCmd = (): Effect.Effect<string, SkillCommandFailed> =>
+  Effect.gen(function* () {
+    if (_localHashCmd !== undefined) return _localHashCmd;
+
+    // Try sha256sum first (Linux)
+    const tryCmd = (cmd: string) =>
+      Effect.tryPromise({
+        try: () =>
+          new Promise<void>((resolve, reject) => {
+            execFile("bash", ["-c", `command -v ${cmd}`], (error) => {
+              if (error) reject(error);
+              else resolve();
+            });
+          }),
+        catch: () => null,
+      }).pipe(Effect.option);
+
+    const hasSha256sum = yield* tryCmd("sha256sum");
+    if (hasSha256sum._tag === "Some") {
+      _localHashCmd = "sha256sum";
+      return _localHashCmd;
+    }
+
+    const hasShasum = yield* tryCmd("shasum");
+    if (hasShasum._tag === "Some") {
+      _localHashCmd = "shasum -a 256";
+      return _localHashCmd;
+    }
+
+    return yield* Effect.fail(
+      new SkillCommandFailed({
+        host: "localhost",
+        command: "detect hash command",
+        exitCode: 1,
+        stderr: "Neither sha256sum nor shasum found on this system",
+      }),
+    );
+  });
+
+/**
+ * Build a portable SHA-256 hash command for a remote host.
+ * Uses `command -v` to detect which tool is available, falling back
+ * from sha256sum → shasum -a 256.
+ */
+/**
+ * Build a portable SHA-256 hash command for a remote host.
+ * Uses `command -v` to detect which tool is available, falling back
+ * from sha256sum → shasum -a 256.
+ * @internal exported for testing
+ */
+export const _remoteHashCmd = (dir: string): string =>
+  `cd ${dir} && HASH_CMD=$(command -v sha256sum >/dev/null 2>&1 && echo "sha256sum" || echo "shasum -a 256") && find . -type f -exec $HASH_CMD {} \\; | sort -k2`;
+
+/**
+ * Build the SSH command string for rsync's -e option.
+ * Includes -i keyPath when the host has a keyPath configured,
+ * -p port for non-standard ports, and standard SSH options.
+ * @internal exported for testing
+ */
+export const _buildRsyncSshCmd = (host: HostConfig): string => {
+  const timeoutSec = host.timeout || 30;
+  const portOpt = host.port && host.port !== 22 ? ` -p ${host.port}` : "";
+  const keyOpt = host.keyPath ? ` -i ${host.keyPath}` : "";
+  return `ssh -o ConnectTimeout=${timeoutSec} -o StrictHostKeyChecking=no -o BatchMode=yes${portOpt}${keyOpt}`;
+};
+
+/**
  * Directories that should be filtered out when listing skills.
  * These are common non-skill directories that may exist in a repository.
  */
@@ -198,9 +279,7 @@ export const SkillOpsLive: Layer.Layer<SkillOps, never, SshExecutor | GitOps> = 
             // --delete = remove files on dest that don't exist on source
             // -e ssh = use SSH transport with ConnectTimeout
             // Trailing / on source means "copy contents of directory"
-            const timeoutSec = host.timeout || 30;
-            const portOpt = host.port && host.port !== 22 ? ` -p ${host.port}` : "";
-            const sshCmd = `ssh -o ConnectTimeout=${timeoutSec} -o StrictHostKeyChecking=no -o BatchMode=yes${portOpt}`;
+            const sshCmd = _buildRsyncSshCmd(host);
             const rsyncCmd = `rsync -a --delete -e '${sshCmd}' ${localSkillPath}/ ${sshTarget}:${remoteSkillPath}/`;
 
             yield* Effect.tryPromise({
@@ -275,7 +354,11 @@ export const SkillOpsLive: Layer.Layer<SkillOps, never, SshExecutor | GitOps> = 
             const localSkillPath = `${localRepoPath}/${skillName}`;
             const remoteSkillPath = `${remoteRepoPath}/${skillName}`;
 
-            // Generate checksums locally using find + sha256sum.
+            // Detect the portable hash command available locally
+            // (sha256sum on Linux, shasum -a 256 on macOS).
+            const hashCmd = yield* detectLocalHashCmd();
+
+            // Generate checksums locally using the detected hash command.
             // Output format: <hash>  <relative-path>
             // We cd into the skill dir first so paths are relative.
             const localChecksumResult = yield* Effect.tryPromise({
@@ -285,7 +368,7 @@ export const SkillOpsLive: Layer.Layer<SkillOps, never, SshExecutor | GitOps> = 
                     "bash",
                     [
                       "-c",
-                      `cd ${localSkillPath} && find . -type f -exec sha256sum {} \\; | sort -k2`,
+                      `cd ${localSkillPath} && find . -type f -exec ${hashCmd} {} \\; | sort -k2`,
                     ],
                     { maxBuffer: 10 * 1024 * 1024 },
                     (error, stdout, stderr) => {
@@ -300,17 +383,17 @@ export const SkillOpsLive: Layer.Layer<SkillOps, never, SshExecutor | GitOps> = 
               catch: (err) =>
                 new SkillCommandFailed({
                   host: "localhost",
-                  command: "sha256sum (local)",
+                  command: `${hashCmd} (local)`,
                   exitCode: 1,
                   stderr: String(err instanceof Error ? err.message : err),
                 }),
             });
 
-            // Generate checksums on remote host
+            // Generate checksums on remote host using portable detection
             const remoteChecksumResult = yield* execSkillCmd(
               ssh,
               host,
-              `cd ${remoteSkillPath} && find . -type f -exec sha256sum {} \\; | sort -k2`,
+              _remoteHashCmd(remoteSkillPath),
             );
 
             // Parse checksums into maps: relative_path -> hash

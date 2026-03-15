@@ -30,5 +30,5 @@ export { SkillCommandFailed, SkillRepoNotFound, SkillNotFound, SyncFailed, Check
 export type { SkillOpsError } from "./errors.js";
 
 // Layers
-export { SkillOpsLive } from "./live.js";
+export { SkillOpsLive, _resetLocalHashCmdCache, _buildRsyncSshCmd, _remoteHashCmd } from "./live.js";
 export { SkillOpsTest } from "./test.js";

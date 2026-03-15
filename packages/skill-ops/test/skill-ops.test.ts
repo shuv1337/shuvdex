@@ -11,6 +11,9 @@ import {
   ChecksumMismatch,
   ActivationFailed,
   DriftCheckFailed,
+  _resetLocalHashCmdCache,
+  _buildRsyncSshCmd,
+  _remoteHashCmd,
 } from "../src/index.js";
 import type { DriftReport, HostDriftInfo } from "../src/index.js";
 import {
@@ -831,13 +834,17 @@ describe("SkillOps syncSkill", () => {
 
 /**
  * Helper to get sha256 checksums for a directory via shell command.
- * Returns the raw output of `find . -type f -exec sha256sum {} | sort -k2`.
+ * Uses portable detection: sha256sum on Linux, shasum -a 256 on macOS.
+ * Returns the raw output of `find . -type f -exec <hash-cmd> {} | sort -k2`.
  */
 const getLocalChecksums = (dir: string): Promise<string> =>
   new Promise((resolve, reject) => {
     execFileCb(
       "bash",
-      ["-c", `cd ${dir} && find . -type f -exec sha256sum {} \\; | sort -k2`],
+      [
+        "-c",
+        `cd ${dir} && HASH_CMD=$(command -v sha256sum >/dev/null 2>&1 && echo "sha256sum" || echo "shasum -a 256") && find . -type f -exec $HASH_CMD {} \\; | sort -k2`,
+      ],
       (err, stdout) => (err ? reject(err) : resolve(stdout)),
     );
   });
@@ -1055,6 +1062,8 @@ describe("SkillOps verifySync", () => {
         const remoteCall = callsAfter[countBefore];
         expect(remoteCall).toBeDefined();
         expect(remoteCall.command).toContain("cd /remote/repo/test-skill");
+        // Portable: uses command -v detection for sha256sum / shasum
+        expect(remoteCall.command).toContain("HASH_CMD=");
         expect(remoteCall.command).toContain("sha256sum");
         expect(remoteCall.command).toContain("sort -k2");
         expect(remoteCall.host).toEqual(testHost);
@@ -2516,4 +2525,223 @@ describe("SkillOps checkDrift OTEL tracing", () => {
       }),
     );
   });
+});
+
+// ──────────────────────────────────────────────────────────────
+// Portability tests: portable hash detection & keyed-host rsync
+// ──────────────────────────────────────────────────────────────
+
+describe("_buildRsyncSshCmd (unit)", () => {
+  it("includes -i keyPath when host has keyPath configured", () => {
+    const host: HostConfig = {
+      hostname: "keyed-host",
+      connectionType: "ssh",
+      port: 22,
+      user: "deploy",
+      keyPath: "/home/deploy/.ssh/fleet_key",
+      timeout: 30,
+    };
+    const cmd = _buildRsyncSshCmd(host);
+    expect(cmd).toContain("-i /home/deploy/.ssh/fleet_key");
+    expect(cmd).toContain("-o ConnectTimeout=30");
+    expect(cmd).toContain("-o BatchMode=yes");
+    expect(cmd).not.toContain("-p ");
+  });
+
+  it("does NOT include -i when host has no keyPath", () => {
+    const host: HostConfig = {
+      hostname: "standard-host",
+      connectionType: "ssh",
+      port: 22,
+      user: "testuser",
+      timeout: 30,
+    };
+    const cmd = _buildRsyncSshCmd(host);
+    expect(cmd).not.toContain("-i ");
+    expect(cmd).toContain("-o ConnectTimeout=30");
+  });
+
+  it("includes both -p port and -i keyPath for keyed host with custom port", () => {
+    const host: HostConfig = {
+      hostname: "keyed-host-alt",
+      connectionType: "ssh",
+      port: 2222,
+      user: "admin",
+      keyPath: "/root/.ssh/id_ed25519",
+      timeout: 15,
+    };
+    const cmd = _buildRsyncSshCmd(host);
+    expect(cmd).toContain("-p 2222");
+    expect(cmd).toContain("-i /root/.ssh/id_ed25519");
+    expect(cmd).toContain("-o ConnectTimeout=15");
+  });
+
+  it("includes -p for non-standard port without keyPath", () => {
+    const host: HostConfig = {
+      hostname: "custom-port-host",
+      connectionType: "ssh",
+      port: 2200,
+      user: "user",
+      timeout: 10,
+    };
+    const cmd = _buildRsyncSshCmd(host);
+    expect(cmd).toContain("-p 2200");
+    expect(cmd).not.toContain("-i ");
+  });
+
+  it("omits -p for standard port 22", () => {
+    const host: HostConfig = {
+      hostname: "standard",
+      connectionType: "ssh",
+      port: 22,
+      user: "user",
+      timeout: 30,
+    };
+    const cmd = _buildRsyncSshCmd(host);
+    expect(cmd).not.toContain("-p ");
+  });
+});
+
+describe("_remoteHashCmd (unit)", () => {
+  it("produces portable hash command with HASH_CMD detection", () => {
+    const cmd = _remoteHashCmd("/remote/path/skill-a");
+    expect(cmd).toContain("cd /remote/path/skill-a");
+    expect(cmd).toContain("HASH_CMD=");
+    expect(cmd).toContain("command -v sha256sum");
+    expect(cmd).toContain("shasum -a 256");
+    expect(cmd).toContain("$HASH_CMD");
+    expect(cmd).toContain("sort -k2");
+  });
+
+  it("uses the provided directory path", () => {
+    const cmd = _remoteHashCmd("/some/other/dir");
+    expect(cmd).toContain("cd /some/other/dir");
+  });
+});
+
+describe("SkillOps portability", () => {
+  describe("verifySync portable hash command", () => {
+    let tmpDir: string;
+
+    beforeEach(async () => {
+      _resetLocalHashCmdCache();
+      tmpDir = await mkdtemp(join(tmpdir(), "skill-ops-portable-"));
+    });
+
+    afterEach(async () => {
+      _resetLocalHashCmdCache();
+      await rm(tmpDir, { recursive: true, force: true });
+    });
+
+    layer(TestLayer)("remote command uses portable detection", (it) => {
+      it.effect("remote checksum command uses 'command -v' to detect hash tool", () =>
+        Effect.gen(function* () {
+          // Create local skill directory
+          const localRepo = tmpDir;
+          const skillDir = join(localRepo, "test-skill");
+          yield* Effect.promise(() => mkdir(skillDir, { recursive: true }));
+          yield* Effect.promise(() => writeFile(join(skillDir, "file.txt"), "content\n"));
+
+          const responsesRef = yield* MockSshResponses;
+          yield* Ref.set(responsesRef, [
+            {
+              _tag: "result" as const,
+              value: { stdout: "", stderr: "", exitCode: 0 },
+            },
+          ]);
+
+          const callsRef = yield* RecordedSshCalls;
+          const callsBefore = yield* Ref.get(callsRef);
+          const countBefore = callsBefore.length;
+
+          const skillOps = yield* SkillOps;
+          yield* skillOps.verifySync(testHost, "test-skill", localRepo, "/remote/repo");
+
+          const callsAfter = yield* Ref.get(callsRef);
+          const remoteCmd = callsAfter[countBefore];
+          expect(remoteCmd).toBeDefined();
+
+          // The remote command must use portable detection via HASH_CMD
+          expect(remoteCmd.command).toContain("HASH_CMD=");
+          expect(remoteCmd.command).toContain("command -v sha256sum");
+          // Fallback to shasum -a 256 for macOS
+          expect(remoteCmd.command).toContain("shasum -a 256");
+          expect(remoteCmd.command).toContain("$HASH_CMD");
+        }),
+      );
+
+      it.effect("local hash detection runs successfully and produces valid checksums", () =>
+        Effect.gen(function* () {
+          // Create local skill directory with a known file
+          const localRepo = tmpDir;
+          const skillDir = join(localRepo, "hash-test");
+          yield* Effect.promise(() => mkdir(skillDir, { recursive: true }));
+          yield* Effect.promise(() => writeFile(join(skillDir, "hello.txt"), "hello world\n"));
+
+          // Get local checksums using our portable helper
+          const localOutput = yield* Effect.promise(() => getLocalChecksums(skillDir));
+          // Output should contain a 64-char hex hash followed by the file path
+          expect(localOutput).toMatch(/^[a-f0-9]{64}\s+\.\/hello\.txt/);
+
+          // Mock remote to return matching checksums
+          const responsesRef = yield* MockSshResponses;
+          yield* Ref.set(responsesRef, [
+            {
+              _tag: "result" as const,
+              value: { stdout: localOutput, stderr: "", exitCode: 0 },
+            },
+          ]);
+
+          const skillOps = yield* SkillOps;
+          const result = yield* skillOps.verifySync(
+            testHost,
+            "hash-test",
+            localRepo,
+            "/remote/repo",
+          );
+
+          expect(result.match).toBe(true);
+          expect(result.filesChecked).toBe(1);
+          expect(result.mismatched).toEqual([]);
+        }),
+      );
+
+      it.effect("verifySync works when remote host uses shasum -a 256 output format", () =>
+        Effect.gen(function* () {
+          // Create local skill directory
+          const localRepo = tmpDir;
+          const skillDir = join(localRepo, "macos-skill");
+          yield* Effect.promise(() => mkdir(skillDir, { recursive: true }));
+          yield* Effect.promise(() => writeFile(join(skillDir, "config.yaml"), "name: test\n"));
+
+          // Get the actual local checksums
+          const localOutput = yield* Effect.promise(() => getLocalChecksums(skillDir));
+
+          // shasum -a 256 produces the same output format as sha256sum:
+          // <64-char-hex>  <path>
+          // So mock the remote to return the same output (which would be produced
+          // by either sha256sum or shasum -a 256)
+          const responsesRef = yield* MockSshResponses;
+          yield* Ref.set(responsesRef, [
+            {
+              _tag: "result" as const,
+              value: { stdout: localOutput, stderr: "", exitCode: 0 },
+            },
+          ]);
+
+          const skillOps = yield* SkillOps;
+          const result = yield* skillOps.verifySync(
+            testHost,
+            "macos-skill",
+            localRepo,
+            "/remote/repo",
+          );
+
+          expect(result.match).toBe(true);
+          expect(result.filesChecked).toBe(1);
+        }),
+      );
+    });
+  });
+
 });
