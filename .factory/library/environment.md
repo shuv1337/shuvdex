@@ -19,3 +19,7 @@ None required for basic operation. SSH uses standard key-based auth from ~/.ssh/
 ## Node.js Version
 
 Requires Node.js 20+ (confirmed: v25.2.1)
+
+## Build Tooling Notes
+
+- Turbo requires the workspace root `package.json` to declare a `packageManager` field; this repo currently uses `npm@11.7.0`

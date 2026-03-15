@@ -16,16 +16,22 @@ All modules follow Effect service patterns:
 - `Context.Tag<Service>` for dependency injection
 - `Layer<Service>` for live/test implementations
 - `Effect<A, E, R>` for all async/fallible operations
+- `Schema` is imported from `effect` in the current codebase (not `@effect/schema`)
 
 ### Error Handling
 
-Use `Data.TaggedEnum` for structured errors:
+Current packages use `Data.TaggedError` subclasses for structured typed errors:
 ```typescript
-type SshError = Data.TaggedEnum<{
-  ConnectionFailed: { host: string; cause: unknown }
-  CommandFailed: { host: string; exitCode: number; stderr: string }
-  Timeout: { host: string; durationMs: number }
-}>
+class ConnectionFailed extends Data.TaggedError("ConnectionFailed")<{
+  host: string;
+  cause: unknown;
+}> {}
+
+class CommandFailed extends Data.TaggedError("CommandFailed")<{
+  host: string;
+  exitCode: number;
+  stderr: string;
+}> {}
 ```
 
 ### OTEL Instrumentation
@@ -34,6 +40,7 @@ All operations create spans via `@effect/opentelemetry`:
 - Root span for CLI command / MCP tool
 - Child spans for SSH connections, git operations
 - Attributes: host, operation, exitCode, durationMs
+- Custom tracer implementations must be installed with `Layer.setTracer(...)` so `Effect.withSpan` emits spans in tests and live layers
 
 ## Package Dependencies
 
@@ -44,5 +51,5 @@ packages/ssh      -> packages/core, telemetry
 packages/git-ops  -> packages/core, ssh, telemetry
 packages/skill-ops -> packages/core, ssh, git-ops, telemetry
 packages/telemetry -> @effect/opentelemetry
-packages/core     -> @effect/schema (no internal deps)
+packages/core     -> effect (Schema) (no internal deps)
 ```

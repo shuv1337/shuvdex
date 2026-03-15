@@ -1,0 +1,39 @@
+{
+  "featureId": "foundation-ssh-package",
+  "reviewedAt": "2026-03-15T15:57:18.450682Z",
+  "commitId": "3d0196c",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "fail",
+  "codeReview": {
+    "summary": "The package mostly matches the intended API and typed error model, but the live executor misimplements timeout handling: the configured connection timeout is applied as a whole-process deadline, so legitimate long-running remote commands are killed and reported as ConnectionTimeout after the SSH session has already connected. The timeout test is also too permissive to catch this contract regression.",
+    "issues": [
+      {
+        "file": "packages/ssh/src/live.ts",
+        "line": 72,
+        "severity": "blocking",
+        "description": "`execFile` is invoked with `timeout: timeoutMs`, and the callback maps any resulting killed/SIGTERM process to `ConnectionTimeout`. That turns the documented connection timeout into a total command-runtime limit. For example, `executeCommand(host, \"sleep 20\", { timeoutMs: 5000 })` would connect successfully, then be killed after 5 seconds and misreported as a connection timeout instead of allowing the remote command to finish."
+      },
+      {
+        "file": "packages/ssh/test/live.test.ts",
+        "line": 150,
+        "severity": "non_blocking",
+        "description": "The VAL-INFRA-008 integration test accepts either `ConnectionTimeout` or `ConnectionFailed`, so it does not actually enforce the feature's typed-timeout contract. That makes the timeout regression above easy to miss."
+      }
+    ]
+  },
+  "sharedStateObservations": [
+    {
+      "area": "skills",
+      "observation": "The backend-worker skill requires tests before implementation and a red test run, but this worker implemented the SSH source files first and only created tests afterward. The handoff still reported `skillFeedback.followedProcedure: true`, so that signal is currently unreliable.",
+      "evidence": "`/home/shuv/repos/codex-fleet/.factory/skills/backend-worker/SKILL.md` lines 28-30 and 49-51 require tests before implementation and a failing test run. In the transcript skeleton for worker session `2e4e3401-5fff-4747-b723-268b798ebf3a`, the worker says 'Now let me implement the full SSH package...' and creates `packages/ssh/src/errors.ts`, `types.ts`, `live.ts`, and `test.ts` before the later step 'Now write the tests (TDD - tests first, then verify they fail, then fix):'."
+    },
+    {
+      "area": "conventions",
+      "observation": "The shared architecture notes are stale for current Effect conventions: they still prescribe `Data.TaggedEnum` and list `packages/core -> @effect/schema`, while the codebase now uses `Data.TaggedError` and `Schema` from `effect`. Future backend workers can be misled unless they cross-check the implementation.",
+      "evidence": "`/home/shuv/repos/codex-fleet/.factory/library/architecture.md` line 22 says to use `Data.TaggedEnum`, and line 47 lists `packages/core -> @effect/schema`. Current code uses `Data.TaggedError` in `/home/shuv/repos/codex-fleet/packages/core/src/errors.ts` line 9 and `Schema` from `effect` in `/home/shuv/repos/codex-fleet/packages/core/src/schema.ts` line 4."
+    }
+  ],
+  "addressesFailureFrom": null,
+  "summary": "Fail: the SSH package API, typed errors, and tracing are mostly in place, but timeout handling is incorrect because the configured connection timeout is enforced as a full command deadline. I also noted a weak timeout test and stale shared guidance around backend-worker procedure and Effect conventions."
+}

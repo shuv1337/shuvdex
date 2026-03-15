@@ -1,0 +1,33 @@
+{
+  "featureId": "foundation-core-package",
+  "reviewedAt": "2026-03-15T15:56:53Z",
+  "commitId": "3b3b49c",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "pass",
+  "codeReview": {
+    "summary": "The feature delivers the requested core package: HostConfig/ConnectionType schemas, typed errors, HostRegistry, YAML loading, and focused tests covering the main success and error paths. I found one non-blocking validation gap around host alias keys in the YAML file.",
+    "issues": [
+      {
+        "file": "packages/core/src/config-loader.ts",
+        "line": 33,
+        "severity": "non_blocking",
+        "description": "loadConfig validates each host value but not the host-map keys themselves. RawConfigFile uses Schema.String for host names, so configs with an empty host alias are accepted even though packages/core/src/schema.ts:48-50 declares HostRegistryConfig keys as Schema.NonEmptyString. Reproduced by calling loadConfig on YAML containing hosts: {\"\": { hostname: blank-host } }, which returned a registry entry named \"\" instead of a ConfigValidationError."
+      }
+    ]
+  },
+  "sharedStateObservations": [
+    {
+      "area": "conventions",
+      "observation": "Mission shared-state docs are stale about Effect Schema imports after this feature. Workers are still told to use `Schema` from `@effect/schema`, even though the feature correctly migrated to `import { Schema } from 'effect'` and removed the deprecated dependency.",
+      "evidence": "/home/shuv/.factory/missions/53d67669-5ba8-4745-9fd5-71906b40773d/AGENTS.md:27 says 'Use `Schema` from `@effect/schema`'; /home/shuv/repos/codex-fleet/.factory/library/architecture.md:47 lists `packages/core -> @effect/schema`; packages/core/src/schema.ts:4 imports Schema from `effect`."
+    },
+    {
+      "area": "skills",
+      "observation": "The backend-worker skill's TDD procedure was not followed for this feature, but the handoff still reports `skillFeedback.followedProcedure: true`. That makes the skill-following signal unreliable for later triage.",
+      "evidence": "backend-worker SKILL.md:28-52 requires creating tests before implementation. The transcript skeleton for worker session 12f3aa4f-591f-4396-9b8b-ae5a98bc15be says 'Let me start by creating all the source files' and shows Create calls for packages/core/src/errors.ts, schema.ts, registry.ts, and config-loader.ts before a later section saying 'Now let me write the comprehensive tests.'"
+    }
+  ],
+  "addressesFailureFrom": null,
+  "summary": "Pass with one non-blocking code issue. The core package implementation matches the requested feature overall, but loadConfig currently accepts empty host aliases because it does not validate host-map keys against the declared NonEmptyString schema."
+}

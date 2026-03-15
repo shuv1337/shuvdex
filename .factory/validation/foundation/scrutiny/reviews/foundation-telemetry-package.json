@@ -1,0 +1,39 @@
+{
+  "featureId": "foundation-telemetry-package",
+  "reviewedAt": "2026-03-15T15:57:54Z",
+  "commitId": "4fa7b44",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "fail",
+  "codeReview": {
+    "summary": "The package wires OTLP export and provides usable test/live layers, but the core helper still misses one stated requirement: it never records durationMs on spans. The matching test name mentions durationMs but does not assert it, so the gap is currently unprotected.",
+    "issues": [
+      {
+        "file": "packages/telemetry/src/span.ts",
+        "line": 32,
+        "severity": "blocking",
+        "description": "`withSpan` only forwards caller-supplied attributes into `Effect.withSpan` and never measures or annotates `durationMs`. The feature's expectedBehavior explicitly requires spans to include `host`, `operation`, `exitCode`, and `durationMs`, so this helper leaves one required attribute unimplemented."
+      },
+      {
+        "file": "packages/telemetry/test/telemetry.test.ts",
+        "line": 54,
+        "severity": "non_blocking",
+        "description": "The test named \"records exitCode and durationMs attributes on success\" only checks `exitCode` and span status. Because `durationMs` is never asserted, the missing behavior is not covered and could regress unnoticed."
+      }
+    ]
+  },
+  "sharedStateObservations": [
+    {
+      "area": "knowledge",
+      "observation": "Mission requirements are inconsistent about telemetry span attributes: the feature definition requires `durationMs`, but the validation contract for VAL-INFRA-012 only mentions `host`, `operation`, and `exitCode`. That mismatch likely contributed to the implementation and tests omitting `durationMs`.",
+      "evidence": "features.json:884-887 requires `durationMs`; validation-contract.md:61-63 omits it; packages/telemetry/src/span.ts:32-40 forwards attributes without adding `durationMs`."
+    },
+    {
+      "area": "skills",
+      "observation": "The backend-worker skill does not mention that Effect tracers must be installed with `Layer.setTracer()` rather than as a normal `Context.Tag` service, which forced the worker to debug empty collected spans before the tests worked.",
+      "evidence": "handoffs/2026-03-15T15-46-53-710Z__foundation-telemetry-package__49c707c2-f449-4e08-bcff-357ca517acf0.json:87 recommends this exact skill update; the final implementation uses `Layer.setTracer(testTracer)` in packages/telemetry/src/test.ts:155."
+    }
+  ],
+  "addressesFailureFrom": null,
+  "summary": "Fail. OTLP export setup and basic span/error plumbing look reasonable, but the feature still misses the expected `durationMs` span attribute, and the current tests do not catch that omission."
+}
