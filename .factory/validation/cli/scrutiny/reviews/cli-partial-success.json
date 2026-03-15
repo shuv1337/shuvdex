@@ -1,0 +1,28 @@
+{
+  "featureId": "cli-partial-success",
+  "reviewedAt": "2026-03-15T22:46:09Z",
+  "commitId": "feb1229",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "pass",
+  "codeReview": {
+    "summary": "Commit `feb1229` implements the requested partial-success behavior across the CLI surface: the table formatters now show `[OK]`/`[FAIL]`, every multi-host command reports `X succeeded, Y failed`, `runStatusCommand()` now returns exit code 2 for mixed online/error results, and the existing JSON formatters still satisfy the required host/status/error shape. I did not find a blocking implementation defect, but I did note one test-coverage gap in the new status exit-code test.",
+    "issues": [
+      {
+        "file": "apps/cli/test/partial-success.test.ts",
+        "line": 457,
+        "severity": "non_blocking",
+        "description": "The new `status command exit codes` test does not execute `runStatusCommand()` or `run()`; it reimplements the exit-code calculation inline and asserts on that local variable instead. That means regressions in `apps/cli/src/cli.ts:437` would not be caught by this test, even though the handoff presents it as coverage for VAL-CLI-019's status exit-code behavior."
+      }
+    ]
+  },
+  "sharedStateObservations": [
+    {
+      "area": "skills",
+      "observation": "The `cli-worker` manual-verification instructions still point workers at a non-existent executable path. Following the skill literally caused this worker to hit a `No such file or directory` error before discovering the real entrypoint.",
+      "evidence": "`.factory/skills/cli-worker/SKILL.md:81-92` tells workers to run `./apps/cli/bin/fleet ...`, but `apps/cli/package.json:8-10` defines the bin as `./bin/fleet.js`. The transcript skeleton for session `03e8b700-a488-4f9a-8ba7-95ba6bd51d13` shows `./apps/cli/bin/fleet --help` failing with `No such file or directory`, after which the worker switched to `node ./apps/cli/bin/fleet.js status`."
+    }
+  ],
+  "addressesFailureFrom": null,
+  "summary": "Pass. The feature implementation in `feb1229` matches the requested partial-success behavior and I found no blocking correctness problems. The only noted issue is a non-blocking test gap for status exit-code coverage, plus a stale `cli-worker` manual-verification command in shared skill guidance."
+}

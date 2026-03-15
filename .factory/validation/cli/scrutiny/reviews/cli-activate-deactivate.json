@@ -1,0 +1,44 @@
+{
+  "featureId": "cli-activate-deactivate",
+  "reviewedAt": "2026-03-15T22:46:53Z",
+  "commitId": "9cbdbf0",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "fail",
+  "codeReview": {
+    "summary": "The feature adds activate/deactivate command wiring, output modes, and solid baseline tests, but `fleet activate` still misses the required already-active idempotent behavior when used with the documented/default repo path. The deactivate path looks aligned; the main coverage gap is that the new activate tests do not model the real `readlink` path normalization behavior.",
+    "issues": [
+      {
+        "file": "apps/cli/src/cli.ts",
+        "line": 635,
+        "severity": "blocking",
+        "description": "`runActivateCommand()` forwards the default/documented repo path `~/repos/shuvbot-skills` unchanged into skill activation (`apps/cli/src/cli.ts:57,632-636`). In the live skill-ops implementation, activate compares the current symlink target to `${repoPath}/${skillName}` by exact string equality (`packages/skill-ops/src/live.ts:473-483`), while `readSymlinkTarget()` obtains the target via `readlink` (`packages/skill-ops/src/live.ts:887-895`), which returns the shell-expanded `/home/<user>/repos/...` path. That means a second `fleet activate <skill>` run with the default repo never sets `alreadyInState: true` and prints `activated` instead of `already active`. The worker's own transcript and handoff both observed this during manual verification and recorded it as a 'pre-existing' issue, but it is user-visible in this CLI feature and breaks VAL-CLI-008 / the feature's expectedBehavior."
+      },
+      {
+        "file": "apps/cli/test/activate.test.ts",
+        "line": 116,
+        "severity": "non_blocking",
+        "description": "The new idempotency coverage mocks `readSymlinkTarget` as returning the literal test constant `${repoPath}/my-skill` where `repoPath` is `~/repos/shuvbot-skills` (`apps/cli/test/activate.test.ts:48,116-150`). On a real host, `readlink` returns the expanded absolute target path instead, so the test never exercises the default-path behavior that users hit. That mocking shortcut is why the blocking regression above shipped despite the new 'already active' tests."
+      }
+    ]
+  },
+  "sharedStateObservations": [
+    {
+      "area": "skills",
+      "observation": "The `cli-worker` skill's manual-verification instructions still point workers at a non-existent executable path. Following the skill literally caused this worker to hit `No such file or directory` before switching to the real `node apps/cli/bin/fleet.js` entrypoint.",
+      "evidence": "`.factory/skills/cli-worker/SKILL.md:89-92` tells workers to run `./apps/cli/bin/fleet ...`, while `apps/cli/package.json:8-10` defines the bin as `./bin/fleet.js`. The transcript skeleton for worker session `27efca5f-fe33-46ee-9cf7-ee0c71bb2c54` shows an attempted `./apps/cli/bin/fleet activate --help` followed by a `No such file or directory` failure before the worker switched to `node apps/cli/bin/fleet.js ...`."
+    },
+    {
+      "area": "skills",
+      "observation": "The recorded `skillFeedback.followedProcedure` signal is unreliable for this run. The `cli-worker` skill requires a red-phase `npm test -- --filter @codex-fleet/cli` after writing tests, but the transcript shows the worker created the new activate/deactivate tests and immediately implemented the commands without a failing-test run; the handoff still marks the procedure as followed.",
+      "evidence": "`.factory/skills/cli-worker/SKILL.md:28-72` requires writing tests first and then running `npm test -- --filter @codex-fleet/cli` to confirm they fail. In the transcript skeleton for session `27efca5f-fe33-46ee-9cf7-ee0c71bb2c54`, the worker creates `apps/cli/test/activate.test.ts` and `apps/cli/test/deactivate.test.ts`, then creates `apps/cli/src/commands/activate.ts` and `deactivate.ts`; the first CLI-package test run happens later, after implementation. The handoff nevertheless sets `skillFeedback.followedProcedure: true` (`/home/shuv/.factory/missions/53d67669-5ba8-4745-9fd5-71906b40773d/handoffs/2026-03-15T22-15-35-466Z__cli-activate-deactivate__27efca5f-fe33-46ee-9cf7-ee0c71bb2c54.json:217-220`)."
+    },
+    {
+      "area": "knowledge",
+      "observation": "The repo's shared-state docs do not capture a real activation-idempotency quirk: remote `readlink` returns an expanded absolute path, so comparing it directly against a `~/...` repo string yields false negatives. This worker had to discover and document that ad hoc in the handoff, and the gap directly affected feature correctness.",
+      "evidence": "The shared library files (`.factory/library/architecture.md`, `.factory/library/environment.md`) do not mention remote path normalization or `readlink` behavior. The reviewed handoff had to record the issue explicitly at `/home/shuv/.factory/missions/53d67669-5ba8-4745-9fd5-71906b40773d/handoffs/2026-03-15T22-15-35-466Z__cli-activate-deactivate__27efca5f-fe33-46ee-9cf7-ee0c71bb2c54.json:211-214`, noting that `~/repos/...` versus `/home/user/repos/...` causes `alreadyInState: false` on repeated activation."
+    }
+  ],
+  "addressesFailureFrom": null,
+  "summary": "Fail. `fleet deactivate` looks okay, but `fleet activate` does not reliably satisfy the required 'already active' behavior because the default/documented `~/repos/shuvbot-skills` path never round-trips through `readlink`, so repeated activation reports `activated` instead of `already active`. I also noted stale `cli-worker` guidance around the executable path, inaccurate TDD-following feedback, and a missing shared note about tilde-path normalization."
+}

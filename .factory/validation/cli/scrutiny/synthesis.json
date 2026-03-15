@@ -1,0 +1,111 @@
+{
+  "milestone": "cli",
+  "round": 1,
+  "status": "fail",
+  "validatorsRun": {
+    "test": {
+      "passed": true,
+      "command": "npm test",
+      "exitCode": 0
+    },
+    "typecheck": {
+      "passed": true,
+      "command": "npm run typecheck",
+      "exitCode": 0
+    },
+    "lint": {
+      "passed": true,
+      "command": "npm run lint",
+      "exitCode": 0
+    }
+  },
+  "reviewsSummary": {
+    "total": 8,
+    "passed": 3,
+    "failed": 5,
+    "failedFeatures": [
+      "cli-status-command",
+      "cli-pull-command",
+      "cli-sync-command",
+      "cli-activate-deactivate",
+      "cli-ssh-handling"
+    ]
+  },
+  "blockingIssues": [
+    {
+      "featureId": "cli-status-command",
+      "severity": "blocking",
+      "description": "`apps/cli/src/commands/status.ts` renders the registry alias (`host.name`) instead of the configured hostname (`host.hostname`), so text-mode `fleet status` does not satisfy the advertised hostname/status table contract when alias and hostname differ."
+    },
+    {
+      "featureId": "cli-pull-command",
+      "severity": "blocking",
+      "description": "`apps/cli/src/commands/pull.ts` silently drops unknown host filters and reports a 0-host success, so `fleet pull <missing-host>` exits 0 instead of surfacing that the requested host was not found."
+    },
+    {
+      "featureId": "cli-sync-command",
+      "severity": "blocking",
+      "description": "`apps/cli/src/cli.ts` misuses `--repo` as both the remote repo path and the local source path, so `fleet sync <skill> --repo <remote-path>` fails local validation whenever the remote destination differs from the local repo layout."
+    },
+    {
+      "featureId": "cli-sync-command",
+      "severity": "blocking",
+      "description": "`apps/cli/src/commands/sync.ts` also treats an all-unknown host filter as success by operating on an empty host list and returning exit code 0."
+    },
+    {
+      "featureId": "cli-activate-deactivate",
+      "severity": "blocking",
+      "description": "`fleet activate` does not reliably report `already active` with the documented `~/repos/shuvbot-skills` repo path because activation compares the raw `~/...` input to `readlink`'s expanded absolute symlink target, causing repeat activation to print `activated` instead of the required idempotent message."
+    },
+    {
+      "featureId": "cli-ssh-handling",
+      "severity": "blocking",
+      "description": "`apps/cli/test/ssh-handling.test.ts` only exercises `SshExecutorTest`, so the feature still lacks real coverage that the live SSH path preserves no-password-prompt auth flags, key selection, and `~/.ssh/config` delegation for VAL-CLI-021."
+    }
+  ],
+  "appliedUpdates": [
+    {
+      "target": "library",
+      "description": "Added `.factory/library/architecture.md` notes that the current CLI uses the hand-rolled parser in `apps/cli/src/cli.ts` and the workspace does not include commander.js or yargs.",
+      "sourceFeature": "cli-sync-command"
+    },
+    {
+      "target": "library",
+      "description": "Added `.factory/library/architecture.md` notes that `SshExecutorTest` returns queued `_tag: \"result\"` values verbatim and higher-layer failure tests must queue explicit typed `_tag: \"error\"` responses.",
+      "sourceFeature": "cli-rollback-tag"
+    }
+  ],
+  "suggestedGuidanceUpdates": [
+    {
+      "target": "cli-worker skill",
+      "suggestion": "Replace the commander.js/yargs implementation step with the current hand-rolled parser pattern in `apps/cli/src/cli.ts` so CLI workers follow the repo's actual architecture.",
+      "evidence": "Reviews for `cli-status-command`, `cli-pull-command`, and `cli-sync-command` all flagged that `.factory/skills/cli-worker/SKILL.md` still tells workers to use commander.js or yargs even though the workspace has neither dependency and the shipped CLI is intentionally hand-rolled in `apps/cli/src/cli.ts`.",
+      "isSystemic": true
+    },
+    {
+      "target": "cli-worker skill",
+      "suggestion": "Update manual verification guidance to use the real CLI entrypoint (`node ./apps/cli/bin/fleet.js` or equivalent package bin) and require isolated sandboxes for write-path commands instead of mutating `~/repos/shuvbot-skills`.",
+      "evidence": "Reviews for `cli-pull-command`, `cli-sync-command`, `cli-activate-deactivate`, and `cli-partial-success` all found stale manual-verification instructions: the skill points to a non-existent `./apps/cli/bin/fleet` path and directs real-host write operations that conflict with mission/library sandbox rules forbidding mutation of `~/repos/shuvbot-skills`.",
+      "isSystemic": true
+    },
+    {
+      "target": "cli-worker skill",
+      "suggestion": "Clarify that coverage-only CLI features may start by auditing existing behavior before adding tests, and require `skillFeedback.followedProcedure=false` plus explicit deviations whenever implementation happens before tests or required manual verification is skipped.",
+      "evidence": "Reviews for `cli-status-command`, `cli-help-usage`, `cli-rollback-tag`, `cli-ssh-handling`, and `cli-activate-deactivate` all found mismatches between the written TDD/manual-verification procedure and the recorded work, yet the resulting handoffs still marked `followedProcedure: true` with no deviations.",
+      "isSystemic": true
+    },
+    {
+      "target": "AGENTS.md",
+      "suggestion": "Resolve the localhost guidance so mission docs match current behavior: user-testing guidance already notes that the shipped live executor still routes localhost through SSH, while AGENTS.md still describes localhost as direct local execution with no SSH.",
+      "evidence": "The `cli-status-command` review identified a contradiction between mission `AGENTS.md` and `.factory/library/user-testing.md`, which can mislead future validators and CLI workers about localhost expectations.",
+      "isSystemic": true
+    }
+  ],
+  "rejectedObservations": [
+    {
+      "observation": "Document the `~/...` versus absolute `readlink` mismatch from `cli-activate-deactivate` as a permanent library note.",
+      "reason": "rejected because this is a feature-specific blocking defect expected to be fixed by follow-up implementation work; encoding it as stable shared-state guidance would fossilize a transient bug rather than durable repository knowledge"
+    }
+  ],
+  "previousRound": null
+}

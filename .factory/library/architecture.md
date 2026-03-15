@@ -58,3 +58,12 @@ packages/skill-ops -> packages/core, ssh, git-ops, telemetry
 packages/telemetry -> @effect/opentelemetry
 packages/core     -> effect (Schema) (no internal deps)
 ```
+
+## CLI Notes
+
+- The current CLI uses the hand-rolled parser in `apps/cli/src/cli.ts`; the workspace does not include `commander.js` or `yargs`.
+
+## Test Double Notes
+
+- `SshExecutorTest` returns queued `_tag: "result"` values verbatim, even when `exitCode !== 0`.
+- Tests that need higher layers to observe `CommandFailed`, `ConnectionFailed`, or other SSH-layer failures must queue `_tag: "error"` with the explicit typed error instead of relying on a non-zero `CommandResult`.
