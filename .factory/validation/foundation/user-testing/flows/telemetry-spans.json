@@ -1,0 +1,132 @@
+{
+  "groupId": "telemetry-spans",
+  "surface": "terminal-node-api",
+  "toolsUsed": [
+    "node --input-type=module"
+  ],
+  "assertions": [
+    {
+      "id": "VAL-INFRA-011",
+      "status": "pass",
+      "reason": "The public telemetry API created observable spans for successful and failing operations, including a real ssh.executeCommand call, with span names plus startTime/endTime captured in the in-memory test surface.",
+      "evidence": {
+        "files": [
+          "/home/shuv/.factory/missions/53d67669-5ba8-4745-9fd5-71906b40773d/evidence/foundation/telemetry-spans/telemetry-spans-validation.mjs",
+          "/home/shuv/.factory/missions/53d67669-5ba8-4745-9fd5-71906b40773d/evidence/foundation/telemetry-spans/telemetry-spans-validation.output.json"
+        ],
+        "scenarios": [
+          "manualSuccess",
+          "nestedSshSuccess",
+          "nestedSshFailure"
+        ],
+        "observations": [
+          "validation.success.span captured status ok with startTime and endTime.",
+          "ssh.executeCommand captured status ok for hostname and status error for the non-zero exit scenario.",
+          "validation.parent.failure also closed with status error and recorded endTime."
+        ]
+      }
+    },
+    {
+      "id": "VAL-INFRA-012",
+      "status": "pass",
+      "reason": "A traced operation created through withSpan exposed host, operation, and exitCode together on one exported span, and the real ssh.executeCommand span also carried host and exitCode attributes.",
+      "evidence": {
+        "files": [
+          "/home/shuv/.factory/missions/53d67669-5ba8-4745-9fd5-71906b40773d/evidence/foundation/telemetry-spans/telemetry-spans-validation.output.json"
+        ],
+        "scenarios": [
+          "manualSuccess",
+          "nestedSshSuccess"
+        ],
+        "observations": [
+          "validation.success.span attributes included host=shuvtest, operation=\"echo ok\", exitCode=0, durationMs=0.",
+          "ssh.executeCommand attributes included host=shuvtest, exitCode=0, port=22, ssh.connect_timeout_ms=5000."
+        ]
+      }
+    },
+    {
+      "id": "VAL-INFRA-013",
+      "status": "pass",
+      "reason": "Wrapping ssh.executeCommand inside a parent withSpan produced parent-child linkage across the operation boundary: the child ssh.executeCommand span recorded parentSpanId equal to the parent spanId in both success and failure runs.",
+      "evidence": {
+        "files": [
+          "/home/shuv/.factory/missions/53d67669-5ba8-4745-9fd5-71906b40773d/evidence/foundation/telemetry-spans/telemetry-spans-validation.output.json"
+        ],
+        "scenarios": [
+          "nestedSshSuccess",
+          "nestedSshFailure"
+        ],
+        "observations": [
+          "nestedSshSuccess: ssh.executeCommand.parentSpanId matched validation.parent.success.spanId.",
+          "nestedSshFailure: ssh.executeCommand.parentSpanId matched validation.parent.failure.spanId.",
+          "The exported CollectedSpan surface did not include trace_id, so propagation was verified via observable parent-child linkage."
+        ]
+      }
+    },
+    {
+      "id": "VAL-INFRA-014",
+      "status": "blocked",
+      "reason": "The live layer targeted http://localhost:4318 and a live traced operation completed, but the accessible read-only collector surface only exposed GET / -> 404 and GET /v1/traces -> 405 (POST-only). No readable collector/UI surface was available to prove that an emitted span was actually ingested or visible, so export could not be conclusively verified.",
+      "evidence": {
+        "files": [
+          "/home/shuv/.factory/missions/53d67669-5ba8-4745-9fd5-71906b40773d/evidence/foundation/telemetry-spans/telemetry-spans-validation.output.json"
+        ],
+        "scenarios": [
+          "liveCollectorProbe"
+        ],
+        "observations": [
+          "DEFAULT_COLLECTOR_URL resolved to http://localhost:4318.",
+          "A live traced operation returned ok without surfacing export diagnostics.",
+          "collectorRoot.status was 404 and collectorTracesGet.status was 405 with a POST-only message."
+        ]
+      }
+    },
+    {
+      "id": "VAL-INFRA-015",
+      "status": "pass",
+      "reason": "A real ssh.executeCommand failure (remote exit 7) produced error spans with status=error and exception details on both the child and parent traced operations.",
+      "evidence": {
+        "files": [
+          "/home/shuv/.factory/missions/53d67669-5ba8-4745-9fd5-71906b40773d/evidence/foundation/telemetry-spans/telemetry-spans-validation.output.json"
+        ],
+        "scenarios": [
+          "nestedSshFailure"
+        ],
+        "observations": [
+          "The failing ssh.executeCommand span recorded status=error, exitCode=7, and an error string containing telemetry-error.",
+          "The surfaced error object had _tag=CommandFailed with host=shuvtest and exitCode=7.",
+          "validation.parent.failure also recorded status=error and the propagated error message."
+        ]
+      }
+    }
+  ],
+  "frictions": [
+    {
+      "description": "shuvtest SSH responses include the known post-quantum key exchange warning on stderr, so stderr-based observations had to distinguish that pre-existing warning from the intentional telemetry-error line.",
+      "resolved": true,
+      "resolution": "Used the known-warning context from mission guidance and validated the intentional stderr content separately.",
+      "affectedAssertions": [
+        "VAL-INFRA-011",
+        "VAL-INFRA-015"
+      ]
+    },
+    {
+      "description": "The exported CollectedSpan user surface did not expose trace_id, limiting context-propagation evidence to parentSpanId linkage.",
+      "resolved": true,
+      "resolution": "Validated propagation by nesting spans around ssh.executeCommand and matching child parentSpanId to the parent spanId in the captured output.",
+      "affectedAssertions": [
+        "VAL-INFRA-013"
+      ]
+    }
+  ],
+  "blockers": [
+    {
+      "description": "No readable collector endpoint or dashboard surface was available from the assigned tooling to confirm that a live-emitted span reached the collector/UI; the only accessible read-only endpoints were GET / (404) and GET /v1/traces (405 POST-only).",
+      "affectedAssertions": [
+        "VAL-INFRA-014"
+      ],
+      "quickFixAttempted": "Ran the live telemetry layer against the default collector URL and performed read-only GET checks on http://localhost:4318/ and http://localhost:4318/v1/traces."
+    }
+  ],
+  "summary": "Tested 5 telemetry assertions through the terminal-driven package API surface: 4 passed (VAL-INFRA-011/012/013/015), 1 blocked (VAL-INFRA-014) because collector ingestion could not be proven from the available read-only surface."
+}
