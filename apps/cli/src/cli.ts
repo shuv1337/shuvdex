@@ -25,6 +25,16 @@ import {
   formatSyncTable,
   formatSyncJson,
 } from "./commands/sync.js";
+import {
+  runActivate,
+  formatActivateTable,
+  formatActivateJson,
+} from "./commands/activate.js";
+import {
+  runDeactivate,
+  formatDeactivateTable,
+  formatDeactivateJson,
+} from "./commands/deactivate.js";
 
 /**
  * Default config path if not specified.
@@ -37,6 +47,11 @@ const DEFAULT_CONFIG_PATH = "fleet.yaml";
 const DEFAULT_REPO_PATH = "~/repos/shuvbot-skills";
 
 /**
+ * Default active skills directory on remote hosts.
+ */
+const DEFAULT_ACTIVE_DIR = "~/.codex/skills";
+
+/**
  * Parse CLI arguments into a structured command object.
  */
 export interface ParsedArgs {
@@ -46,6 +61,7 @@ export interface ParsedArgs {
     readonly help: boolean;
     readonly config: string;
     readonly repo: string;
+    readonly activeDir: string;
   };
   readonly positional: ReadonlyArray<string>;
 }
@@ -56,6 +72,7 @@ export const parseArgs = (argv: ReadonlyArray<string>): ParsedArgs => {
   let help = false;
   let config = DEFAULT_CONFIG_PATH;
   let repo = DEFAULT_REPO_PATH;
+  let activeDir = DEFAULT_ACTIVE_DIR;
   const positional: Array<string> = [];
 
   const args = argv.slice(2); // skip node + script
@@ -73,6 +90,9 @@ export const parseArgs = (argv: ReadonlyArray<string>): ParsedArgs => {
     } else if (arg === "--repo" || arg === "-r") {
       i++;
       repo = args[i] ?? DEFAULT_REPO_PATH;
+    } else if (arg === "--active-dir" || arg === "-a") {
+      i++;
+      activeDir = args[i] ?? DEFAULT_ACTIVE_DIR;
     } else if (!arg.startsWith("-") && command === undefined) {
       command = arg;
     } else if (!arg.startsWith("-")) {
@@ -81,7 +101,7 @@ export const parseArgs = (argv: ReadonlyArray<string>): ParsedArgs => {
     i++;
   }
 
-  return { command, flags: { json, help, config, repo }, positional };
+  return { command, flags: { json, help, config, repo, activeDir }, positional };
 };
 
 /**
@@ -172,6 +192,60 @@ Exit codes:
 `;
 
 /**
+ * Show activate command help text.
+ */
+export const activateHelp = (): string =>
+  `Usage: fleet activate <skill> [hosts...] [options]
+
+Activate a skill on remote hosts by creating a symlink in the
+active skills directory. If the skill is already active, it
+reports "already active" and exits successfully.
+
+Arguments:
+  skill                Skill name to activate (required)
+  hosts                Host names to activate on (default: all)
+
+Options:
+  --json               Output as JSON
+  --repo, -r <path>    Path to skills repo on remote hosts (default: ~/repos/shuvbot-skills)
+  --active-dir, -a <path>  Path to active skills directory (default: ~/.codex/skills)
+  --config, -c <path>  Path to fleet config file (default: fleet.yaml)
+  --help, -h           Show help
+
+Exit codes:
+  0  All hosts activated successfully (or already active)
+  1  All hosts failed or missing skill argument
+  2  Partial success (some hosts succeeded, some failed)
+`;
+
+/**
+ * Show deactivate command help text.
+ */
+export const deactivateHelp = (): string =>
+  `Usage: fleet deactivate <skill> [hosts...] [options]
+
+Deactivate a skill on remote hosts by removing the symlink
+from the active skills directory. The actual skill files in
+the repository remain intact. If the skill is not active, it
+reports "not active" and exits successfully.
+
+Arguments:
+  skill                Skill name to deactivate (required)
+  hosts                Host names to deactivate on (default: all)
+
+Options:
+  --json               Output as JSON
+  --active-dir, -a <path>  Path to active skills directory (default: ~/.codex/skills)
+  --config, -c <path>  Path to fleet config file (default: fleet.yaml)
+  --help, -h           Show help
+
+Exit codes:
+  0  All hosts deactivated successfully (or not active)
+  1  All hosts failed or missing skill argument
+  2  Partial success (some hosts succeeded, some failed)
+`;
+
+/**
  * Run the CLI with the given argv.
  * Returns the exit code.
  */
@@ -217,6 +291,22 @@ export const run = (
           return 0;
         }
         return yield* runSyncCommand(parsed);
+      }
+
+      case "activate": {
+        if (parsed.flags.help) {
+          yield* Effect.sync(() => process.stdout.write(activateHelp()));
+          return 0;
+        }
+        return yield* runActivateCommand(parsed);
+      }
+
+      case "deactivate": {
+        if (parsed.flags.help) {
+          yield* Effect.sync(() => process.stdout.write(deactivateHelp()));
+          return 0;
+        }
+        return yield* runDeactivateCommand(parsed);
       }
 
       default: {
@@ -400,6 +490,153 @@ const runSyncCommand = (
     if (result.skillError) {
       return 1;
     }
+    if (result.allSucceeded) {
+      return 0;
+    }
+    const okCount = result.hosts.filter((h) => h.status === "ok").length;
+    return okCount > 0 ? 2 : 1;
+  }).pipe(
+    Effect.catchAll(() => Effect.succeed(1)),
+  );
+
+/**
+ * Execute the activate subcommand end-to-end.
+ *
+ * The first positional argument is the skill name (required).
+ * Remaining positional arguments are host names (optional filter).
+ *
+ * Exit codes:
+ * - 0: All hosts activated successfully (or already active)
+ * - 1: All hosts failed or missing skill argument
+ * - 2: Partial success
+ */
+const runActivateCommand = (
+  parsed: ParsedArgs,
+): Effect.Effect<number, never, never> =>
+  Effect.gen(function* () {
+    // Skill name is the first positional arg
+    const skillName = parsed.positional[0] as string | undefined;
+    if (!skillName) {
+      yield* Effect.sync(() =>
+        process.stderr.write(
+          `Error: missing required argument: <skill>\n\n${activateHelp()}`,
+        ),
+      );
+      return 1;
+    }
+
+    // Load config
+    const registry = yield* loadConfig(parsed.flags.config).pipe(
+      Effect.catchAll((err) =>
+        Effect.gen(function* () {
+          yield* Effect.sync(() =>
+            process.stderr.write(`Error: ${err.message}\n`),
+          );
+          return yield* Effect.fail("config-error" as const);
+        }),
+      ),
+    );
+
+    // Build live layer: SSH + Telemetry + GitOps + SkillOps
+    const baseLiveLayer = Layer.merge(SshExecutorLive, TelemetryLive);
+    const gitOpsLayer = Layer.provideMerge(GitOpsLive, baseLiveLayer);
+    const liveLayer = Layer.provideMerge(SkillOpsLive, gitOpsLayer);
+
+    // Host filter from remaining positional args (after skill name)
+    const filterHosts =
+      parsed.positional.length > 1
+        ? parsed.positional.slice(1)
+        : undefined;
+
+    const result = yield* runActivate(
+      registry,
+      skillName,
+      parsed.flags.repo,
+      parsed.flags.activeDir,
+      filterHosts,
+    ).pipe(Effect.provide(liveLayer));
+
+    // Format and print output
+    const output = parsed.flags.json
+      ? formatActivateJson(result)
+      : formatActivateTable(result);
+
+    yield* Effect.sync(() => process.stdout.write(output + "\n"));
+
+    // Exit code: 0 = all ok, 1 = all failed, 2 = partial
+    if (result.allSucceeded) {
+      return 0;
+    }
+    const okCount = result.hosts.filter((h) => h.status === "ok").length;
+    return okCount > 0 ? 2 : 1;
+  }).pipe(
+    Effect.catchAll(() => Effect.succeed(1)),
+  );
+
+/**
+ * Execute the deactivate subcommand end-to-end.
+ *
+ * The first positional argument is the skill name (required).
+ * Remaining positional arguments are host names (optional filter).
+ *
+ * Exit codes:
+ * - 0: All hosts deactivated successfully (or already inactive)
+ * - 1: All hosts failed or missing skill argument
+ * - 2: Partial success
+ */
+const runDeactivateCommand = (
+  parsed: ParsedArgs,
+): Effect.Effect<number, never, never> =>
+  Effect.gen(function* () {
+    // Skill name is the first positional arg
+    const skillName = parsed.positional[0] as string | undefined;
+    if (!skillName) {
+      yield* Effect.sync(() =>
+        process.stderr.write(
+          `Error: missing required argument: <skill>\n\n${deactivateHelp()}`,
+        ),
+      );
+      return 1;
+    }
+
+    // Load config
+    const registry = yield* loadConfig(parsed.flags.config).pipe(
+      Effect.catchAll((err) =>
+        Effect.gen(function* () {
+          yield* Effect.sync(() =>
+            process.stderr.write(`Error: ${err.message}\n`),
+          );
+          return yield* Effect.fail("config-error" as const);
+        }),
+      ),
+    );
+
+    // Build live layer: SSH + Telemetry + GitOps + SkillOps
+    const baseLiveLayer = Layer.merge(SshExecutorLive, TelemetryLive);
+    const gitOpsLayer = Layer.provideMerge(GitOpsLive, baseLiveLayer);
+    const liveLayer = Layer.provideMerge(SkillOpsLive, gitOpsLayer);
+
+    // Host filter from remaining positional args (after skill name)
+    const filterHosts =
+      parsed.positional.length > 1
+        ? parsed.positional.slice(1)
+        : undefined;
+
+    const result = yield* runDeactivate(
+      registry,
+      skillName,
+      parsed.flags.activeDir,
+      filterHosts,
+    ).pipe(Effect.provide(liveLayer));
+
+    // Format and print output
+    const output = parsed.flags.json
+      ? formatDeactivateJson(result)
+      : formatDeactivateTable(result);
+
+    yield* Effect.sync(() => process.stdout.write(output + "\n"));
+
+    // Exit code: 0 = all ok, 1 = all failed, 2 = partial
     if (result.allSucceeded) {
       return 0;
     }

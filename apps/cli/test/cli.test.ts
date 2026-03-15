@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { parseArgs, mainHelp, statusHelp, pullHelp, syncHelp } from "../src/cli.js";
+import {
+  parseArgs,
+  mainHelp,
+  statusHelp,
+  pullHelp,
+  syncHelp,
+  activateHelp,
+  deactivateHelp,
+} from "../src/cli.js";
 
 describe("parseArgs", () => {
   it("parses status command", () => {
@@ -127,6 +135,49 @@ describe("parseArgs", () => {
     expect(result.command).toBe("sync");
     expect(result.positional).toEqual([]);
   });
+
+  it("parses --active-dir flag", () => {
+    const result = parseArgs([
+      "node",
+      "fleet",
+      "activate",
+      "my-skill",
+      "--active-dir",
+      "/custom/active/dir",
+    ]);
+    expect(result.command).toBe("activate");
+    expect(result.flags.activeDir).toBe("/custom/active/dir");
+    expect(result.positional).toEqual(["my-skill"]);
+  });
+
+  it("parses -a as active-dir shorthand", () => {
+    const result = parseArgs([
+      "node",
+      "fleet",
+      "activate",
+      "my-skill",
+      "-a",
+      "/custom/dir",
+    ]);
+    expect(result.flags.activeDir).toBe("/custom/dir");
+  });
+
+  it("defaults activeDir to ~/.codex/skills", () => {
+    const result = parseArgs(["node", "fleet", "activate", "my-skill"]);
+    expect(result.flags.activeDir).toBe("~/.codex/skills");
+  });
+
+  it("parses activate command with skill and hosts", () => {
+    const result = parseArgs(["node", "fleet", "activate", "my-skill", "shuvtest", "shuvbot"]);
+    expect(result.command).toBe("activate");
+    expect(result.positional).toEqual(["my-skill", "shuvtest", "shuvbot"]);
+  });
+
+  it("parses deactivate command with skill and hosts", () => {
+    const result = parseArgs(["node", "fleet", "deactivate", "my-skill", "shuvtest"]);
+    expect(result.command).toBe("deactivate");
+    expect(result.positional).toEqual(["my-skill", "shuvtest"]);
+  });
 });
 
 describe("help text", () => {
@@ -166,6 +217,27 @@ describe("help text", () => {
     expect(help).toContain("hosts");
     expect(help).toContain("--json");
     expect(help).toContain("--repo");
+    expect(help).toContain("--config");
+  });
+
+  it("activateHelp describes the command", () => {
+    const help = activateHelp();
+    expect(help).toContain("fleet activate");
+    expect(help).toContain("skill");
+    expect(help).toContain("hosts");
+    expect(help).toContain("--json");
+    expect(help).toContain("--repo");
+    expect(help).toContain("--active-dir");
+    expect(help).toContain("--config");
+  });
+
+  it("deactivateHelp describes the command", () => {
+    const help = deactivateHelp();
+    expect(help).toContain("fleet deactivate");
+    expect(help).toContain("skill");
+    expect(help).toContain("hosts");
+    expect(help).toContain("--json");
+    expect(help).toContain("--active-dir");
     expect(help).toContain("--config");
   });
 });
