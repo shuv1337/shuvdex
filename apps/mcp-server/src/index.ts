@@ -72,6 +72,17 @@ async function main(): Promise<void> {
 
   await server.connect(transport);
 
+  // Graceful shutdown on stdin EOF.
+  // The StdioServerTransport does not listen for the stdin "end" event
+  // itself, so we handle it here.  Without this, the ManagedRuntime keeps
+  // the Node event loop alive and the process never exits when Codex
+  // Desktop (or any client) closes the pipe.
+  process.stdin.on("end", async () => {
+    await server.close();
+    await managedRuntime.dispose();
+    process.exit(0);
+  });
+
   // --- JSON-RPC parse error handling ---
   // The MCP SDK's StdioServerTransport forwards JSON parse errors to
   // onerror but does NOT send a JSON-RPC error response back to the

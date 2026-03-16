@@ -1,0 +1,20 @@
+# Codex Desktop MCP Configuration for codex-fleet
+#
+# This project-scoped config makes the codex-fleet MCP server automatically
+# available when using Codex CLI or IDE extension in this repository.
+#
+# Global alternative: copy the [mcp_servers.codex_fleet] section to
+#   ~/.codex/config.toml
+#
+# Usage:
+#   1. Ensure dependencies are installed: npm install && npm run build
+#   2. Open this project in Codex (CLI or IDE extension)
+#   3. The fleet tools will appear automatically
+#   4. Use /mcp in the TUI to verify the server is connected
+#
+# Manual add via CLI:
+#   codex mcp add codex-fleet -- node apps/mcp-server/dist/index.js
+
+[mcp_servers.codex_fleet]
+command = "node"
+args = ["apps/mcp-server/dist/index.js"]
