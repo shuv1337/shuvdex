@@ -649,12 +649,35 @@ export function createServer(config?: ServerConfig): McpServer {
         ),
       ...hostsFilter,
     },
-    async () => ({
-      content: [
-        { type: "text", text: JSON.stringify({ error: "Not implemented" }) },
-      ],
-      isError: true,
-    }),
+    async (args) => {
+      if (!config) {
+        return err({ error: "Not implemented" });
+      }
+
+      const { registry, repoPath, runtime } = config;
+      const hosts = resolveHosts(registry, args.hosts);
+
+      if (hosts.length === 0) {
+        return err({ error: "No matching hosts found" });
+      }
+
+      // Determine reference host: use provided name or default to first host
+      const referenceHostName = args.referenceHost ?? hosts[0][0];
+
+      const program = Effect.gen(function* () {
+        const skillOps = yield* SkillOps;
+        return yield* skillOps.checkDrift(hosts, repoPath, referenceHostName);
+      });
+
+      try {
+        const report = await Runtime.runPromise(runtime)(program);
+        return ok(report);
+      } catch (e) {
+        return err({
+          error: e instanceof Error ? e.message : String(e),
+        });
+      }
+    },
   );
 
   // --- fleet_rollback ---
@@ -665,12 +688,93 @@ export function createServer(config?: ServerConfig): McpServer {
       ref: z.string().describe("Git ref to checkout (branch, tag, or SHA)"),
       ...hostsFilter,
     },
-    async () => ({
-      content: [
-        { type: "text", text: JSON.stringify({ error: "Not implemented" }) },
-      ],
-      isError: true,
-    }),
+    async (args) => {
+      if (!config) {
+        return err({ error: "Not implemented" });
+      }
+
+      const { registry, repoPath, runtime } = config;
+      const hosts = resolveHosts(registry, args.hosts);
+
+      if (hosts.length === 0) {
+        return err({ error: "No matching hosts found", ref: args.ref, results: [] });
+      }
+
+      const program = Effect.gen(function* () {
+        const gitOps = yield* GitOps;
+
+        interface HostRollbackResult {
+          name: string;
+          hostname: string;
+          status: "ok" | "fail";
+          head?: string;
+          error?: string;
+        }
+
+        const results: HostRollbackResult[] = [];
+
+        for (const [name, hostConfig] of hosts) {
+          // Checkout the specified ref
+          const checkoutResult = yield* gitOps
+            .checkoutRef(hostConfig, repoPath, args.ref)
+            .pipe(
+              Effect.map(() => ({ ok: true as const })),
+              Effect.catchAll((checkoutErr) =>
+                Effect.succeed({
+                  ok: false as const,
+                  error:
+                    checkoutErr instanceof Error
+                      ? checkoutErr.message
+                      : String(checkoutErr),
+                }),
+              ),
+            );
+
+          if (!checkoutResult.ok) {
+            results.push({
+              name,
+              hostname: hostConfig.hostname,
+              status: "fail",
+              error: checkoutResult.error,
+            });
+            continue;
+          }
+
+          // Get HEAD commit after checkout for verification
+          const head = yield* gitOps
+            .getHead(hostConfig, repoPath)
+            .pipe(
+              Effect.map((sha) => sha.trim()),
+              Effect.catchAll(() =>
+                Effect.succeed(undefined as string | undefined),
+              ),
+            );
+
+          results.push({
+            name,
+            hostname: hostConfig.hostname,
+            status: "ok",
+            ...(head !== undefined ? { head } : {}),
+          });
+        }
+
+        return results;
+      });
+
+      try {
+        const results = await Runtime.runPromise(runtime)(program);
+        const allFailed = results.every((r) => r.status === "fail");
+        const payload = { ref: args.ref, results };
+
+        return allFailed ? err(payload) : ok(payload);
+      } catch (e) {
+        return err({
+          error: e instanceof Error ? e.message : String(e),
+          ref: args.ref,
+          results: [],
+        });
+      }
+    },
   );
 
   return server;
