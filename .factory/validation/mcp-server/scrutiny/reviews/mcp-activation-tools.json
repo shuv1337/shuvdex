@@ -1,0 +1,34 @@
+{
+  "featureId": "mcp-activation-tools",
+  "reviewedAt": "2026-03-16T00:27:05.208407Z",
+  "commitId": "d06cbfc",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "fail",
+  "codeReview": {
+    "summary": "The three MCP tools are implemented and have focused tests, but two handlers mask post-operation verification failures as successes. As written, fleet_deactivate can report success without completing the required repo-intact verification, and fleet_pull can report success without returning the promised HEAD value.",
+    "issues": [
+      {
+        "file": "apps/mcp-server/src/server.ts",
+        "line": 504,
+        "severity": "blocking",
+        "description": "fleet_deactivate swallows any gitOps.getHead() failure, sets repoIntact=false, and still records the host result as status:\"ok\". If the post-deactivation integrity check fails on every host, the tool can still return isError:false even though the required repo-intact verification never succeeded."
+      },
+      {
+        "file": "apps/mcp-server/src/server.ts",
+        "line": 606,
+        "severity": "blocking",
+        "description": "fleet_pull swallows any gitOps.getHead() failure after a successful pull and still records status:\"ok\" with no head field. The feature contract says pull should return per-host outcome with HEAD, so a host should not be reported successful when the follow-up HEAD lookup fails."
+      }
+    ]
+  },
+  "sharedStateObservations": [
+    {
+      "area": "skills",
+      "observation": "The mcp-worker skill requires TDD and REQUIRED manual stdio verification with commands recorded in the handoff, but this worker implemented the tools before writing tests and did not actually run the stdio verification before commit. The handoff still reports skillFeedback.followedProcedure=true, so the skill-compliance signal is currently unreliable.",
+      "evidence": "Skill: .factory/skills/mcp-worker/SKILL.md:28-30,55-56,90-106. Transcript snippet for worker session e9970aae-397c-4f9a-a8e8-2781e4bb6a39 shows 'Let me now implement the three tools:' before 'Now let me write the tests.' and later 'Now let me commit and do manual verification:' immediately followed by git status/commit commands. Handoff /home/shuv/.factory/missions/53d67669-5ba8-4745-9fd5-71906b40773d/handoffs/2026-03-16T00-01-30-099Z__mcp-activation-tools__e9970aae-397c-4f9a-a8e8-2781e4bb6a39.json:123-126 marks followedProcedure=true, while commandsRun at lines 14-37 contains no stdio manual-verification command."
+    }
+  ],
+  "addressesFailureFrom": null,
+  "summary": "Fail: fleet_activate is fine, but fleet_deactivate and fleet_pull both downgrade failed post-operation HEAD checks into successful host results, so the feature does not fully satisfy the required verification/reporting behavior."
+}

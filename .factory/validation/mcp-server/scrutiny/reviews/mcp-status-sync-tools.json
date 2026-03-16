@@ -1,0 +1,45 @@
+{
+  "featureId": "mcp-status-sync-tools",
+  "reviewedAt": "2026-03-16T00:26:44Z",
+  "commitId": "ffce905",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "fail",
+  "codeReview": {
+    "summary": "The feature wires `fleet_status` and `fleet_sync` into the MCP server and adds focused tests, but two core semantics are still wrong: `fleet_status` hides repository-level failures behind `status: \"online\"`, and `fleet_sync` reports the remote repo HEAD as if it identified the synced content even though the sync operation only rsyncs files and leaves the repo dirty. The added `fleet_sync` tests only cover missing-skill/error cases, so the commit-hash mismatch is not exercised.",
+    "issues": [
+      {
+        "file": "apps/mcp-server/src/server.ts",
+        "line": 149,
+        "severity": "blocking",
+        "description": "`fleet_status` swallows every `getHead`/`getBranch`/`isDirty` failure and still returns `status: \"online\"` with no per-host error. A reachable host with a missing/broken repo therefore looks successful, but the tool no longer returns the repository state that VAL-MCP-003 requires."
+      },
+      {
+        "file": "apps/mcp-server/src/server.ts",
+        "line": 296,
+        "severity": "blocking",
+        "description": "`fleet_sync` advertises per-host commit hashes by reading `git rev-parse HEAD` after `syncSkill`, but `syncSkill` only rsyncs files into the working tree (`packages/skill-ops/src/live.ts:264-358`) and does not create or move a commit. The returned `head` therefore identifies the old repository commit, not the synced skill contents, so the feature does not actually satisfy the expected commit-hash behavior."
+      },
+      {
+        "file": "apps/mcp-server/test/fleet-sync.test.ts",
+        "line": 93,
+        "severity": "non_blocking",
+        "description": "The new `fleet_sync` coverage only exercises missing-skill/input-schema/filtering paths. There is no successful sync test asserting `filesTransferred` or the reported `head`, so the stale-commit-hash behavior above is left unverified."
+      }
+    ]
+  },
+  "sharedStateObservations": [
+    {
+      "area": "skills",
+      "observation": "The `mcp-worker` skill still teaches a simplified `Effect.runPromise(...)` example for MCP tool handlers, but this feature had to introduce runtime injection plus `Runtime.runPromise(runtime)` bridging to call Effect services from async MCP callbacks. The skill should show that pattern explicitly so workers do not have to rediscover it.",
+      "evidence": ".factory/skills/mcp-worker/SKILL.md:67-75 shows a direct `Effect.runPromise(statusService.getStatus())` example, while apps/mcp-server/src/server.ts:183-323 now relies on `ServerConfig.runtime` and `Runtime.runPromise(runtime)` for real tool execution; the handoff's `skillFeedback.suggestedChanges` calls this out too."
+    },
+    {
+      "area": "knowledge",
+      "observation": "The MCP server now depends on launch working directory for both config discovery and local skill lookup, but that requirement is not recorded in shared state. Future workers/validators can misdiagnose stubbed tools or missing local-skill errors if they launch the server outside the repo root.",
+      "evidence": "apps/mcp-server/src/index.ts:38-50 resolves `fleet.yaml` and `localRepoPath` from `process.cwd()`, while .factory/library/environment.md:10-25 does not document any launch-cwd requirement for MCP usage."
+    }
+  ],
+  "addressesFailureFrom": null,
+  "summary": "Reviewed commit `ffce905` for `mcp-status-sync-tools`: transcript skeleton, handoff, diff, implementation, and tests were inspected. Result: fail, because `fleet_status` masks repo-state failures and `fleet_sync` reports a misleading commit hash for rsynced-but-uncommitted content. The review report also records a missing success-path test for `fleet_sync` and shared-state gaps around MCP runtime bridging and launch working-directory requirements."
+}

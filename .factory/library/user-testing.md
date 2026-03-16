@@ -31,6 +31,13 @@ Testing surface, resource cost classification, and validation approach.
 - **State verification:** SSH commands to inspect remote state
 - **OTEL verification:** Query maple dashboard
 
+### MCP Validation Notes
+
+- For MCP protocol checks, prefer the same handshake real clients use: `initialize`, then `notifications/initialized`, then `tools/list`, followed by at least one feature-relevant `tools/call` when the feature adds or changes a tool handler.
+- For stdio transport assertions, capture raw line-delimited stdout and explicitly verify EOF shutdown behavior; the current server has custom stdin-`end` handling because the SDK transport alone does not terminate a live `ManagedRuntime` process.
+- For malformed-request/error-handling work, probe both invalid JSON and valid JSON that is invalid JSON-RPC (for example `[]` or `{"foo":"bar"}`) to confirm the server returns the expected protocol error instead of silently dropping the request.
+- For Codex-discovery features, a raw stdio harness is necessary but not sufficient: also validate the Codex-owned discovery path (project-scoped `.codex/config.toml` and visible tool registration on the Codex surface, or an equivalent Codex-controlled launch path).
+
 ### OTEL Collector Notes
 
 - Read-only probes against `http://localhost:4318` currently return `404` for `GET /` and `405` for `GET /v1/traces`.

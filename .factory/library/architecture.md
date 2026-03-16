@@ -2,6 +2,12 @@
 
 Architectural decisions and patterns for the fleet-skills system.
 
+
+### MCP Server Notes
+
+- `apps/mcp-server/src/index.ts` resolves `fleet.yaml` and the default `localRepoPath` from `process.cwd()`, so launch the MCP server from the repo root (or an equivalent working directory that contains the intended `fleet.yaml`).
+- Live MCP tool handlers bridge from async SDK callbacks into Effect programs via `ServerConfig.runtime` plus `Runtime.runPromise(runtime)(program)`; the simplified `Effect.runPromise(...)` pattern is not sufficient once the server is running with injected live layers.
+- `@modelcontextprotocol/sdk`'s `StdioServerTransport` does not by itself shut the process down on stdin EOF when a live `ManagedRuntime` is still keeping the Node event loop active. The current server handles `process.stdin.on("end")` explicitly to close the server and dispose the runtime.
 ---
 
 ## Overview
