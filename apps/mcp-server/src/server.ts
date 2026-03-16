@@ -104,15 +104,20 @@ function err(data: unknown) {
 
 /**
  * Per-host status record returned by fleet_status.
+ *
+ * `online`   – host reachable AND all repo-state lookups succeeded.
+ * `degraded` – host reachable but one or more repo-state lookups failed.
+ * `error`    – host unreachable (connectivity check failed).
  */
 interface HostStatusRecord {
   name: string;
   hostname: string;
-  status: "online" | "error";
+  status: "online" | "degraded" | "error";
   head?: string;
   branch?: string;
   dirty?: boolean;
   error?: string;
+  errors?: string[];
 }
 
 /**
@@ -145,28 +150,42 @@ const checkHostStatus = (
       };
     }
 
-    // 2. Git state (each may fail independently)
+    // 2. Git state (each may fail independently – capture error details)
+    const errors: string[] = [];
+
     const head = yield* gitOps.getHead(config, repoPath).pipe(
       Effect.map((sha) => sha.trim()),
-      Effect.catchAll(() => Effect.succeed(undefined as string | undefined)),
+      Effect.catchAll((e) => {
+        errors.push(`getHead: ${e instanceof Error ? e.message : String(e)}`);
+        return Effect.succeed(undefined as string | undefined);
+      }),
     );
 
     const branch = yield* gitOps.getBranch(config, repoPath).pipe(
       Effect.map((b) => b.trim()),
-      Effect.catchAll(() => Effect.succeed(undefined as string | undefined)),
+      Effect.catchAll((e) => {
+        errors.push(`getBranch: ${e instanceof Error ? e.message : String(e)}`);
+        return Effect.succeed(undefined as string | undefined);
+      }),
     );
 
     const dirty = yield* gitOps.isDirty(config, repoPath).pipe(
-      Effect.catchAll(() => Effect.succeed(undefined as boolean | undefined)),
+      Effect.catchAll((e) => {
+        errors.push(`isDirty: ${e instanceof Error ? e.message : String(e)}`);
+        return Effect.succeed(undefined as boolean | undefined);
+      }),
     );
+
+    const status = errors.length > 0 ? ("degraded" as const) : ("online" as const);
 
     return {
       name,
       hostname: config.hostname,
-      status: "online" as const,
+      status,
       ...(head !== undefined ? { head } : {}),
       ...(branch !== undefined ? { branch } : {}),
       ...(dirty !== undefined ? { dirty } : {}),
+      ...(errors.length > 0 ? { errors, error: errors.join("; ") } : {}),
     };
   });
 
