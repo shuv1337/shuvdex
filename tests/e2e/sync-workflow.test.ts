@@ -44,10 +44,11 @@ const activeDir = "~/.codex/skills";
 
 /**
  * Skill to use for E2E testing.
- * "test-skill" exists in the shuvbot-skills repo and is safe to
- * activate/deactivate without affecting real functionality.
+ * "adapt" exists on both shuvtest (Linux) and shuvbot (macOS) in the
+ * shuvbot-skills repo and is safe to activate/deactivate without
+ * affecting real functionality.
  */
-const testSkillName = "test-skill";
+const testSkillName = "adapt";
 
 // ─── Test Layer ────────────────────────────────────────────────
 
@@ -202,7 +203,7 @@ describe("VAL-CROSS-001: Full Sync Workflow (E2E)", () => {
             // Target should be under the skills repo path
             // (tilde may be expanded to /home/exedev)
             expect(target).toMatch(
-              /repos\/shuvbot-skills\/test-skill$/,
+              /repos\/shuvbot-skills\/adapt$/,
             );
           }),
         { timeout: 15_000 },
