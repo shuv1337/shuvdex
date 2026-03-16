@@ -16,7 +16,11 @@
     "@codex-fleet/ssh": "*",
     "@codex-fleet/git-ops": "*",
     "@codex-fleet/skill-ops": "*",
-    "@codex-fleet/telemetry": "*"
+    "@codex-fleet/telemetry": "*",
+    "@codex-fleet/cli": "*",
+    "@codex-fleet/mcp-server": "*",
+    "@modelcontextprotocol/sdk": "^1.27.1",
+    "zod": "^3.25.0 || ^4.0.0"
   },
   "devDependencies": {
     "@effect/vitest": "^0.27.0",
