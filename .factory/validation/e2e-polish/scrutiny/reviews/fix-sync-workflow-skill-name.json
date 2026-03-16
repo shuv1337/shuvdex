@@ -1,0 +1,15 @@
+{
+  "featureId": "fix-sync-workflow-skill-name",
+  "reviewedAt": "2026-03-16T03:21:14Z",
+  "commitId": "289aa1e",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "pass",
+  "codeReview": {
+    "summary": "Pass. The original rerun failure was caused by `tests/e2e/sync-workflow.test.ts` using `test-skill`, which does not exist on `shuvtest`, so activation could not produce a valid target and `getSkillStatus` remained inactive. The fix switches the scenario to the cross-host `adapt` skill (`tests/e2e/sync-workflow.test.ts:51`) and retains assertions that directly cover the failure mode: status must become `active` after activation (`tests/e2e/sync-workflow.test.ts:181`), the symlink target must resolve to the expected repo path (`tests/e2e/sync-workflow.test.ts:205-206`), and a second activation must return `alreadyInState=true` (`tests/e2e/sync-workflow.test.ts:264`). Those checks match the `SkillOps` semantics in `packages/skill-ops/src/live.ts:517-524` and `packages/skill-ops/src/live.ts:871-873`, so I did not find any remaining blocking correctness defect in the current implementation.",
+    "issues": []
+  },
+  "sharedStateObservations": [],
+  "addressesFailureFrom": "/home/shuv/repos/codex-fleet/.factory/validation/e2e-polish/scrutiny/reviews/e2e-full-sync-workflow.json",
+  "summary": "Pass: the fix replaces the Linux-missing `test-skill` with cross-host `adapt`, and the current sync-workflow assertions now directly validate the activation, status, and idempotency behavior that previously failed."
+}

@@ -1,0 +1,40 @@
+{
+  "featureId": "e2e-cli-mcp-parity",
+  "reviewedAt": "2026-03-16T02:52:07Z",
+  "commitId": "1939321",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "fail",
+  "codeReview": {
+    "summary": "The commit adds a dedicated parity suite, but it does not fully satisfy VAL-CROSS-005. The test bypasses the shipped CLI and MCP transport surfaces, mutates shared live host state instead of an isolated sandbox, and weakens several assertions so it never proves that CLI and MCP results are actually equivalent.",
+    "issues": [
+      {
+        "file": "tests/e2e/parity.test.ts",
+        "line": 11,
+        "severity": "blocking",
+        "description": "This is not a true CLI↔MCP end-to-end test. The suite explicitly uses the CLI programmatic helpers (`runStatus`, `runPull`, `runActivate`, `runDeactivate`) and an in-memory MCP transport instead of invoking the real CLI command and the stdio JSON-RPC MCP server. Because of that, regressions in CLI argument parsing, stdout/JSON formatting, exit codes, server stdio wiring, and initialize/tool-call protocol behavior would all go undetected even though VAL-CROSS-005 requires CLI command and MCP tool parity. See `tests/e2e/parity.test.ts:11-13`, `:144-149`, `:194-195`, `:243-245`, `:327-333`, and `:429-430`."
+      },
+      {
+        "file": "tests/e2e/parity.test.ts",
+        "line": 71,
+        "severity": "blocking",
+        "description": "The test hard-codes the live remote repo (`~/repos/shuvbot-skills`) and active-skills directory (`~/.codex/skills`) and then mutates them via pull/activate/deactivate operations. That violates the mission guidance that existing skills repos are read-only for e2e work and that isolated test directories must be used, so the suite is non-hermetic and can interfere with other tests or real host state. See `tests/e2e/parity.test.ts:71-80`, `:243-245`, `:327-333`, `:429-430`, and `:654-655`; compare with mission `AGENTS.md:16` and `:75`, plus `.factory/library/user-testing.md:60-62`, `:87`, and `:100-101`."
+      },
+      {
+        "file": "tests/e2e/parity.test.ts",
+        "line": 228,
+        "severity": "blocking",
+        "description": "Several assertions explicitly relax parity instead of checking it. In the status test, the suite states that 'reachability' alone is the parity requirement and does not compare the richer MCP status payload (`head`, `branch`, `dirty`) against any CLI-visible equivalent. In the pull test, it likewise says 'The important thing is both succeed' and never compares the CLI result's semantic payload (`updated`, `summary`) to the MCP response. A mismatch between the two interfaces could therefore pass this suite, which means the implementation does not actually verify the 'identical results' / 'result data semantically equivalent' requirement from VAL-CROSS-005. See `tests/e2e/parity.test.ts:228-230` and `:280-282`."
+      }
+    ]
+  },
+  "sharedStateObservations": [
+    {
+      "area": "skills",
+      "observation": "The `backend-worker` skill is a poor fit for e2e interface work and currently nudges workers toward package-level tests and the live `~/repos/shuvbot-skills` checkout. That likely contributed to this worker bypassing the real CLI/MCP surfaces and hard-coding live host paths instead of using the documented e2e sandboxes.",
+      "evidence": "`.factory/skills/backend-worker/SKILL.md:28-30` directs workers to create tests under `packages/<name>/test/`, and `:85-88` recommends probing `ssh shuvtest \"cd ~/repos/shuvbot-skills && git status\"`. Mission `AGENTS.md:16` and `:75` require isolated directories for e2e work, while `.factory/library/user-testing.md:86-101` documents the real CLI and stdio MCP validation surfaces. The reviewed transcript plus `tests/e2e/parity.test.ts:11-13` and `:71-74` show the worker followed the skill's package-level/live-path bias rather than the documented e2e surface guidance."
+    }
+  ],
+  "addressesFailureFrom": null,
+  "summary": "Fail: the parity suite adds useful coverage around shared service behavior, but it does not exercise the shipped CLI/MCP interfaces, it mutates forbidden live host paths, and its assertions are too weak to prove identical results between the two surfaces."
+}

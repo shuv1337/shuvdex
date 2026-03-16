@@ -1,0 +1,39 @@
+{
+  "featureId": "e2e-rollback-workflow",
+  "reviewedAt": "2026-03-16T02:51:49.700397+00:00",
+  "commitId": "4fdc2c4",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "fail",
+  "codeReview": {
+    "summary": "The feature adds the requested rollback-flow assertions and OTEL coverage, but it does so by mutating the shared `~/repos/shuvbot-skills` checkout and then cleaning it with destructive commands. Because the test creates commits/tags, hard-resets the branch, and prunes untracked files in that shared repo, the implementation is not hermetic and can break or erase unrelated state on the test host.",
+    "issues": [
+      {
+        "file": "tests/e2e/rollback.test.ts",
+        "line": 46,
+        "severity": "blocking",
+        "description": "The test performs write-path rollback assertions directly against the shared `~/repos/shuvbot-skills` checkout instead of an isolated sandbox. It creates commits/tags and hard-resets that shared repo (`git commit`, `git reset --hard`, `git checkout`), which violates the mission/testing guidance to keep remote mutations inside isolated temp directories and makes the feature unsafe/non-hermetic."
+      },
+      {
+        "file": "tests/e2e/rollback.test.ts",
+        "line": 124,
+        "severity": "blocking",
+        "description": "Cleanup runs `git clean -fd` in the shared repo, which deletes all untracked files/directories rather than only the test-owned temp artifact. That can erase unrelated untracked state from other tests or users, and it directly contradicts the test's own comment that pre-existing untracked files may exist. The same destructive cleanup pattern is repeated in the OTEL path at line 478."
+      }
+    ]
+  },
+  "sharedStateObservations": [
+    {
+      "area": "conventions",
+      "observation": "Shared guidance says remote write-path validation must use isolated test directories/sandboxes and must not mutate `~/repos/shuvbot-skills`, but the shipped E2E tests (including this feature) operate on that shared checkout and now require serialized execution to avoid interference.",
+      "evidence": "/home/shuv/.factory/missions/53d67669-5ba8-4745-9fd5-71906b40773d/AGENTS.md:16,75 and /home/shuv/repos/codex-fleet/.factory/library/user-testing.md:22,60-65,81,100-101 versus /home/shuv/repos/codex-fleet/tests/e2e/rollback.test.ts:46,239-247,463-479 and /home/shuv/repos/codex-fleet/tests/e2e/vitest.config.ts:8-10"
+    },
+    {
+      "area": "skills",
+      "observation": "The assigned `backend-worker` skill is package/service oriented and prescribes `packages/<name>/test/` TDD flows, but this feature was an E2E test under `tests/e2e` against live SSH hosts. The worker's own handoff notes that the TDD/red-phase guidance does not fit this kind of E2E work, so the skill appears mismatched for E2E features.",
+      "evidence": "/home/shuv/repos/codex-fleet/.factory/skills/backend-worker/SKILL.md:12-17,28-67 and /home/shuv/.factory/missions/53d67669-5ba8-4745-9fd5-71906b40773d/handoffs/2026-03-16T01-45-42-639Z__e2e-rollback-workflow__e4fe0d14-c86d-4877-9fbd-7401c42b534d.json :: handoff.skillFeedback.suggestedChanges[0]"
+    }
+  ],
+  "addressesFailureFrom": null,
+  "summary": "Fail: the rollback test covers the intended flow, but it mutates the shared `~/repos/shuvbot-skills` checkout and uses destructive cleanup (`git clean -fd`) there, so the feature is unsafe and non-hermetic despite passing its own test run."
+}

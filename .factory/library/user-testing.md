@@ -44,6 +44,7 @@ Testing surface, resource cost classification, and validation approach.
 - Verifying actual trace ingestion therefore requires a readable maple/dashboard surface or another trace-query interface; collector reachability alone is not conclusive evidence that a span was ingested.
 - Foundation rerun evidence showed a reliable terminal-only proof path: run the public telemetry package under Node with a temporary `fetch` interceptor, then assert the live exporter makes `POST http://localhost:4318/v1/traces` and that the OTLP JSON body contains the unique span name while the collector replies `200` with `{"partialSuccess":{}}`.
 - `http://localhost:13133/` is a readable collector health endpoint and returned `200` health JSON during the rerun, but it only proves collector availability, not trace ingestion.
+- For direct maple SQL checks in this environment, the working query endpoint is `http://localhost:7181/v0/sql`, with credentials sourced from `~/repos/maple/.env.local`. Treat those queries as evidence for the current run only if they filter on a run-unique marker and include `maple_org_id`, because primary-table routing depends on that field.
 
 ## Validation Concurrency
 
@@ -60,6 +61,7 @@ Testing surface, resource cost classification, and validation approach.
 - Use isolated test directories on remote hosts
 - Create/destroy test skill directories per test
 - Reset git state between tests
+- The live host skill repos are asymmetric: `test-skill` is present on `shuvbot` but not on `shuvtest`. For cross-host comparisons, use a common skill already present on both hosts (for example `adapt`) or provision a sandboxed fixture on each host.
 - For foundation package validation, use per-flow temp dirs under `/tmp/codex-fleet-user-testing-*` and only run read-only remote SSH commands (`echo`, `hostname`, `whoami`, controlled non-zero exits).
 - For git/skill package validation, create separate local and remote `/tmp/codex-fleet-user-testing-<group>` sandboxes per flow and keep every mutation, clone, tag, symlink, and cleanup operation inside those directories.
 - For git merge-conflict validation on Git 2.53, set `git config pull.rebase false` inside the isolated conflict repo before calling `git pull origin`; otherwise Git may stop at the pull-strategy prompt instead of reaching the actual content-conflict path.

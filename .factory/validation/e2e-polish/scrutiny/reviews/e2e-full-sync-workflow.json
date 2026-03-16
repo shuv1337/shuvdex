@@ -1,0 +1,34 @@
+{
+  "featureId": "e2e-full-sync-workflow",
+  "reviewedAt": "2026-03-16T02:50:33Z",
+  "commitId": "cb3bc18",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "fail",
+  "codeReview": {
+    "summary": "The commit adds a dedicated e2e workspace and a 12-test workflow suite, but the implementation falls short of the feature contract in two important ways: it bypasses the promised CLI/MCP surfaces and it runs against live shared host state instead of an isolated sandbox.",
+    "issues": [
+      {
+        "file": "tests/e2e/sync-workflow.test.ts",
+        "line": 120,
+        "severity": "blocking",
+        "description": "The suite exercises `GitOps`/`SkillOps` services directly rather than the CLI or MCP entrypoints. The feature description explicitly says this workflow should test integration across git-ops, skill-ops, and CLI/MCP, but no CLI command or MCP request is issued anywhere in the file, so regressions in the actual user-facing wiring would not be caught."
+      },
+      {
+        "file": "tests/e2e/sync-workflow.test.ts",
+        "line": 40,
+        "severity": "blocking",
+        "description": "The test hard-codes the live remote repo (`~/repos/shuvbot-skills`) and active-skills directory (`~/.codex/skills`), then mutates them in place via pull/activate/deactivate steps. That violates the mission guidance to keep e2e work in isolated test directories, makes the suite non-hermetic, and it does not restore any pre-existing active state because it forcibly deactivates `test-skill` before and after the workflow."
+      }
+    ]
+  },
+  "sharedStateObservations": [
+    {
+      "area": "skills",
+      "observation": "The `backend-worker` skill still nudges SSH-related work toward the live `~/repos/shuvbot-skills` checkout, which conflicts with this mission's isolated-directory rule for e2e work and likely contributed to the worker hard-coding live paths.",
+      "evidence": "`.factory/skills/backend-worker/SKILL.md:82-89` recommends `ssh shuvtest \"cd ~/repos/shuvbot-skills && git status\"`, while mission `AGENTS.md:16,75` says existing skills repos are read-only for e2e tests and isolated test directories must be used. The transcript skeleton also shows the worker probing `~/repos/shuvbot-skills` and `~/.codex/skills` before authoring the test."
+    }
+  ],
+  "addressesFailureFrom": null,
+  "summary": "Fail: the added suite verifies package-level git/skill operations and OTEL spans, but it does not exercise the promised CLI/MCP surfaces and it mutates shared remote host state instead of using isolated e2e sandboxes."
+}
