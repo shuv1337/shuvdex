@@ -1,0 +1,95 @@
+{
+  "milestone": "mcp-server",
+  "round": 1,
+  "status": "fail",
+  "validatorsRun": {
+    "test": {
+      "passed": true,
+      "command": "npm test",
+      "exitCode": 0
+    },
+    "typecheck": {
+      "passed": true,
+      "command": "npm run typecheck",
+      "exitCode": 0
+    },
+    "lint": {
+      "passed": true,
+      "command": "npm run lint",
+      "exitCode": 0
+    }
+  },
+  "reviewsSummary": {
+    "total": 6,
+    "passed": 1,
+    "failed": 5,
+    "failedFeatures": [
+      "mcp-status-sync-tools",
+      "mcp-activation-tools",
+      "mcp-drift-rollback-tools",
+      "mcp-error-handling",
+      "mcp-codex-integration"
+    ]
+  },
+  "blockingIssues": [
+    {
+      "featureId": "mcp-status-sync-tools",
+      "severity": "blocking",
+      "description": "`fleet_status` reports a reachable host as `online` even when repo-state lookups (`getHead`/`getBranch`/`isDirty`) fail, and `fleet_sync` returns the repo HEAD after an rsync-style sync even though that commit hash does not identify the synced content."
+    },
+    {
+      "featureId": "mcp-activation-tools",
+      "severity": "blocking",
+      "description": "`fleet_deactivate` and `fleet_pull` both downgrade post-operation `getHead()` verification failures into successful host results, so required repo-intact / resulting-HEAD reporting can fail silently."
+    },
+    {
+      "featureId": "mcp-drift-rollback-tools",
+      "severity": "blocking",
+      "description": "`fleet_rollback` can report `status: \"ok\"` even when post-checkout HEAD verification fails, so the tool does not reliably verify and return the resulting HEAD per host."
+    },
+    {
+      "featureId": "mcp-error-handling",
+      "severity": "blocking",
+      "description": "MCP error handling is still incomplete: `fleet_status` collapses connection failures to the generic string `Host unreachable`, and valid JSON that is invalid JSON-RPC (for example `[]` or `{\"foo\":\"bar\"}`) can still receive no protocol error response."
+    },
+    {
+      "featureId": "mcp-codex-integration",
+      "severity": "blocking",
+      "description": "The Codex integration evidence only simulates Codex by parsing `.codex/config.toml` and spawning the server directly; it does not verify actual Codex discovery of the config entry or tool visibility on a Codex-owned surface."
+    }
+  ],
+  "appliedUpdates": [
+    {
+      "target": "library",
+      "description": "Added MCP architecture notes covering repo-root launch assumptions, the `Runtime.runPromise(runtime)` handler pattern, and explicit stdin-EOF shutdown for `StdioServerTransport` with a live `ManagedRuntime`.",
+      "sourceFeature": "mcp-status-sync-tools + mcp-codex-integration"
+    },
+    {
+      "target": "library",
+      "description": "Expanded MCP validation guidance with the real client handshake, malformed JSON-RPC probes, transport-level EOF checks, and Codex-discovery validation requirements.",
+      "sourceFeature": "mcp-server-protocol + mcp-error-handling + mcp-codex-integration"
+    }
+  ],
+  "suggestedGuidanceUpdates": [
+    {
+      "target": "mcp-worker skill",
+      "suggestion": "Strengthen required manual verification to use the real MCP handshake (`initialize` -> `notifications/initialized` -> `tools/list`) and also invoke at least one feature-relevant tool; for protocol/error-handling work, explicitly require malformed JSON-RPC probes in addition to plain parse-error checks.",
+      "evidence": "Reviews for `mcp-server-protocol`, `mcp-drift-rollback-tools`, `mcp-error-handling`, and `mcp-codex-integration` all found that the current skill only requires initialize/tools-list smoke checks, which left tool-specific and invalid-JSON-RPC bugs undiscovered.",
+      "isSystemic": true
+    },
+    {
+      "target": "mcp-worker skill",
+      "suggestion": "Replace the simplified `Effect.runPromise(...)` example with the repository's current live-server pattern that passes `ServerConfig.runtime` into handlers and executes programs via `Runtime.runPromise(runtime)(program)`.",
+      "evidence": "The `mcp-status-sync-tools` review noted that real handlers now depend on runtime injection in `apps/mcp-server/src/server.ts`, while `.factory/skills/mcp-worker/SKILL.md` still teaches the simplified direct-run pattern.",
+      "isSystemic": true
+    },
+    {
+      "target": "mcp-worker skill",
+      "suggestion": "Clarify that workers must report `skillFeedback.followedProcedure=false` whenever they skip the documented TDD or manual-verification steps, rather than marking the procedure as followed after only running automated tests.",
+      "evidence": "The `mcp-activation-tools` review found the worker implemented code before tests, skipped the required stdio manual verification, and still reported `skillFeedback.followedProcedure=true` in the handoff.",
+      "isSystemic": true
+    }
+  ],
+  "rejectedObservations": [],
+  "previousRound": null
+}

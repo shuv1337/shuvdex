@@ -1,0 +1,15 @@
+{
+  "featureId": "fix-mcp-status-degraded",
+  "reviewedAt": "2026-03-16T01:03:13Z",
+  "commitId": "9981918547e1b298b4c5a1c9f254ef0135fc6410",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "pass",
+  "codeReview": {
+    "summary": "This fix adequately addresses the prior fleet_status blocker from the original mcp-status-sync-tools review. The original implementation in commit ffce905 swallowed getHead/getBranch/isDirty failures and still returned status \"online\"; the fix now introduces a distinct \"degraded\" status, preserves per-operation error details, and retains any successful repo-state fields. The added tests cover all-git-op failure, partial repo-state failure, and the all-degraded response envelope.",
+    "issues": []
+  },
+  "sharedStateObservations": [],
+  "addressesFailureFrom": "/home/shuv/repos/codex-fleet/.factory/validation/mcp-server/scrutiny/reviews/mcp-status-sync-tools.json",
+  "summary": "Pass. I reviewed the prior failed feature report, both handoffs, the fix transcript skeleton, the original ffce905 implementation, and the fix commit 9981918547e1b298b4c5a1c9f254ef0135fc6410. The targeted degraded-status failure is fixed: apps/mcp-server/src/server.ts now reports reachable hosts with repo-state lookup failures as degraded and includes error details, and apps/mcp-server/test/fleet-status.test.ts adds focused regression coverage for full and partial lookup failures. No new issues were found in this fix's scope; the separate fleet_sync blocker from the original review is unchanged and outside this fix feature's scope."
+}

@@ -1,6 +1,6 @@
 {
   "milestone": "mcp-server",
-  "round": 1,
+  "round": 2,
   "status": "fail",
   "validatorsRun": {
     "test": {
@@ -21,75 +21,49 @@
   },
   "reviewsSummary": {
     "total": 6,
-    "passed": 1,
-    "failed": 5,
+    "passed": 5,
+    "failed": 1,
     "failedFeatures": [
-      "mcp-status-sync-tools",
-      "mcp-activation-tools",
-      "mcp-drift-rollback-tools",
-      "mcp-error-handling",
-      "mcp-codex-integration"
+      "fix-mcp-zod-dep"
     ]
   },
   "blockingIssues": [
     {
-      "featureId": "mcp-status-sync-tools",
+      "featureId": "fix-mcp-zod-dep",
       "severity": "blocking",
-      "description": "`fleet_status` reports a reachable host as `online` even when repo-state lookups (`getHead`/`getBranch`/`isDirty`) fail, and `fleet_sync` returns the repo HEAD after an rsync-style sync even though that commit hash does not identify the synced content."
-    },
-    {
-      "featureId": "mcp-activation-tools",
-      "severity": "blocking",
-      "description": "`fleet_deactivate` and `fleet_pull` both downgrade post-operation `getHead()` verification failures into successful host results, so required repo-intact / resulting-HEAD reporting can fail silently."
-    },
-    {
-      "featureId": "mcp-drift-rollback-tools",
-      "severity": "blocking",
-      "description": "`fleet_rollback` can report `status: \"ok\"` even when post-checkout HEAD verification fails, so the tool does not reliably verify and return the resulting HEAD per host."
-    },
-    {
-      "featureId": "mcp-error-handling",
-      "severity": "blocking",
-      "description": "MCP error handling is still incomplete: `fleet_status` collapses connection failures to the generic string `Host unreachable`, and valid JSON that is invalid JSON-RPC (for example `[]` or `{\"foo\":\"bar\"}`) can still receive no protocol error response."
-    },
-    {
-      "featureId": "mcp-codex-integration",
-      "severity": "blocking",
-      "description": "The Codex integration evidence only simulates Codex by parsing `.codex/config.toml` and spawning the server directly; it does not verify actual Codex discovery of the config entry or tool visibility on a Codex-owned surface."
+      "description": "The direct `zod` dependency fix improves `apps/mcp-server` launchability when hoisting is absent, but it does not resolve the prior `mcp-codex-integration` scrutiny blocker. The project still lacks Codex-owned discovery/tool-visibility evidence and only validates integration by parsing `.codex/config.toml` locally and spawning the server directly."
     }
   ],
-  "appliedUpdates": [
-    {
-      "target": "library",
-      "description": "Added MCP architecture notes covering repo-root launch assumptions, the `Runtime.runPromise(runtime)` handler pattern, and explicit stdin-EOF shutdown for `StdioServerTransport` with a live `ManagedRuntime`.",
-      "sourceFeature": "mcp-status-sync-tools + mcp-codex-integration"
-    },
-    {
-      "target": "library",
-      "description": "Expanded MCP validation guidance with the real client handshake, malformed JSON-RPC probes, transport-level EOF checks, and Codex-discovery validation requirements.",
-      "sourceFeature": "mcp-server-protocol + mcp-error-handling + mcp-codex-integration"
-    }
-  ],
+  "appliedUpdates": [],
   "suggestedGuidanceUpdates": [
     {
       "target": "mcp-worker skill",
-      "suggestion": "Strengthen required manual verification to use the real MCP handshake (`initialize` -> `notifications/initialized` -> `tools/list`) and also invoke at least one feature-relevant tool; for protocol/error-handling work, explicitly require malformed JSON-RPC probes in addition to plain parse-error checks.",
-      "evidence": "Reviews for `mcp-server-protocol`, `mcp-drift-rollback-tools`, `mcp-error-handling`, and `mcp-codex-integration` all found that the current skill only requires initialize/tools-list smoke checks, which left tool-specific and invalid-JSON-RPC bugs undiscovered.",
+      "suggestion": "Update REQUIRED MCP manual verification to match `.factory/library/user-testing.md`: use the real handshake (`initialize` -> `notifications/initialized` -> `tools/list`) and require at least one feature-relevant `tools/call`; for error-handling/protocol work, explicitly probe malformed JSON-RPC envelopes such as `[]`, `{}`, and `{\"foo\":\"bar\"}`.",
+      "evidence": "Rerun reviews for `fix-mcp-head-verification`, `fix-mcp-error-context`, and `fix-mcp-jsonrpc-envelope` all observed workers following the current initialize/tools-list-only skill guidance, which no longer matches the stronger MCP validation procedure already documented in `.factory/library/user-testing.md`.",
       "isSystemic": true
     },
     {
       "target": "mcp-worker skill",
-      "suggestion": "Replace the simplified `Effect.runPromise(...)` example with the repository's current live-server pattern that passes `ServerConfig.runtime` into handlers and executes programs via `Runtime.runPromise(runtime)(program)`.",
-      "evidence": "The `mcp-status-sync-tools` review noted that real handlers now depend on runtime injection in `apps/mcp-server/src/server.ts`, while `.factory/skills/mcp-worker/SKILL.md` still teaches the simplified direct-run pattern.",
+      "suggestion": "Require workers to set `skillFeedback.followedProcedure=false` and record deviations whenever they skip the documented TDD/build/manual-verification steps, instead of reporting the procedure as followed after only automated validators.",
+      "evidence": "The `fix-mcp-head-verification` rerun still found a handoff marked `followedProcedure=true` even though only test/typecheck/lint were run and no manual stdio verification was recorded, so the current skill-following signal remains unreliable.",
       "isSystemic": true
     },
     {
       "target": "mcp-worker skill",
-      "suggestion": "Clarify that workers must report `skillFeedback.followedProcedure=false` whenever they skip the documented TDD or manual-verification steps, rather than marking the procedure as followed after only running automated tests.",
-      "evidence": "The `mcp-activation-tools` review found the worker implemented code before tests, skipped the required stdio manual verification, and still reported `skillFeedback.followedProcedure=true` in the handoff.",
+      "suggestion": "Add a lighter-weight dependency/config-fix procedure so manifest-only or packaging-only MCP fixes can use proportional targeted validation rather than the full new-tool workflow, while still requiring relevant verification for launchability changes.",
+      "evidence": "The `fix-mcp-zod-dep` review found the worker was pushed through the full new-tool workflow even though the change was only a direct dependency declaration; the handoff explicitly requested a lighter dependency/config-fix path in `mcp-worker` guidance.",
       "isSystemic": true
     }
   ],
-  "rejectedObservations": [],
-  "previousRound": null
+  "rejectedObservations": [
+    {
+      "observation": "Add another library note about the MCP handshake and feature-relevant tool-call verification.",
+      "reason": "already-documented in `.factory/library/user-testing.md`; the remaining gap is worker-skill guidance, not missing factual library knowledge"
+    },
+    {
+      "observation": "Add another architecture/library note about runtime-bridged MCP handlers or repo-root launch assumptions.",
+      "reason": "already-documented in `.factory/library/architecture.md`, so no additional shared-state update is needed"
+    }
+  ],
+  "previousRound": ".factory/validation/mcp-server/scrutiny/synthesis.round-1.json"
 }
