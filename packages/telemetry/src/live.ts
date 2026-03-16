@@ -45,6 +45,9 @@ export const OtlpTracingLive = (
       serviceVersion: "0.0.0",
       attributes: {
         "deployment.environment": "development",
+        // maple_org_id is required by the maple OTEL collector pipeline
+        // for traces to be routed to the primary traces table (not quarantine).
+        "maple_org_id": "default",
       },
     },
     tracerExportInterval: "5 seconds",
