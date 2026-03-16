@@ -267,16 +267,16 @@ export function createServer(config?: ServerConfig): McpServer {
         return err({ error: "No matching hosts found", results: [] });
       }
 
+      const source = { localRepoPath: localRepo, skill: args.skill };
+
       const program = Effect.gen(function* () {
         const skillOps = yield* SkillOps;
-        const gitOps = yield* GitOps;
 
         interface HostSyncResult {
           name: string;
           hostname: string;
           status: "ok" | "fail";
           filesTransferred?: number;
-          head?: string;
           error?: string;
         }
 
@@ -312,22 +312,11 @@ export function createServer(config?: ServerConfig): McpServer {
             continue;
           }
 
-          // Get HEAD commit after sync for verification
-          const head = yield* gitOps
-            .getHead(hostConfig, repoPath)
-            .pipe(
-              Effect.map((sha) => sha.trim()),
-              Effect.catchAll(() =>
-                Effect.succeed(undefined as string | undefined),
-              ),
-            );
-
           results.push({
             name,
             hostname: hostConfig.hostname,
             status: "ok",
             filesTransferred: syncResult.filesTransferred,
-            ...(head !== undefined ? { head } : {}),
           });
         }
 
@@ -337,13 +326,14 @@ export function createServer(config?: ServerConfig): McpServer {
       try {
         const results = await Runtime.runPromise(runtime)(program);
         const allFailed = results.every((r) => r.status === "fail");
-        const payload = { skill: args.skill, results };
+        const payload = { skill: args.skill, source, results };
 
         return allFailed ? err(payload) : ok(payload);
       } catch (e) {
         return err({
           error: e instanceof Error ? e.message : String(e),
           skill: args.skill,
+          source,
           results: [],
         });
       }
