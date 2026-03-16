@@ -1,0 +1,173 @@
+{
+  "groupId": "e2e-parity-error",
+  "testedAt": "2026-03-16T03:44:46Z",
+  "isolation": {
+    "repoRoot": "/home/shuv/repos/codex-fleet",
+    "missionDir": "/home/shuv/.factory/missions/53d67669-5ba8-4745-9fd5-71906b40773d",
+    "workingDirectory": "/home/shuv/repos/codex-fleet/tests/e2e",
+    "guidanceFile": "/home/shuv/repos/codex-fleet/.factory/library/user-testing.md",
+    "guidanceSection": "Flow Validator Guidance: e2e-vitest",
+    "executionMode": "serial",
+    "assignedAssertions": [
+      "VAL-CROSS-005",
+      "VAL-CROSS-007"
+    ],
+    "assignedFiles": [
+      "/home/shuv/repos/codex-fleet/tests/e2e/parity.test.ts",
+      "/home/shuv/repos/codex-fleet/tests/e2e/error-propagation.test.ts"
+    ],
+    "evidenceDirectory": "/home/shuv/.factory/missions/53d67669-5ba8-4745-9fd5-71906b40773d/evidence/e2e-polish/e2e-parity-error"
+  },
+  "toolsUsed": [
+    "npm",
+    "vitest",
+    "python3"
+  ],
+  "assertions": [
+    {
+      "id": "VAL-CROSS-005",
+      "title": "CLI to MCP Parity",
+      "status": "fail",
+      "steps": [
+        {
+          "action": "status: CLI and MCP report the same host status",
+          "expected": "Named Vitest step passes in the targeted E2E file.",
+          "observed": "Passed in `npm test -- parity.test.ts`; see `e2e-polish/e2e-parity-error/parity.stdout.txt`."
+        },
+        {
+          "action": "pull: CLI and MCP produce the same pull outcome and HEAD",
+          "expected": "Named Vitest step passes in the targeted E2E file.",
+          "observed": "Passed in `npm test -- parity.test.ts`; see `e2e-polish/e2e-parity-error/parity.stdout.txt`."
+        },
+        {
+          "action": "activate: CLI and MCP produce identical activation state",
+          "expected": "Named Vitest step passes in the targeted E2E file.",
+          "observed": "Passed in `npm test -- parity.test.ts`; see `e2e-polish/e2e-parity-error/parity.stdout.txt`."
+        },
+        {
+          "action": "deactivate: CLI and MCP produce identical deactivation state",
+          "expected": "Named Vitest step passes in the targeted E2E file.",
+          "observed": "Passed in `npm test -- parity.test.ts`; see `e2e-polish/e2e-parity-error/parity.stdout.txt`."
+        },
+        {
+          "action": "idempotent activate: both CLI and MCP report alreadyInState for already-active skill",
+          "expected": "Named Vitest step passes in the targeted E2E file.",
+          "observed": "Failed in `npm test -- parity.test.ts`; `e2e-polish/e2e-parity-error/parity.stderr.txt` shows `AssertionError: expected false to be true` because `cliHost!.alreadyInState` was `false`."
+        },
+        {
+          "action": "idempotent deactivate: both CLI and MCP report alreadyInState for not-active skill",
+          "expected": "Named Vitest step passes in the targeted E2E file.",
+          "observed": "Passed in `npm test -- parity.test.ts`; see `e2e-polish/e2e-parity-error/parity.stdout.txt`."
+        },
+        {
+          "action": "state consistency: CLI and MCP see the same HEAD after sequential pulls",
+          "expected": "Named Vitest step passes in the targeted E2E file.",
+          "observed": "Passed in `npm test -- parity.test.ts`; see `e2e-polish/e2e-parity-error/parity.stdout.txt`."
+        }
+      ],
+      "evidence": {
+        "command": "npm test -- parity.test.ts",
+        "stdout": "e2e-polish/e2e-parity-error/parity.stdout.txt",
+        "stderr": "e2e-polish/e2e-parity-error/parity.stderr.txt",
+        "exitCode": "e2e-polish/e2e-parity-error/parity.exit-code.txt",
+        "vitestSummary": "6 passed, 1 failed in parity.test.ts",
+        "stderrSummary": "AssertionError in `idempotent activate: both CLI and MCP report alreadyInState for already-active skill`: expected false to be true."
+      },
+      "issues": "`idempotent activate: both CLI and MCP report alreadyInState for already-active skill` failed because the CLI result reported `alreadyInState=false` for an already-active skill, so CLI/MCP parity was not preserved."
+    },
+    {
+      "id": "VAL-CROSS-007",
+      "title": "Error Propagation",
+      "status": "pass",
+      "steps": [
+        {
+          "action": "CLI status: SSH failure is detected and reported with human-readable error",
+          "expected": "Named Vitest step passes in the targeted E2E file.",
+          "observed": "Passed in `npm test -- error-propagation.test.ts`; see `e2e-polish/e2e-parity-error/error-propagation.stdout.txt`."
+        },
+        {
+          "action": "MCP fleet_status: returns structured error with isError and error fields",
+          "expected": "Named Vitest step passes in the targeted E2E file.",
+          "observed": "Passed in `npm test -- error-propagation.test.ts`; see `e2e-polish/e2e-parity-error/error-propagation.stdout.txt`."
+        },
+        {
+          "action": "CLI pull: SSH failure propagates with preserved error context",
+          "expected": "Named Vitest step passes in the targeted E2E file.",
+          "observed": "Passed in `npm test -- error-propagation.test.ts`; see `e2e-polish/e2e-parity-error/error-propagation.stdout.txt`."
+        },
+        {
+          "action": "MCP fleet_pull: returns structured error with per-host failure detail",
+          "expected": "Named Vitest step passes in the targeted E2E file.",
+          "observed": "Passed in `npm test -- error-propagation.test.ts`; see `e2e-polish/e2e-parity-error/error-propagation.stdout.txt`."
+        },
+        {
+          "action": "CLI rollback: SSH failure on unreachable host preserves error context",
+          "expected": "Named Vitest step passes in the targeted E2E file.",
+          "observed": "Passed in `npm test -- error-propagation.test.ts`; see `e2e-polish/e2e-parity-error/error-propagation.stdout.txt`."
+        },
+        {
+          "action": "MCP fleet_rollback: returns structured error for unreachable host",
+          "expected": "Named Vitest step passes in the targeted E2E file.",
+          "observed": "Passed in `npm test -- error-propagation.test.ts`; see `e2e-polish/e2e-parity-error/error-propagation.stdout.txt`."
+        },
+        {
+          "action": "CLI activate: SSH failure propagates with error context",
+          "expected": "Named Vitest step passes in the targeted E2E file.",
+          "observed": "Passed in `npm test -- error-propagation.test.ts`; see `e2e-polish/e2e-parity-error/error-propagation.stdout.txt`."
+        },
+        {
+          "action": "MCP fleet_activate: returns structured error for unreachable host",
+          "expected": "Named Vitest step passes in the targeted E2E file.",
+          "observed": "Passed in `npm test -- error-propagation.test.ts`; see `e2e-polish/e2e-parity-error/error-propagation.stdout.txt`."
+        },
+        {
+          "action": "CLI deactivate: SSH failure propagates with error context",
+          "expected": "Named Vitest step passes in the targeted E2E file.",
+          "observed": "Passed in `npm test -- error-propagation.test.ts`; see `e2e-polish/e2e-parity-error/error-propagation.stdout.txt`."
+        },
+        {
+          "action": "MCP fleet_deactivate: returns structured error for SSH failure",
+          "expected": "Named Vitest step passes in the targeted E2E file.",
+          "observed": "Passed in `npm test -- error-propagation.test.ts`; see `e2e-polish/e2e-parity-error/error-propagation.stdout.txt`."
+        },
+        {
+          "action": "CLI status with mixed hosts: reachable host succeeds, unreachable reports error",
+          "expected": "Named Vitest step passes in the targeted E2E file.",
+          "observed": "Passed in `npm test -- error-propagation.test.ts`; see `e2e-polish/e2e-parity-error/error-propagation.stdout.txt`."
+        },
+        {
+          "action": "MCP fleet_status with mixed hosts: returns partial success with per-host error detail",
+          "expected": "Named Vitest step passes in the targeted E2E file.",
+          "observed": "Passed in `npm test -- error-propagation.test.ts`; see `e2e-polish/e2e-parity-error/error-propagation.stdout.txt`."
+        },
+        {
+          "action": "error parity: CLI and MCP report comparable error messages for same SSH failure",
+          "expected": "Named Vitest step passes in the targeted E2E file.",
+          "observed": "Passed in `npm test -- error-propagation.test.ts`; see `e2e-polish/e2e-parity-error/error-propagation.stdout.txt`."
+        },
+        {
+          "action": "MCP fleet_pull with mixed hosts: good host succeeds, bad host reports error",
+          "expected": "Named Vitest step passes in the targeted E2E file.",
+          "observed": "Passed in `npm test -- error-propagation.test.ts`; see `e2e-polish/e2e-parity-error/error-propagation.stdout.txt`."
+        },
+        {
+          "action": "error messages are actionable: no raw stack traces or Effect internals",
+          "expected": "Named Vitest step passes in the targeted E2E file.",
+          "observed": "Passed in `npm test -- error-propagation.test.ts`; see `e2e-polish/e2e-parity-error/error-propagation.stdout.txt`."
+        }
+      ],
+      "evidence": {
+        "command": "npm test -- error-propagation.test.ts",
+        "stdout": "e2e-polish/e2e-parity-error/error-propagation.stdout.txt",
+        "stderr": "e2e-polish/e2e-parity-error/error-propagation.stderr.txt",
+        "exitCode": "e2e-polish/e2e-parity-error/error-propagation.exit-code.txt",
+        "vitestSummary": "15 passed in error-propagation.test.ts",
+        "stderrSummary": "none"
+      },
+      "issues": null
+    }
+  ],
+  "frictions": [],
+  "blockers": [],
+  "summary": "Tested 2 assertions via serial Vitest E2E runs: VAL-CROSS-005 failed (6/7 named steps passed; idempotent activate parity failed), and VAL-CROSS-007 passed (15/15 named steps passed)."
+}

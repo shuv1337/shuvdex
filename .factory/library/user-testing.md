@@ -72,6 +72,13 @@ Testing surface, resource cost classification, and validation approach.
 - Avoid parallel tests that modify same remote state
 - OTEL collector handles high span volume (no throttling needed)
 
+## E2E Milestone Harness Notes
+
+- For the `e2e-polish` milestone, the correct validation harness is the shipped `tests/e2e/*.test.ts` Vitest suite because each file exercises the real CLI and/or MCP user surface against live SSH hosts and the OTEL collector.
+- Run targeted files from `/home/shuv/repos/codex-fleet/tests/e2e` with `npm test -- <file>.test.ts` so evidence maps cleanly to the single validation-contract assertion covered by that file.
+- Do **not** run more than one `tests/e2e` file at a time, even across separate worker sessions: the suite mutates shared remote state on `shuvtest`/`shuvbot` and the package config already enforces `fileParallelism: false` for this reason.
+- Capture raw stdout/stderr/exit-code artifacts for each targeted run and treat the Vitest step summaries as the primary user-visible evidence for the covered assertion.
+
 ## Flow Validator Guidance: terminal-node-api
 
 - Work from `/home/shuv/repos/codex-fleet` only.
@@ -104,3 +111,11 @@ Testing surface, resource cost classification, and validation approach.
 - Verify both the user-visible MCP response payload and the resulting remote filesystem/git state with direct `ssh` commands against the same sandbox paths.
 - Capture raw request/response transcripts plus stdout/stderr/exit-code artifacts for each server run in the assigned evidence directory.
 - When validating Codex discovery, use the project-scoped `.codex/config.toml` as-is and confirm the server launched from that config exposes all 7 tools after the standard initialize sequence.
+
+## Flow Validator Guidance: e2e-vitest
+
+- Work from `/home/shuv/repos/codex-fleet/tests/e2e` and invoke only the shipped targeted test files with `npm test -- <file>.test.ts`.
+- Treat each test file as the real-user harness for its covered assertion because the file drives the actual CLI entrypoint and/or MCP stdio server instead of mocked interfaces.
+- Run one file at a time. Do not overlap validators that touch `tests/e2e`, because these flows mutate shared remote repos, activation symlinks, and collector-visible traces.
+- Stay within the existing test boundaries: never rewrite the test files, never point them at `~/repos/overseer`, `~/repos/executor`, `~/repos/maple`, and never mutate off-limits ports/resources.
+- Save raw Vitest stdout/stderr/exit-code artifacts and summarize the specific named steps that passed or failed for each assigned assertion in the flow report JSON.
