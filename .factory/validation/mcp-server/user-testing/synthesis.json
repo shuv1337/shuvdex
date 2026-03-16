@@ -1,0 +1,38 @@
+{
+  "milestone": "mcp-server",
+  "round": 1,
+  "status": "pass",
+  "assertionsSummary": {
+    "total": 15,
+    "passed": 15,
+    "failed": 0,
+    "blocked": 0
+  },
+  "passedAssertions": [
+    "VAL-MCP-001",
+    "VAL-MCP-002",
+    "VAL-MCP-003",
+    "VAL-MCP-004",
+    "VAL-MCP-005",
+    "VAL-MCP-006",
+    "VAL-MCP-007",
+    "VAL-MCP-008",
+    "VAL-MCP-009",
+    "VAL-MCP-010",
+    "VAL-MCP-011",
+    "VAL-MCP-012",
+    "VAL-MCP-013",
+    "VAL-MCP-014",
+    "VAL-MCP-015"
+  ],
+  "failedAssertions": [],
+  "blockedAssertions": [],
+  "appliedUpdates": [
+    {
+      "target": "user-testing.md",
+      "description": "Added MCP stdio flow-validator guidance covering when to use the shipped entrypoint versus the isolated custom wrapper and the sandbox boundaries for write-path assertions.",
+      "source": "setup"
+    }
+  ],
+  "previousRound": null
+}

@@ -92,3 +92,13 @@ Testing surface, resource cost classification, and validation approach.
 - SSH to `shuvtest` may emit the known post-quantum warning on stderr; treat that warning as benign unless stdout, exit code, or repo state contradict expected behavior.
 - If `tuistory` is unavailable in `PATH`, capture terminal transcripts with `script` (or equivalent) and still save separate raw stdout/stderr/exit-code artifacts.
 - Save raw stdout/stderr/exit-code evidence into the assigned mission evidence directory and write the flow report JSON exactly to the assigned path.
+
+## Flow Validator Guidance: mcp-stdio
+
+- Exercise the MCP server through real stdio JSON-RPC only: line-delimited requests on stdin and JSON responses on stdout.
+- Use `node apps/mcp-server/dist/index.js` for protocol/discovery assertions that depend on the shipped Codex launch path (`initialize`, `notifications/initialized`, `tools/list`, malformed JSON-RPC handling, EOF shutdown, `.codex/config.toml`).
+- For write-path assertions (`fleet_sync`, `fleet_activate`, `fleet_deactivate`, `fleet_pull`, `fleet_drift`, `fleet_rollback`), launch the validator-provided wrapper script instead of the default entrypoint so the real server logic runs against validator-owned `/tmp/codex-fleet-user-testing-mcp-*` sandboxes rather than `~/repos/shuvbot-skills` or `~/.codex/skills`.
+- Stay strictly inside the assigned local skill root, remote repo path, active-dir path, and any remote bare origins; never read from or modify the real fleet repo paths on `shuvtest` or `shuvbot`.
+- Verify both the user-visible MCP response payload and the resulting remote filesystem/git state with direct `ssh` commands against the same sandbox paths.
+- Capture raw request/response transcripts plus stdout/stderr/exit-code artifacts for each server run in the assigned evidence directory.
+- When validating Codex discovery, use the project-scoped `.codex/config.toml` as-is and confirm the server launched from that config exposes all 7 tools after the standard initialize sequence.

@@ -1,0 +1,17 @@
+{
+  "registry": {
+    "shuvtest": {
+      "hostname": "shuvtest",
+      "connectionType": "ssh",
+      "port": 22,
+      "timeout": 10
+    },
+    "shuvbot": {
+      "hostname": "shuvbot",
+      "connectionType": "ssh",
+      "port": 22,
+      "timeout": 10
+    }
+  },
+  "repoPath": "/tmp/codex-fleet-user-testing-mcp-git/repo"
+}
