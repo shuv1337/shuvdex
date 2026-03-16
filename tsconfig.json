@@ -7,6 +7,7 @@
     { "path": "packages/git-ops" },
     { "path": "packages/skill-ops" },
     { "path": "apps/cli" },
-    { "path": "apps/mcp-server" }
+    { "path": "apps/mcp-server" },
+    { "path": "tests/e2e" }
   ]
 }
