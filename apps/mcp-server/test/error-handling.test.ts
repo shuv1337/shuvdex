@@ -519,6 +519,83 @@ describe("VAL-MCP-011: Malformed JSON over stdio", () => {
     expect(response.error.code).toBe(-32700);
   });
 
+  it("empty array returns -32600 Invalid Request error", async () => {
+    const { stdout } = await spawnServer("[]\n");
+
+    const lines = stdout.split("\n").filter((l) => l.trim().length > 0);
+    expect(lines.length).toBeGreaterThanOrEqual(1);
+
+    const response = JSON.parse(lines[0]);
+    expect(response.jsonrpc).toBe("2.0");
+    expect(response.error).toBeDefined();
+    expect(response.error.code).toBe(-32600);
+    expect(response.error.message).toContain("Invalid Request");
+    expect(response.id).toBeNull();
+  });
+
+  it("empty object returns -32600 Invalid Request error", async () => {
+    const { stdout } = await spawnServer("{}\n");
+
+    const lines = stdout.split("\n").filter((l) => l.trim().length > 0);
+    expect(lines.length).toBeGreaterThanOrEqual(1);
+
+    const response = JSON.parse(lines[0]);
+    expect(response.jsonrpc).toBe("2.0");
+    expect(response.error).toBeDefined();
+    expect(response.error.code).toBe(-32600);
+    expect(response.error.message).toContain("Invalid Request");
+    expect(response.id).toBeNull();
+  });
+
+  it("{foo:bar} returns -32600 Invalid Request error", async () => {
+    const { stdout } = await spawnServer(
+      JSON.stringify({ foo: "bar" }) + "\n",
+    );
+
+    const lines = stdout.split("\n").filter((l) => l.trim().length > 0);
+    expect(lines.length).toBeGreaterThanOrEqual(1);
+
+    const response = JSON.parse(lines[0]);
+    expect(response.jsonrpc).toBe("2.0");
+    expect(response.error).toBeDefined();
+    expect(response.error.code).toBe(-32600);
+    expect(response.error.message).toContain("Invalid Request");
+    expect(response.id).toBeNull();
+  });
+
+  it("server continues processing after invalid envelope", async () => {
+    // Send invalid envelope followed by valid initialize
+    const messages = [
+      JSON.stringify({ foo: "bar" }),
+      JSON.stringify({
+        jsonrpc: "2.0",
+        id: 1,
+        method: "initialize",
+        params: {
+          protocolVersion: "2025-03-26",
+          capabilities: {},
+          clientInfo: { name: "test", version: "0.0.1" },
+        },
+      }),
+    ];
+
+    const { stdout } = await spawnServer(messages.join("\n") + "\n");
+
+    const lines = stdout.split("\n").filter((l) => l.trim().length > 0);
+    expect(lines.length).toBeGreaterThanOrEqual(2);
+
+    // First response should be the -32600 Invalid Request error
+    const errorResponse = JSON.parse(lines[0]);
+    expect(errorResponse.error).toBeDefined();
+    expect(errorResponse.error.code).toBe(-32600);
+
+    // Second response should be the valid initialize response
+    const initResponse = JSON.parse(lines[1]);
+    expect(initResponse.id).toBe(1);
+    expect(initResponse.result).toBeDefined();
+    expect(initResponse.result.serverInfo.name).toBe("codex-fleet");
+  });
+
   it("unknown method returns -32601 over stdio", async () => {
     const messages = [
       JSON.stringify({

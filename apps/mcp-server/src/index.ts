@@ -83,21 +83,32 @@ async function main(): Promise<void> {
     process.exit(0);
   });
 
-  // --- JSON-RPC parse error handling ---
-  // The MCP SDK's StdioServerTransport forwards JSON parse errors to
-  // onerror but does NOT send a JSON-RPC error response back to the
-  // client.  We intercept those errors here and write a proper -32700
-  // ParseError response to stdout so clients receive actionable feedback
-  // and the server continues processing subsequent messages.
+  // --- JSON-RPC error handling ---
+  // The MCP SDK's StdioServerTransport forwards errors from its
+  // ReadBuffer to onerror.  Two categories need distinct responses:
+  //
+  // 1. **Parse errors** (SyntaxError) – the line is not valid JSON at all.
+  //    JSON-RPC 2.0 §5.1: respond with -32700 Parse error.
+  //
+  // 2. **Invalid Request** (ZodError) – the line is valid JSON but fails
+  //    the JSONRPCMessageSchema union (e.g. `[]`, `{}`, `{"foo":"bar"}`).
+  //    JSON-RPC 2.0 §5.1: respond with -32600 Invalid Request.
   //
   // We write directly to stdout (not transport.send) because the SDK's
   // JSONRPCMessage type doesn't allow `id: null`, but JSON-RPC 2.0 spec
-  // requires `id: null` for parse errors where the request id is unknown.
+  // requires `id: null` for errors where the request id is unknown.
   server.server.onerror = (error: Error) => {
     const isParseError =
       error instanceof SyntaxError ||
       error.message.includes("Expected") ||
       error.message.includes("JSON");
+
+    // ZodError from the SDK's JSONRPCMessageSchema.parse() – valid JSON
+    // that doesn't conform to any JSON-RPC message shape.
+    const isInvalidRequest =
+      !isParseError &&
+      "issues" in error &&
+      Array.isArray((error as Record<string, unknown>).issues);
 
     if (isParseError) {
       const errorResponse = JSON.stringify({
@@ -106,6 +117,16 @@ async function main(): Promise<void> {
         error: {
           code: -32700,
           message: `Parse error: ${error.message}`,
+        },
+      });
+      process.stdout.write(errorResponse + "\n");
+    } else if (isInvalidRequest) {
+      const errorResponse = JSON.stringify({
+        jsonrpc: "2.0",
+        id: null,
+        error: {
+          code: -32600,
+          message: "Invalid Request: payload is not a valid JSON-RPC 2.0 message",
         },
       });
       process.stdout.write(errorResponse + "\n");
