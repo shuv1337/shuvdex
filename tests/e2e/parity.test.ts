@@ -75,9 +75,11 @@ const activeDir = "~/.codex/skills";
 
 /**
  * Skill to use for parity testing.
- * "test-skill" exists in the shuvbot-skills repo on shuvtest.
+ * "adapt" exists on both shuvtest (Linux) and shuvbot (macOS) in the
+ * shuvbot-skills repo and is safe to activate/deactivate without
+ * affecting real functionality.
  */
-const testSkillName = "test-skill";
+const testSkillName = "adapt";
 
 // ─── Shared Layer ──────────────────────────────────────────────
 
