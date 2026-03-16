@@ -71,6 +71,35 @@ async function main(): Promise<void> {
   });
 
   await server.connect(transport);
+
+  // --- JSON-RPC parse error handling ---
+  // The MCP SDK's StdioServerTransport forwards JSON parse errors to
+  // onerror but does NOT send a JSON-RPC error response back to the
+  // client.  We intercept those errors here and write a proper -32700
+  // ParseError response to stdout so clients receive actionable feedback
+  // and the server continues processing subsequent messages.
+  //
+  // We write directly to stdout (not transport.send) because the SDK's
+  // JSONRPCMessage type doesn't allow `id: null`, but JSON-RPC 2.0 spec
+  // requires `id: null` for parse errors where the request id is unknown.
+  server.server.onerror = (error: Error) => {
+    const isParseError =
+      error instanceof SyntaxError ||
+      error.message.includes("Expected") ||
+      error.message.includes("JSON");
+
+    if (isParseError) {
+      const errorResponse = JSON.stringify({
+        jsonrpc: "2.0",
+        id: null,
+        error: {
+          code: -32700,
+          message: `Parse error: ${error.message}`,
+        },
+      });
+      process.stdout.write(errorResponse + "\n");
+    }
+  };
 }
 
 main().catch((err) => {
