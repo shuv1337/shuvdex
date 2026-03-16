@@ -19,7 +19,8 @@
     "@codex-fleet/ssh": "*",
     "@codex-fleet/telemetry": "*",
     "@modelcontextprotocol/sdk": "^1.27.1",
-    "effect": "^3.19.0"
+    "effect": "^3.19.0",
+    "zod": "^3.25.0 || ^4.0.0"
   },
   "devDependencies": {
     "@effect/vitest": "^0.27.0",
