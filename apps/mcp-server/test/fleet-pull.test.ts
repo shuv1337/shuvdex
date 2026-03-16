@@ -144,6 +144,104 @@ describe("MCP fleet_pull tool", () => {
     expect(host2.head).toBe("def4567890abcdef1234567890abcdef12345678");
   });
 
+  it("marks host as failed when post-pull HEAD verification fails", async () => {
+    // shuvtest: pull succeeds but getHead fails
+    // shuvbot: pull succeeds and getHead succeeds
+    await setup([
+      // shuvtest pull (success)
+      { _tag: "result", value: { stdout: "Already up to date.\n", stderr: "", exitCode: 0 } },
+      // shuvtest getHead (fails)
+      {
+        _tag: "error",
+        value: new CommandFailed({
+          host: "shuvtest",
+          command: "git rev-parse HEAD",
+          exitCode: 128,
+          stdout: "",
+          stderr: "fatal: not a git repository",
+        }),
+      },
+      // shuvbot pull (success)
+      { _tag: "result", value: { stdout: "Already up to date.\n", stderr: "", exitCode: 0 } },
+      // shuvbot getHead (success)
+      { _tag: "result", value: { stdout: "def4567890abcdef1234567890abcdef12345678\n", stderr: "", exitCode: 0 } },
+    ]);
+
+    const result = await client.callTool({
+      name: "fleet_pull",
+      arguments: {},
+    });
+
+    // Not all failed (shuvbot succeeded), so isError should not be true
+    expect(result.isError).not.toBe(true);
+    const parsed = JSON.parse(
+      (result.content as Array<{ type: string; text: string }>)[0].text,
+    );
+    expect(parsed.results).toHaveLength(2);
+
+    // shuvtest: failed due to HEAD verification
+    const host1 = parsed.results.find(
+      (r: { name: string }) => r.name === "shuvtest",
+    );
+    expect(host1).toBeDefined();
+    expect(host1.status).toBe("fail");
+    expect(host1.error).toContain("HEAD verification failed");
+
+    // shuvbot: succeeded
+    const host2 = parsed.results.find(
+      (r: { name: string }) => r.name === "shuvbot",
+    );
+    expect(host2).toBeDefined();
+    expect(host2.status).toBe("ok");
+    expect(host2.head).toBe("def4567890abcdef1234567890abcdef12345678");
+  });
+
+  it("returns isError:true when all hosts fail HEAD verification after pull", async () => {
+    await setup([
+      // shuvtest pull (success)
+      { _tag: "result", value: { stdout: "Already up to date.\n", stderr: "", exitCode: 0 } },
+      // shuvtest getHead (fails)
+      {
+        _tag: "error",
+        value: new CommandFailed({
+          host: "shuvtest",
+          command: "git rev-parse HEAD",
+          exitCode: 128,
+          stdout: "",
+          stderr: "fatal: not a git repository",
+        }),
+      },
+      // shuvbot pull (success)
+      { _tag: "result", value: { stdout: "Already up to date.\n", stderr: "", exitCode: 0 } },
+      // shuvbot getHead (fails)
+      {
+        _tag: "error",
+        value: new CommandFailed({
+          host: "shuvbot",
+          command: "git rev-parse HEAD",
+          exitCode: 128,
+          stdout: "",
+          stderr: "fatal: not a git repository",
+        }),
+      },
+    ]);
+
+    const result = await client.callTool({
+      name: "fleet_pull",
+      arguments: {},
+    });
+
+    expect(result.isError).toBe(true);
+    const parsed = JSON.parse(
+      (result.content as Array<{ type: string; text: string }>)[0].text,
+    );
+    expect(parsed.results).toHaveLength(2);
+    for (const hostResult of parsed.results) {
+      expect(hostResult.status).toBe("fail");
+      expect(hostResult.error).toContain("HEAD verification failed");
+    }
+  });
+
   it("handles pull failure gracefully per host", async () => {
     // shuvtest succeeds, shuvbot fails
     await setup([

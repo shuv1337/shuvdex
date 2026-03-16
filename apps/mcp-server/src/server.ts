@@ -509,11 +509,28 @@ export function createServer(config?: ServerConfig): McpServer {
           const headResult = yield* gitOps
             .getHead(hostConfig, repoPath)
             .pipe(
-              Effect.map((sha) => ({ intact: true, head: sha.trim() })),
-              Effect.catchAll(() =>
-                Effect.succeed({ intact: false, head: undefined as string | undefined }),
+              Effect.map((sha) => ({ intact: true, head: sha.trim(), error: undefined as string | undefined })),
+              Effect.catchAll((headErr) =>
+                Effect.succeed({
+                  intact: false,
+                  head: undefined as string | undefined,
+                  error: `HEAD verification failed: ${headErr instanceof Error ? headErr.message : String(headErr)}`,
+                }),
               ),
             );
+
+          if (!headResult.intact) {
+            results.push({
+              name,
+              hostname: hostConfig.hostname,
+              status: "fail",
+              alreadyInState: deactivationResult.alreadyInState,
+              skillStatus: deactivationResult.skillStatus,
+              repoIntact: false,
+              error: headResult.error,
+            });
+            continue;
+          }
 
           results.push({
             name,
@@ -521,8 +538,8 @@ export function createServer(config?: ServerConfig): McpServer {
             status: "ok",
             alreadyInState: deactivationResult.alreadyInState,
             skillStatus: deactivationResult.skillStatus,
-            repoIntact: headResult.intact,
-            ...(headResult.head !== undefined ? { head: headResult.head } : {}),
+            repoIntact: true,
+            head: headResult.head,
           });
         }
 
@@ -607,15 +624,31 @@ export function createServer(config?: ServerConfig): McpServer {
             continue;
           }
 
-          // Get HEAD commit after pull
-          const head = yield* gitOps
+          // Get HEAD commit after pull – failure means the host is in an
+          // indeterminate state so we must report it as failed.
+          const headResult = yield* gitOps
             .getHead(hostConfig, repoPath)
             .pipe(
-              Effect.map((sha) => sha.trim()),
-              Effect.catchAll(() =>
-                Effect.succeed(undefined as string | undefined),
+              Effect.map((sha) => ({ ok: true as const, head: sha.trim() })),
+              Effect.catchAll((headErr) =>
+                Effect.succeed({
+                  ok: false as const,
+                  error: `HEAD verification failed: ${headErr instanceof Error ? headErr.message : String(headErr)}`,
+                }),
               ),
             );
+
+          if (!headResult.ok) {
+            results.push({
+              name,
+              hostname: hostConfig.hostname,
+              status: "fail",
+              updated: pullResult.updated,
+              summary: pullResult.summary,
+              error: headResult.error,
+            });
+            continue;
+          }
 
           results.push({
             name,
@@ -623,7 +656,7 @@ export function createServer(config?: ServerConfig): McpServer {
             status: "ok",
             updated: pullResult.updated,
             summary: pullResult.summary,
-            ...(head !== undefined ? { head } : {}),
+            head: headResult.head,
           });
         }
 
@@ -749,21 +782,35 @@ export function createServer(config?: ServerConfig): McpServer {
             continue;
           }
 
-          // Get HEAD commit after checkout for verification
-          const head = yield* gitOps
+          // Get HEAD commit after checkout for verification – failure means
+          // the host is in an indeterminate state so we must report it as failed.
+          const headResult = yield* gitOps
             .getHead(hostConfig, repoPath)
             .pipe(
-              Effect.map((sha) => sha.trim()),
-              Effect.catchAll(() =>
-                Effect.succeed(undefined as string | undefined),
+              Effect.map((sha) => ({ ok: true as const, head: sha.trim() })),
+              Effect.catchAll((headErr) =>
+                Effect.succeed({
+                  ok: false as const,
+                  error: `HEAD verification failed: ${headErr instanceof Error ? headErr.message : String(headErr)}`,
+                }),
               ),
             );
+
+          if (!headResult.ok) {
+            results.push({
+              name,
+              hostname: hostConfig.hostname,
+              status: "fail",
+              error: headResult.error,
+            });
+            continue;
+          }
 
           results.push({
             name,
             hostname: hostConfig.hostname,
             status: "ok",
-            ...(head !== undefined ? { head } : {}),
+            head: headResult.head,
           });
         }
 

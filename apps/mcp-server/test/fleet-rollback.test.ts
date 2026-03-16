@@ -141,6 +141,104 @@ describe("MCP fleet_rollback tool", () => {
     expect(host2.head).toBe(SHA_TARGET);
   });
 
+  it("marks host as failed when post-rollback HEAD verification fails", async () => {
+    // shuvtest: checkout succeeds but getHead fails
+    // shuvbot: checkout succeeds and getHead succeeds
+    await setup([
+      // shuvtest checkoutRef (success)
+      { _tag: "result", value: { stdout: "", stderr: "Switched to branch 'v1.0'\n", exitCode: 0 } },
+      // shuvtest getHead (fails)
+      {
+        _tag: "error",
+        value: new CommandFailed({
+          host: "shuvtest",
+          command: "git rev-parse HEAD",
+          exitCode: 128,
+          stdout: "",
+          stderr: "fatal: not a git repository",
+        }),
+      },
+      // shuvbot checkoutRef (success)
+      { _tag: "result", value: { stdout: "", stderr: "Switched to branch 'v1.0'\n", exitCode: 0 } },
+      // shuvbot getHead (success)
+      { _tag: "result", value: { stdout: `${SHA_TARGET}\n`, stderr: "", exitCode: 0 } },
+    ]);
+
+    const result = await client.callTool({
+      name: "fleet_rollback",
+      arguments: { ref: "v1.0" },
+    });
+
+    // Not all failed (shuvbot succeeded), so isError should not be true
+    expect(result.isError).not.toBe(true);
+    const parsed = JSON.parse(
+      (result.content as Array<{ type: string; text: string }>)[0].text,
+    );
+    expect(parsed.results).toHaveLength(2);
+
+    // shuvtest: failed due to HEAD verification
+    const host1 = parsed.results.find(
+      (r: { name: string }) => r.name === "shuvtest",
+    );
+    expect(host1).toBeDefined();
+    expect(host1.status).toBe("fail");
+    expect(host1.error).toContain("HEAD verification failed");
+
+    // shuvbot: succeeded
+    const host2 = parsed.results.find(
+      (r: { name: string }) => r.name === "shuvbot",
+    );
+    expect(host2).toBeDefined();
+    expect(host2.status).toBe("ok");
+    expect(host2.head).toBe(SHA_TARGET);
+  });
+
+  it("returns isError:true when all hosts fail HEAD verification after rollback", async () => {
+    await setup([
+      // shuvtest checkoutRef (success)
+      { _tag: "result", value: { stdout: "", stderr: "Switched to branch 'v1.0'\n", exitCode: 0 } },
+      // shuvtest getHead (fails)
+      {
+        _tag: "error",
+        value: new CommandFailed({
+          host: "shuvtest",
+          command: "git rev-parse HEAD",
+          exitCode: 128,
+          stdout: "",
+          stderr: "fatal: not a git repository",
+        }),
+      },
+      // shuvbot checkoutRef (success)
+      { _tag: "result", value: { stdout: "", stderr: "Switched to branch 'v1.0'\n", exitCode: 0 } },
+      // shuvbot getHead (fails)
+      {
+        _tag: "error",
+        value: new CommandFailed({
+          host: "shuvbot",
+          command: "git rev-parse HEAD",
+          exitCode: 128,
+          stdout: "",
+          stderr: "fatal: not a git repository",
+        }),
+      },
+    ]);
+
+    const result = await client.callTool({
+      name: "fleet_rollback",
+      arguments: { ref: "v1.0" },
+    });
+
+    expect(result.isError).toBe(true);
+    const parsed = JSON.parse(
+      (result.content as Array<{ type: string; text: string }>)[0].text,
+    );
+    expect(parsed.results).toHaveLength(2);
+    for (const hostResult of parsed.results) {
+      expect(hostResult.status).toBe("fail");
+      expect(hostResult.error).toContain("HEAD verification failed");
+    }
+  });
+
   it("handles checkout failure gracefully per host", async () => {
     // shuvtest succeeds, shuvbot fails
     await setup([
