@@ -43,7 +43,15 @@ export interface ServerConfig {
    * Defaults to process.cwd() if not provided.
    */
   readonly localRepoPath?: string;
+  /**
+   * Path to the active skills directory on remote hosts (where symlinks live).
+   * Defaults to "~/.codex/skills" if not provided.
+   */
+  readonly activeDir?: string;
 }
+
+/** Default active skills directory on remote hosts. */
+const DEFAULT_ACTIVE_DIR = "~/.codex/skills";
 
 /**
  * Optional hosts filter schema, shared across several tools.
@@ -331,12 +339,93 @@ export function createServer(config?: ServerConfig): McpServer {
       skill: z.string().describe("Name of the skill to activate"),
       ...hostsFilter,
     },
-    async () => ({
-      content: [
-        { type: "text", text: JSON.stringify({ error: "Not implemented" }) },
-      ],
-      isError: true,
-    }),
+    async (args) => {
+      if (!config) {
+        return err({ error: "Not implemented" });
+      }
+
+      const { registry, repoPath, runtime, activeDir: cfgActiveDir } = config;
+      const hosts = resolveHosts(registry, args.hosts);
+      const activeDir = cfgActiveDir ?? DEFAULT_ACTIVE_DIR;
+
+      if (hosts.length === 0) {
+        return err({ error: "No matching hosts found", results: [] });
+      }
+
+      const program = Effect.gen(function* () {
+        const skillOps = yield* SkillOps;
+
+        interface HostActivateResult {
+          name: string;
+          hostname: string;
+          status: "ok" | "fail";
+          alreadyInState?: boolean;
+          skillStatus?: string;
+          symlinkPath?: string;
+          targetPath?: string;
+          error?: string;
+        }
+
+        const results: HostActivateResult[] = [];
+
+        for (const [name, hostConfig] of hosts) {
+          const activationResult = yield* skillOps
+            .activateSkill(hostConfig, args.skill, repoPath, activeDir)
+            .pipe(
+              Effect.map((r) => ({
+                ok: true as const,
+                alreadyInState: r.alreadyInState,
+                skillStatus: r.status,
+              })),
+              Effect.catchAll((activateErr) =>
+                Effect.succeed({
+                  ok: false as const,
+                  error:
+                    activateErr instanceof Error
+                      ? activateErr.message
+                      : String(activateErr),
+                }),
+              ),
+            );
+
+          if (!activationResult.ok) {
+            results.push({
+              name,
+              hostname: hostConfig.hostname,
+              status: "fail",
+              error: activationResult.error,
+            });
+            continue;
+          }
+
+          results.push({
+            name,
+            hostname: hostConfig.hostname,
+            status: "ok",
+            alreadyInState: activationResult.alreadyInState,
+            skillStatus: activationResult.skillStatus,
+            symlinkPath: `${activeDir}/${args.skill}`,
+            targetPath: `${repoPath}/${args.skill}`,
+          });
+        }
+
+        return results;
+      });
+
+      try {
+        const results = await Runtime.runPromise(runtime)(program);
+        const allFailed = results.every((r) => r.status === "fail");
+        const payload = { skill: args.skill, results };
+
+        return allFailed ? err(payload) : ok(payload);
+      } catch (e) {
+        return err({
+          error: e instanceof Error ? e.message : String(e),
+          skill: args.skill,
+          results: [],
+        });
+      }
+    },
   );
 
   // --- fleet_deactivate ---
@@ -347,12 +436,104 @@ export function createServer(config?: ServerConfig): McpServer {
       skill: z.string().describe("Name of the skill to deactivate"),
       ...hostsFilter,
     },
-    async () => ({
-      content: [
-        { type: "text", text: JSON.stringify({ error: "Not implemented" }) },
-      ],
-      isError: true,
-    }),
+    async (args) => {
+      if (!config) {
+        return err({ error: "Not implemented" });
+      }
+
+      const { registry, repoPath, runtime, activeDir: cfgActiveDir } = config;
+      const hosts = resolveHosts(registry, args.hosts);
+      const activeDir = cfgActiveDir ?? DEFAULT_ACTIVE_DIR;
+
+      if (hosts.length === 0) {
+        return err({ error: "No matching hosts found", results: [] });
+      }
+
+      const program = Effect.gen(function* () {
+        const skillOps = yield* SkillOps;
+        const gitOps = yield* GitOps;
+
+        interface HostDeactivateResult {
+          name: string;
+          hostname: string;
+          status: "ok" | "fail";
+          alreadyInState?: boolean;
+          skillStatus?: string;
+          repoIntact?: boolean;
+          head?: string;
+          error?: string;
+        }
+
+        const results: HostDeactivateResult[] = [];
+
+        for (const [name, hostConfig] of hosts) {
+          const deactivationResult = yield* skillOps
+            .deactivateSkill(hostConfig, args.skill, activeDir)
+            .pipe(
+              Effect.map((r) => ({
+                ok: true as const,
+                alreadyInState: r.alreadyInState,
+                skillStatus: r.status,
+              })),
+              Effect.catchAll((deactivateErr) =>
+                Effect.succeed({
+                  ok: false as const,
+                  error:
+                    deactivateErr instanceof Error
+                      ? deactivateErr.message
+                      : String(deactivateErr),
+                }),
+              ),
+            );
+
+          if (!deactivationResult.ok) {
+            results.push({
+              name,
+              hostname: hostConfig.hostname,
+              status: "fail",
+              error: deactivationResult.error,
+            });
+            continue;
+          }
+
+          // Verify repo is intact by checking HEAD is still accessible
+          const headResult = yield* gitOps
+            .getHead(hostConfig, repoPath)
+            .pipe(
+              Effect.map((sha) => ({ intact: true, head: sha.trim() })),
+              Effect.catchAll(() =>
+                Effect.succeed({ intact: false, head: undefined as string | undefined }),
+              ),
+            );
+
+          results.push({
+            name,
+            hostname: hostConfig.hostname,
+            status: "ok",
+            alreadyInState: deactivationResult.alreadyInState,
+            skillStatus: deactivationResult.skillStatus,
+            repoIntact: headResult.intact,
+            ...(headResult.head !== undefined ? { head: headResult.head } : {}),
+          });
+        }
+
+        return results;
+      });
+
+      try {
+        const results = await Runtime.runPromise(runtime)(program);
+        const allFailed = results.every((r) => r.status === "fail");
+        const payload = { skill: args.skill, results };
+
+        return allFailed ? err(payload) : ok(payload);
+      } catch (e) {
+        return err({
+          error: e instanceof Error ? e.message : String(e),
+          skill: args.skill,
+          results: [],
+        });
+      }
+    },
   );
 
   // --- fleet_pull ---
@@ -360,12 +541,99 @@ export function createServer(config?: ServerConfig): McpServer {
     "fleet_pull",
     "Pull latest changes from the remote origin on each host's skills repository.",
     hostsFilter,
-    async () => ({
-      content: [
-        { type: "text", text: JSON.stringify({ error: "Not implemented" }) },
-      ],
-      isError: true,
-    }),
+    async (args) => {
+      if (!config) {
+        return err({ error: "Not implemented" });
+      }
+
+      const { registry, repoPath, runtime } = config;
+      const hosts = resolveHosts(registry, args.hosts);
+
+      if (hosts.length === 0) {
+        return err({ error: "No matching hosts found", results: [] });
+      }
+
+      const program = Effect.gen(function* () {
+        const gitOps = yield* GitOps;
+
+        interface HostPullResult {
+          name: string;
+          hostname: string;
+          status: "ok" | "fail";
+          updated?: boolean;
+          summary?: string;
+          head?: string;
+          error?: string;
+        }
+
+        const results: HostPullResult[] = [];
+
+        for (const [name, hostConfig] of hosts) {
+          const pullResult = yield* gitOps
+            .pull(hostConfig, repoPath)
+            .pipe(
+              Effect.map((r) => ({
+                ok: true as const,
+                updated: r.updated,
+                summary: r.summary,
+              })),
+              Effect.catchAll((pullErr) =>
+                Effect.succeed({
+                  ok: false as const,
+                  error:
+                    pullErr instanceof Error
+                      ? pullErr.message
+                      : String(pullErr),
+                }),
+              ),
+            );
+
+          if (!pullResult.ok) {
+            results.push({
+              name,
+              hostname: hostConfig.hostname,
+              status: "fail",
+              error: pullResult.error,
+            });
+            continue;
+          }
+
+          // Get HEAD commit after pull
+          const head = yield* gitOps
+            .getHead(hostConfig, repoPath)
+            .pipe(
+              Effect.map((sha) => sha.trim()),
+              Effect.catchAll(() =>
+                Effect.succeed(undefined as string | undefined),
+              ),
+            );
+
+          results.push({
+            name,
+            hostname: hostConfig.hostname,
+            status: "ok",
+            updated: pullResult.updated,
+            summary: pullResult.summary,
+            ...(head !== undefined ? { head } : {}),
+          });
+        }
+
+        return results;
+      });
+
+      try {
+        const results = await Runtime.runPromise(runtime)(program);
+        const allFailed = results.every((r) => r.status === "fail");
+        const payload = { results };
+
+        return allFailed ? err(payload) : ok(payload);
+      } catch (e) {
+        return err({
+          error: e instanceof Error ? e.message : String(e),
+          results: [],
+        });
+      }
+    },
   );
 
   // --- fleet_drift ---
