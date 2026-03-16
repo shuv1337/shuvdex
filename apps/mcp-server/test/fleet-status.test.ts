@@ -15,6 +15,8 @@ import {
   SshExecutorTest,
   MockSshResponses,
   CommandFailed,
+  ConnectionFailed,
+  ConnectionTimeout,
 } from "@codex-fleet/ssh";
 import type { MockResponse } from "@codex-fleet/ssh";
 import { GitOpsLive } from "@codex-fleet/git-ops";
@@ -458,5 +460,132 @@ describe("MCP fleet_status tool", () => {
     // hosts is optional
     const required = (statusTool!.inputSchema as Record<string, unknown>).required as string[] | undefined;
     expect(!required || required.length === 0).toBe(true);
+  });
+
+  it("includes SSH timeout context in connection error (not generic 'Host unreachable')", async () => {
+    await setup([
+      // shuvtest -> ConnectionTimeout
+      {
+        _tag: "error",
+        value: new ConnectionTimeout({
+          host: "shuvtest",
+          timeoutMs: 10000,
+        }),
+      },
+      // shuvbot succeeds
+      { _tag: "result", value: { stdout: "ok\n", stderr: "", exitCode: 0 } },
+      { _tag: "result", value: { stdout: "abc1234\n", stderr: "", exitCode: 0 } },
+      { _tag: "result", value: { stdout: "main\n", stderr: "", exitCode: 0 } },
+      { _tag: "result", value: { stdout: "", stderr: "", exitCode: 0 } },
+    ]);
+
+    const result = await client.callTool({ name: "fleet_status", arguments: {} });
+
+    expect(result.isError).not.toBe(true);
+    const parsed = JSON.parse((result.content as Array<{ type: string; text: string }>)[0].text);
+
+    const host = parsed.hosts.find((h: { name: string }) => h.name === "shuvtest");
+    expect(host.status).toBe("error");
+    // Error should include timeout context, not just "Host unreachable"
+    expect(host.error).toContain("timed out");
+    expect(host.error).toContain("10000");
+  });
+
+  it("includes SSH connection failure details in error", async () => {
+    await setup([
+      // shuvtest -> ConnectionFailed with detailed cause
+      {
+        _tag: "error",
+        value: new ConnectionFailed({
+          host: "shuvtest",
+          cause: "ssh: connect to host shuvtest port 22: Connection refused",
+        }),
+      },
+      // shuvbot succeeds
+      { _tag: "result", value: { stdout: "ok\n", stderr: "", exitCode: 0 } },
+      { _tag: "result", value: { stdout: "def5678\n", stderr: "", exitCode: 0 } },
+      { _tag: "result", value: { stdout: "main\n", stderr: "", exitCode: 0 } },
+      { _tag: "result", value: { stdout: "", stderr: "", exitCode: 0 } },
+    ]);
+
+    const result = await client.callTool({ name: "fleet_status", arguments: {} });
+
+    expect(result.isError).not.toBe(true);
+    const parsed = JSON.parse((result.content as Array<{ type: string; text: string }>)[0].text);
+
+    const host = parsed.hosts.find((h: { name: string }) => h.name === "shuvtest");
+    expect(host.status).toBe("error");
+    // Error should include the actual SSH error details
+    expect(host.error).toContain("Connection refused");
+  });
+
+  it("includes command details in CommandFailed connection errors", async () => {
+    await setup([
+      // shuvtest -> CommandFailed on connectivity check
+      {
+        _tag: "error",
+        value: new CommandFailed({
+          host: "shuvtest",
+          command: "echo ok",
+          exitCode: 255,
+          stdout: "",
+          stderr: "ssh: Could not resolve hostname shuvtest: Name or service not known",
+        }),
+      },
+      // shuvbot succeeds
+      { _tag: "result", value: { stdout: "ok\n", stderr: "", exitCode: 0 } },
+      { _tag: "result", value: { stdout: "def5678\n", stderr: "", exitCode: 0 } },
+      { _tag: "result", value: { stdout: "main\n", stderr: "", exitCode: 0 } },
+      { _tag: "result", value: { stdout: "", stderr: "", exitCode: 0 } },
+    ]);
+
+    const result = await client.callTool({ name: "fleet_status", arguments: {} });
+
+    expect(result.isError).not.toBe(true);
+    const parsed = JSON.parse((result.content as Array<{ type: string; text: string }>)[0].text);
+
+    const host = parsed.hosts.find((h: { name: string }) => h.name === "shuvtest");
+    expect(host.status).toBe("error");
+    // Should contain the SSH error detail, not generic message
+    expect(host.error).toContain("Could not resolve hostname");
+  });
+
+  it("redacts credentials from SSH error messages", async () => {
+    await setup([
+      // shuvtest -> ConnectionFailed with credential info in cause
+      {
+        _tag: "error",
+        value: new ConnectionFailed({
+          host: "shuvtest",
+          cause: "Permission denied (password=s3cretP@ss). Identity file /home/user/.ssh/id_rsa not accessible",
+        }),
+      },
+      // shuvbot -> ConnectionFailed with password in stderr
+      {
+        _tag: "error",
+        value: new CommandFailed({
+          host: "shuvbot",
+          command: "echo ok",
+          exitCode: 255,
+          stdout: "",
+          stderr: "Authentication failed for user@shuvbot password=hunter2 token=ghp_abc123secret",
+        }),
+      },
+    ]);
+
+    const result = await client.callTool({ name: "fleet_status", arguments: {} });
+
+    expect(result.isError).toBe(true);
+    const parsed = JSON.parse((result.content as Array<{ type: string; text: string }>)[0].text);
+
+    // Credentials must be redacted
+    const host1 = parsed.hosts.find((h: { name: string }) => h.name === "shuvtest");
+    expect(host1.error).not.toContain("s3cretP@ss");
+    expect(host1.error).toContain("[REDACTED]");
+
+    const host2 = parsed.hosts.find((h: { name: string }) => h.name === "shuvbot");
+    expect(host2.error).not.toContain("hunter2");
+    expect(host2.error).not.toContain("ghp_abc123secret");
+    expect(host2.error).toContain("[REDACTED]");
   });
 });

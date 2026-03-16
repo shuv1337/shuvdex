@@ -102,6 +102,84 @@ function err(data: unknown) {
 // Tool handlers
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// SSH error formatting helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Patterns that indicate credential or secret values in error messages.
+ * Each pattern is matched case-insensitively and the associated value is
+ * replaced with [REDACTED].
+ */
+const CREDENTIAL_PATTERNS: ReadonlyArray<RegExp> = [
+  // password=... or password:... (value up to next space/comma/paren)
+  /\b(password\s*[=:]\s*)\S+/gi,
+  // token=... or token:...
+  /\b(token\s*[=:]\s*)\S+/gi,
+  // secret=... or secret:...
+  /\b(secret\s*[=:]\s*)\S+/gi,
+  // GitHub personal access tokens
+  /\bghp_[A-Za-z0-9_]+/g,
+  // GitHub OAuth tokens
+  /\bgho_[A-Za-z0-9_]+/g,
+  // GitHub app tokens
+  /\bghu_[A-Za-z0-9_]+/g,
+  // Generic bearer tokens
+  /\b(Bearer\s+)\S+/gi,
+];
+
+/**
+ * Redact credential-like values from a string while preserving the
+ * surrounding context that is useful for debugging.
+ */
+function redactCredentials(text: string): string {
+  let result = text;
+  for (const pattern of CREDENTIAL_PATTERNS) {
+    result = result.replace(pattern, (match, prefix?: string) => {
+      // If the regex captured a labeled prefix (e.g. "password="), keep it
+      if (prefix) return `${prefix}[REDACTED]`;
+      return "[REDACTED]";
+    });
+  }
+  return result;
+}
+
+/**
+ * Extract a human-readable, actionable error description from a typed SSH
+ * error.  Credentials that may appear in stderr or cause strings are
+ * redacted before returning.
+ *
+ * Uses `_tag` discrimination (not `instanceof`) because Effect
+ * `Data.TaggedError` classes rely on structural tagging.
+ */
+function formatSshError(error: SshError): string {
+  switch (error._tag) {
+    case "ConnectionTimeout":
+      return redactCredentials(
+        `Connection timed out after ${error.timeoutMs}ms`,
+      );
+    case "ConnectionFailed": {
+      const cause =
+        typeof error.cause === "string"
+          ? error.cause
+          : error.cause instanceof Error
+            ? error.cause.message
+            : String(error.cause);
+      return redactCredentials(`Connection failed: ${cause}`);
+    }
+    case "CommandFailed": {
+      const detail = error.stderr || `exit code ${error.exitCode}`;
+      return redactCredentials(
+        `Command failed (exit ${error.exitCode}): ${detail}`,
+      );
+    }
+    case "CommandTimeout":
+      return redactCredentials(
+        `Command timed out after ${error.timeoutMs}ms: ${error.command}`,
+      );
+  }
+}
+
 /**
  * Per-host status record returned by fleet_status.
  *
@@ -133,20 +211,22 @@ const checkHostStatus = (
     const ssh = yield* SshExecutor;
     const gitOps = yield* GitOps;
 
-    // 1. Connectivity check
+    // 1. Connectivity check – capture SSH error details when it fails
     const connResult = yield* ssh
       .executeCommand(config, "echo ok", { timeoutMs: config.timeout * 1000 })
       .pipe(
-        Effect.map(() => true),
-        Effect.catchAll((_err: SshError) => Effect.succeed(false)),
+        Effect.map(() => ({ ok: true as const })),
+        Effect.catchAll((sshErr: SshError) =>
+          Effect.succeed({ ok: false as const, detail: formatSshError(sshErr) }),
+        ),
       );
 
-    if (!connResult) {
+    if (!connResult.ok) {
       return {
         name,
         hostname: config.hostname,
         status: "error" as const,
-        error: "Host unreachable",
+        error: connResult.detail,
       };
     }
 
