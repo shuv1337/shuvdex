@@ -1,0 +1,18 @@
+name: fleet_drift
+description: "Detect commit drift across fleet hosts by comparing HEAD commits to a reference."
+enabled: true
+builtIn: true
+category: fleet
+schema:
+  referenceHost:
+    type: string
+    description: "Host to use as the reference (defaults to first configured host)"
+    optional: true
+  hosts:
+    type: array
+    description: "Subset of host names to target (defaults to all)"
+    optional: true
+    items:
+      type: string
+createdAt: "2024-01-01T00:00:00.000Z"
+updatedAt: "2024-01-01T00:00:00.000Z"

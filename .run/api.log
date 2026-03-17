@@ -1,0 +1,5 @@
+[codex-fleet/api] loaded 2 host(s) from /home/shuv/repos/codex-fleet/fleet.yaml
+[codex-fleet/api] listening on http://localhost:3847
+[codex-fleet/api] tools dir: /home/shuv/repos/codex-fleet/.tools
+[codex-fleet/api] local repo: /home/shuv/repos/codex-fleet
+[codex-fleet/api] remote repo: ~/repos/shuvbot-skills

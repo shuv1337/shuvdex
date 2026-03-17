@@ -1,0 +1,17 @@
+name: fleet_deactivate
+description: Deactivate a skill on remote hosts by removing its activation symlink.
+enabled: true
+builtIn: true
+category: fleet
+schema:
+  skill:
+    type: string
+    description: Name of the skill to deactivate
+    optional: false
+  hosts:
+    type: array
+    description: Subset of host names to target (defaults to all)
+    optional: true
+    items:
+      type: string
+createdAt: 2024-01-01T00:00:00.000Z

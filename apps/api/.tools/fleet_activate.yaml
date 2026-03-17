@@ -1,0 +1,18 @@
+name: fleet_activate
+description: Activate a skill on remote hosts by creating a symlink in the
+  active skills directory.
+enabled: true
+builtIn: true
+category: fleet
+schema:
+  skill:
+    type: string
+    description: Name of the skill to activate
+    optional: false
+  hosts:
+    type: array
+    description: Subset of host names to target (defaults to all)
+    optional: true
+    items:
+      type: string
+createdAt: 2024-01-01T00:00:00.000Z

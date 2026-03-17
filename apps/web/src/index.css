@@ -1,0 +1,80 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  html {
+    font-family: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Scrollbar styling */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-slate-700 rounded-full;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-slate-600;
+  }
+
+  /* Selection */
+  ::selection {
+    @apply bg-cyan-400/20 text-cyan-100;
+  }
+}
+
+@layer components {
+  /* Monospace text for technical values */
+  .mono {
+    font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
+  }
+
+  /* Focus ring for keyboard nav */
+  .focus-ring {
+    @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900;
+  }
+
+  /* Card base */
+  .card {
+    @apply bg-slate-800/50 border border-slate-700/30 rounded-sm;
+  }
+
+  /* Table row hover */
+  .table-row-hover {
+    @apply hover:bg-slate-800/60 transition-colors duration-100;
+  }
+
+  /* Input base */
+  .input-base {
+    @apply bg-slate-900 border border-slate-700/50 rounded-sm text-slate-100 placeholder:text-slate-500
+           focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/30
+           transition-colors duration-150;
+  }
+
+  /* Button variants */
+  .btn-primary {
+    @apply bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/20
+           hover:border-cyan-500/50 transition-colors duration-150 focus-ring rounded-sm;
+  }
+
+  .btn-ghost {
+    @apply text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition-colors duration-150
+           focus-ring rounded-sm;
+  }
+
+  .btn-danger {
+    @apply bg-rose-500/10 border border-rose-500/30 text-rose-400 hover:bg-rose-500/20
+           hover:border-rose-500/50 transition-colors duration-150 focus-ring rounded-sm;
+  }
+}

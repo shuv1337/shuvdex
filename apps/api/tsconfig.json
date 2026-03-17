@@ -1,0 +1,17 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src",
+    "composite": true
+  },
+  "include": ["src/**/*.ts"],
+  "references": [
+    { "path": "../../packages/core" },
+    { "path": "../../packages/ssh" },
+    { "path": "../../packages/git-ops" },
+    { "path": "../../packages/skill-ops" },
+    { "path": "../../packages/telemetry" },
+    { "path": "../../packages/tool-registry" }
+  ]
+}

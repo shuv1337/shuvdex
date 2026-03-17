@@ -1,0 +1,17 @@
+name: fleet_rollback
+description: Rollback hosts to a specific git ref (branch, tag, or SHA).
+enabled: true
+builtIn: true
+category: fleet
+schema:
+  ref:
+    type: string
+    description: Git ref to checkout (branch, tag, or SHA)
+    optional: false
+  hosts:
+    type: array
+    description: Subset of host names to target (defaults to all)
+    optional: true
+    items:
+      type: string
+createdAt: 2024-01-01T00:00:00.000Z

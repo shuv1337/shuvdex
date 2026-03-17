@@ -6,8 +6,10 @@
     { "path": "packages/ssh" },
     { "path": "packages/git-ops" },
     { "path": "packages/skill-ops" },
+    { "path": "packages/tool-registry" },
     { "path": "apps/cli" },
     { "path": "apps/mcp-server" },
+    { "path": "apps/api" },
     { "path": "tests/e2e" }
   ]
 }
