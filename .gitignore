@@ -3,3 +3,7 @@ dist/
 *.tsbuildinfo
 .turbo/
 coverage/
+
+.codex/environments/
+.pi/suggester/logs/
+.pi/suggester/sessions/
