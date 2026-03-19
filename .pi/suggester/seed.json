@@ -1,0 +1,106 @@
+{
+  "seedVersion": 3,
+  "generatedAt": "2026-03-19T08:21:18.681Z",
+  "sourceCommit": "6fb45412cb0ad90fccabd6b1beeaac24821f5b6a",
+  "generatorVersion": "2026-03-11.2",
+  "seederPromptVersion": "2026-03-11.2",
+  "suggestionPromptVersion": "2026-03-11.1",
+  "configFingerprint": "sha256:21f83c4eb1e4bc24e4d35c839c914e7a8354b1bc0bfd27a728b2998d79ec1922",
+  "projectIntentSummary": "codex-fleet is a centralized capability gateway for Codex hosts. It replaces the old model of pulling repos, syncing skill directories, and activating symlinks across hosts with a single client-facing MCP (Model Context Protocol) server that serves as the control plane for capability discovery, policy/auth, and routing. The system compiles skills (from SKILL.md files and optional capability.yaml manifests) into structured capability packages exposed through MCP primitives (tools, resources, prompts). A thin per-host runner is retained only for capabilities requiring local execution (shell, filesystem, browser, device control). The project is organized as a TypeScript monorepo with three apps (api, mcp-server, web) and several shared packages (capability-registry, core, execution-providers, policy-engine, skill-indexer, ssh, telemetry).",
+  "objectivesSummary": "1. Build codex-fleet into the single client-facing MCP server for fleet capabilities, replacing local skills and local MCP servers.\n2. Implement a capability registry supporting multiple kinds: tool, resource, prompt, module, and connector, with package-scoped definitions.\n3. Provide a skill compiler/indexer that transforms SKILL.md and capability.yaml into capability packages with progressive disclosure.\n4. Implement policy and token-based ACLs with signed tokens, subject scopes, tag rules, default-deny, and full audit logging.\n5. Support pluggable execution providers: builtin, host_runner, mcp_proxy, http_api, and module_runtime.\n6. Serve MCP tools/resources/prompts as the primary agent-facing surface, with a REST admin API and React web UI for management.\n7. Support first-class skill file import from standalone .md, .zip, or .skill archives.",
+  "constraintsSummary": "- Node.js with npm workspaces (npm@11.7.0 pinned). TypeScript monorepo managed with Turborepo.\n- Execution providers are scaffolded but return not-yet-implemented responses (host_runner, mcp_proxy, http_api, module_runtime).\n- No repo-sync, activation, or git/file replication flows — these are explicitly excluded from the architecture.\n- Default-deny security model: capabilities must match both subject scopes and tag rules to be listed or executed.\n- Persistent state stored in local directories (.capabilities/packages and .capabilities/policy) via YAML files.\n- Optional fleet.yaml only needed for host-management API surface.\n- MCP is the primary consumption surface for agents; REST API is internal/admin only.",
+  "principlesGuidelinesSummary": "No dedicated principles, guidelines, or conventions document was found in the repository. However, strong architectural principles are embedded in PLAN.md and README.md:\n\n1. Centralized capability discovery and policy; local execution only when necessary (shell/fs/browser/device).\n2. Progressive disclosure: list endpoints return compact metadata; full content via resources/read only.\n3. Default-deny security with token-based ACLs and audit logging on every operation.\n4. Skill authoring follows a hybrid transition: SKILL.md remains supported alongside structured capability.yaml manifests.\n5. The MCP server is the public gateway; REST API is admin/internal only.\n6. Capability packages are the canonical unit — replacing flat tool definitions and directory-based skill trees.\n7. Pluggable execution with a standard executor contract (resolve, validate, authorize, execute, stream/return, audit).",
+  "implementationStatusSummary": "The capability-gateway foundation is implemented: capability registry with package-scoped definitions, skill indexer compiling SKILL.md/capability.yaml, policy engine with signed tokens and ACLs, and dynamic MCP registration with progressive disclosure. Three apps are functional: MCP server, admin REST API, and React/Vite web UI. Execution providers are wired but only return structured not-yet-implemented responses. Skill file import (standalone .md, .zip, .skill) is planned but not yet implemented. The web UI is tool-centric and lacks full package management awareness.",
+  "topObjectives": [
+    "Serve as the single centralized MCP capability gateway replacing local skill repos and MCP servers",
+    "Compile skills into structured capability packages with progressive disclosure",
+    "Enforce token-based ACLs with default-deny policy and full audit logging",
+    "Implement pluggable execution providers (host_runner, mcp_proxy, http_api, module_runtime)",
+    "Support first-class skill file import from .md, .zip, and .skill archives"
+  ],
+  "constraints": [
+    "TypeScript monorepo with npm workspaces and Turborepo",
+    "No repo-sync, activation, or file replication flows in the architecture",
+    "Default-deny security model for all capability access",
+    "MCP is the primary agent-facing surface; REST API is admin/internal only",
+    "Execution providers beyond builtin are scaffolded but not yet functional",
+    "Persistent state in local YAML files under .capabilities/"
+  ],
+  "keyFiles": [
+    {
+      "path": "README.md",
+      "hash": "sha256:8b5cc099593cdf34afe640c6c6f5ae423321bfbb8d259c994875a35844a9580a",
+      "whyImportant": "Project overview, current state, target model, monorepo layout, and configuration reference",
+      "category": "vision"
+    },
+    {
+      "path": "PLAN.md",
+      "hash": "sha256:bcc374d873fe237303959891b5410ba25c2de57feebbac22868c048f8fb3dd9f",
+      "whyImportant": "Comprehensive capability gateway plan covering registry, skill compiler, MCP gateway, policy engine, execution providers, and public interfaces",
+      "category": "architecture"
+    },
+    {
+      "path": "PLAN-skills-package-import.md",
+      "hash": "sha256:dda046dd74dbcc81eaee18034d35b7484f1987c9b209e857e501580973900537",
+      "whyImportant": "Detailed plan for first-class skill file import with current state analysis and proposed behavior",
+      "category": "architecture"
+    },
+    {
+      "path": "package.json",
+      "hash": "sha256:349434e0dd8d7bf7660a3bd901de60a2a9e8b21a660721fea22c2075f61e0f2d",
+      "whyImportant": "Monorepo root package configuration with workspace definitions",
+      "category": "other"
+    },
+    {
+      "path": "turbo.json",
+      "hash": "sha256:a0645c289c33d6b40faccb800d99918101f0c90467d17cef279bc9accda14118",
+      "whyImportant": "Turborepo build orchestration configuration",
+      "category": "other"
+    },
+    {
+      "path": "fleet.yaml",
+      "hash": "sha256:c7719edfe6818547d33a635c31c67ffbf3be5ab0178b66e98559f232f01be108",
+      "whyImportant": "Host configuration file for fleet management",
+      "category": "other"
+    },
+    {
+      "path": ".codex/config.toml",
+      "hash": "sha256:8a5c0ebcd67c5737970aadc60a86c5e162f2d3b659a665cc378de70d85cb7f61",
+      "whyImportant": "Codex Desktop MCP configuration for development",
+      "category": "other"
+    }
+  ],
+  "categoryFindings": {
+    "vision": {
+      "found": true,
+      "rationale": "README.md contains clear project vision, current state, and target operating model. PLAN.md provides the detailed strategic plan.",
+      "files": [
+        "README.md",
+        "PLAN.md"
+      ]
+    },
+    "architecture": {
+      "found": true,
+      "rationale": "PLAN.md has comprehensive architecture covering capability registry, skill compiler, MCP gateway, policy engine, and execution providers. PLAN-skills-package-import.md details the import architecture. README.md documents the monorepo layout.",
+      "files": [
+        "PLAN.md",
+        "PLAN-skills-package-import.md",
+        "README.md"
+      ]
+    },
+    "principles_guidelines": {
+      "found": false,
+      "rationale": "No dedicated principles, guidelines, or coding conventions document exists. Architectural principles are embedded within PLAN.md and README.md but there is no standalone file for development guidelines, coding standards, or contribution conventions.",
+      "files": []
+    }
+  },
+  "openQuestions": [
+    "What is the timeline/priority for implementing the execution providers (host_runner, mcp_proxy, http_api, module_runtime)?",
+    "Are there coding conventions or contribution guidelines that should be documented?",
+    "What is the status of the skill file import feature described in PLAN-skills-package-import.md?",
+    "What do the .factory, .rodney, .run, .tools, and .turbo directories contain and how do they relate to the development workflow?"
+  ],
+  "reseedNotes": "Initial seed from repository exploration. The project has strong vision and architecture documentation in README.md and PLAN.md. No dedicated principles/guidelines document was found. Consider reseeding if conventions are established or if execution providers move beyond scaffold stage.",
+  "lastReseedReason": "initial_missing",
+  "lastChangedFiles": []
+}

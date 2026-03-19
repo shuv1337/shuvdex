@@ -1,0 +1,152 @@
+#!/bin/bash
+# Make API CLI Wrapper
+
+# Load environment from multiple sources (first match wins)
+# 1. ~/.env
+# 2. ~/.openclaw/.env
+# 3. ~/.openclaw/credentials/make-api.json
+# 4. Already-set env vars
+# 5. ~/.clawdbot/.env (legacy)
+
+_load_env_file() {
+    local file="$1"
+    [ -f "$file" ] || return
+    while IFS='=' read -r key val; do
+        key="${key%%#*}"        # strip inline comments
+        key="${key// /}"        # trim spaces
+        [ -z "$key" ] && continue
+        [[ "$key" == \#* ]] && continue
+        val="${val#\"}" ; val="${val%\"}"   # strip quotes
+        val="${val#\'}" ; val="${val%\'}"
+        case "$key" in
+            MAKE_API_TOKEN) [ -z "$MAKE_API_TOKEN" ] && export MAKE_API_TOKEN="$val" ;;
+            MAKE_ZONE)      [ -z "$MAKE_ZONE" ]      && export MAKE_ZONE="$val" ;;
+        esac
+    done < "$file"
+}
+
+_load_env_file "$HOME/.env"
+_load_env_file "$HOME/.openclaw/.env"
+
+# Try JSON credentials if still missing
+if [ -z "$MAKE_API_TOKEN" ] && [ -f "$HOME/.openclaw/credentials/make-api.json" ]; then
+    MAKE_API_TOKEN="$(python3 -c "import json,sys; d=json.load(open(sys.argv[1])); print(d.get('token',d.get('api_token','')))" "$HOME/.openclaw/credentials/make-api.json" 2>/dev/null)"
+    export MAKE_API_TOKEN
+fi
+if [ -z "$MAKE_ZONE" ] && [ -f "$HOME/.openclaw/credentials/make-api.json" ]; then
+    MAKE_ZONE="$(python3 -c "import json,sys; d=json.load(open(sys.argv[1])); print(d.get('zone',''))" "$HOME/.openclaw/credentials/make-api.json" 2>/dev/null)"
+    export MAKE_ZONE
+fi
+
+# Legacy fallback
+_load_env_file "$HOME/.clawdbot/.env"
+
+# Default zone
+export MAKE_ZONE="${MAKE_ZONE:-eu1}"
+
+# Resolve script directory for portable paths
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+show_help() {
+    cat << EOF
+Make API CLI - Control Make.com scenarios, data stores, and more
+
+Usage: make-api <command> [options]
+
+Commands:
+    scenarios list <teamId>          List scenarios in a team
+    scenarios get <scenarioId>       Get scenario details
+    scenarios create <teamId>        Create a new scenario
+    scenarios update <scenarioId>    Update a scenario
+    scenarios delete <scenarioId>    Delete a scenario
+    scenarios start <scenarioId>     Activate a scenario
+    scenarios stop <scenarioId>      Deactivate a scenario
+    scenarios run <scenarioId>       Run a scenario
+    scenarios clone <scenarioId>     Clone a scenario
+    
+    data-stores list <teamId>       List data stores
+    data-stores get <id>            Get data store details
+    data-stores records <id>        List data store records
+    
+    connections list <teamId>       List connections
+    
+    folders list <teamId>           List scenario folders
+    
+    me                              Get current user info
+    teams                           List teams
+    organizations                   List organizations
+
+Config sources (first match wins):
+    ~/.env
+    ~/.openclaw/.env
+    ~/.openclaw/credentials/make-api.json
+    Environment variables (MAKE_API_TOKEN, MAKE_ZONE)
+    ~/.clawdbot/.env (legacy)
+
+Examples:
+    make-api scenarios list 123
+    make-api scenarios start 925
+    make-api data-stores list 123
+    make-api me
+
+EOF
+}
+
+if [ -z "$MAKE_API_TOKEN" ]; then
+    echo "Error: MAKE_API_TOKEN not found."
+    echo "Add it to ~/.env, ~/.openclaw/.env, or ~/.openclaw/credentials/make-api.json"
+    exit 1
+fi
+
+CMD="$1"
+shift || true
+
+case "$CMD" in
+    scenarios)
+        SUB="$1"
+        shift
+        case "$SUB" in
+            list)   python3 "$SCRIPT_DIR/make_api_server.py" scenarios_list "{\"teamId\": $1}" ;;
+            get)    python3 "$SCRIPT_DIR/make_api_server.py" scenarios_get "{\"scenarioId\": $1}" ;;
+            create) python3 "$SCRIPT_DIR/make_api_server.py" scenarios_create "{\"teamId\": $1}" ;;
+            update) python3 "$SCRIPT_DIR/make_api_server.py" scenarios_update "{\"scenarioId\": $1}" ;;
+            delete) python3 "$SCRIPT_DIR/make_api_server.py" scenarios_delete "{\"scenarioId\": $1}" ;;
+            start)  python3 "$SCRIPT_DIR/make_api_server.py" scenarios_start "{\"scenarioId\": $1}" ;;
+            stop)   python3 "$SCRIPT_DIR/make_api_server.py" scenarios_stop "{\"scenarioId\": $1}" ;;
+            run)    python3 "$SCRIPT_DIR/make_api_server.py" scenarios_run "{\"scenarioId\": $1}" ;;
+            clone)  python3 "$SCRIPT_DIR/make_api_server.py" scenarios_clone "{\"scenarioId\": $1}" ;;
+            *)      show_help ;;
+        esac
+        ;;
+    data-stores|data)
+        SUB="$1"
+        shift
+        case "$SUB" in
+            list)   python3 "$SCRIPT_DIR/make_api_server.py" data_stores_list "{\"teamId\": $1}" ;;
+            get)    python3 "$SCRIPT_DIR/make_api_server.py" data_stores_get "{\"dataStoreId\": $1}" ;;
+            records) python3 "$SCRIPT_DIR/make_api_server.py" data_stores_records_list "{\"dataStoreId\": $1}" ;;
+            *)      show_help ;;
+        esac
+        ;;
+    connections|conn)
+        python3 "$SCRIPT_DIR/make_api_server.py" connections_list "{\"teamId\": $1}"
+        ;;
+    folders)
+        python3 "$SCRIPT_DIR/make_api_server.py" scenario_folders_list "{\"teamId\": $1}"
+        ;;
+    me)
+        python3 "$SCRIPT_DIR/make_api_server.py" users_me "{}"
+        ;;
+    teams)
+        python3 "$SCRIPT_DIR/make_api_server.py" teams_list "{}"
+        ;;
+    organizations|org)
+        python3 "$SCRIPT_DIR/make_api_server.py" organizations_list "{}"
+        ;;
+    help|--help|-h)
+        show_help
+        ;;
+    *)
+        show_help
+        ;;
+esac
