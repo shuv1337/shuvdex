@@ -143,9 +143,20 @@ export const CapabilityDefinition = Schema.Struct({
 export type CapabilityDefinition = typeof CapabilityDefinition.Type;
 
 export const PackageSource = Schema.Struct({
-  type: Schema.Literal("builtin", "skill", "manifest", "connector", "generated"),
+  type: Schema.Literal(
+    "builtin",
+    "skill",
+    "manifest",
+    "connector",
+    "generated",
+    "imported_archive",
+  ),
   path: Schema.optional(Schema.String),
   skillName: Schema.optional(Schema.String),
+  archiveName: Schema.optional(Schema.String),
+  importedAt: Schema.optional(Schema.String),
+  checksum: Schema.optional(Schema.String),
+  importMode: Schema.optional(Schema.String),
 });
 export type PackageSource = typeof PackageSource.Type;
 

@@ -6,6 +6,7 @@ export {
   ExecutionBinding,
   CapabilityDefinition,
   CapabilityPackage,
+  PackageSource,
 } from "./schema.js";
 export type {
   CapabilityKind as CapabilityKindType,
@@ -14,6 +15,7 @@ export type {
   ExecutionBinding as ExecutionBindingType,
   CapabilityDefinition as CapabilityDefinitionType,
   CapabilityPackage as CapabilityPackageType,
+  PackageSource as PackageSourceType,
 } from "./schema.js";
 export {
   CapabilityPackageNotFound,
