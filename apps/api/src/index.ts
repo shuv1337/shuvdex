@@ -14,6 +14,7 @@ import {
   makeCapabilityRegistryLive,
 } from "@codex-fleet/capability-registry";
 import { makePolicyEngineLive } from "@codex-fleet/policy-engine";
+import { makeSkillImporterLive } from "@codex-fleet/skill-importer";
 import { SkillIndexer, SkillIndexerLive } from "@codex-fleet/skill-indexer";
 import { auditRouter } from "./routes/audit.js";
 import { toolsRouter } from "./routes/tools.js";
@@ -34,14 +35,19 @@ async function main(): Promise<void> {
   const policyDir = process.env["POLICY_DIR"]
     ? path.resolve(process.env["POLICY_DIR"])
     : path.resolve(process.cwd(), ".capabilities", "policy");
+  const importsDir = process.env["IMPORTS_DIR"]
+    ? path.resolve(process.env["IMPORTS_DIR"])
+    : path.resolve(process.cwd(), ".capabilities", "imports");
   const localRepoPath = process.env["LOCAL_REPO_PATH"]
     ? path.resolve(process.env["LOCAL_REPO_PATH"])
     : process.cwd();
   const configPath = path.resolve(process.cwd(), "fleet.yaml");
 
+  const capabilityRegistryLayer = makeCapabilityRegistryLive(capabilitiesDir);
   const liveLayer = Layer.mergeAll(
-    makeCapabilityRegistryLive(capabilitiesDir),
+    capabilityRegistryLayer,
     makePolicyEngineLive({ policyDir }),
+    Layer.provide(makeSkillImporterLive({ importsDir }), capabilityRegistryLayer),
     SkillIndexerLive,
   );
   const managedRuntime = ManagedRuntime.make(liveLayer);
@@ -53,6 +59,10 @@ async function main(): Promise<void> {
       const indexer = yield* SkillIndexer;
       const indexed = yield* indexer.indexRepository(localRepoPath);
       for (const artifact of indexed.artifacts) {
+        const existing = yield* Effect.either(registry.getPackage(artifact.package.id));
+        if (existing._tag === "Right" && existing.right.source?.type === "imported_archive") {
+          continue;
+        }
         yield* registry.upsertPackage(artifact.package);
       }
     }).pipe(Effect.provide(liveLayer)),
@@ -79,7 +89,7 @@ async function main(): Promise<void> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   app.route("/api/skills", skillsRouter(runtime as any, localRepoPath));
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  app.route("/api/packages", packagesRouter(runtime as any, localRepoPath));
+  app.route("/api/packages", packagesRouter(runtime as any, localRepoPath, importsDir));
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   app.route("/api/policies", policiesRouter(runtime as any));
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -93,6 +103,7 @@ async function main(): Promise<void> {
       status: "ok",
       version: "0.0.0",
       capabilitiesDir,
+      importsDir,
       policyDir,
       localRepoPath,
       configPath,

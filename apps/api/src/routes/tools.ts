@@ -32,6 +32,7 @@ export function toolsRouter(
     category: pkg.tags?.[0] ?? capability.tags?.[0] ?? capability.kind,
     enabled: capability.enabled,
     builtIn: pkg.builtIn,
+    provenance: pkg.source?.type === "imported_archive" ? "imported_archive" : "local",
     schema: {
       params:
         capability.tool &&

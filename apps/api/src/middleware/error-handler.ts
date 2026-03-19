@@ -28,6 +28,7 @@ const TAG_TO_STATUS: Record<string, HttpStatus> = {
   ToolAlreadyExists: 409,
   CapabilityAlreadyExists: 409,
   CapabilityPackageAlreadyExists: 409,
+  ImportConflictError: 409,
 
   // 403 — forbidden
   CannotRemoveBuiltIn: 403,
@@ -39,6 +40,7 @@ const TAG_TO_STATUS: Record<string, HttpStatus> = {
   ConfigValidationError: 400,
   ConfigParseError: 400,
   InvalidTokenError: 400,
+  ArchiveValidationError: 400,
 
   // 502 — upstream SSH failure
   ConnectionFailed: 502,

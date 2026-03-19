@@ -21,6 +21,7 @@
     "@codex-fleet/capability-registry": "*",
     "@codex-fleet/core": "*",
     "@codex-fleet/policy-engine": "*",
+    "@codex-fleet/skill-importer": "*",
     "@codex-fleet/skill-indexer": "*"
   },
   "devDependencies": {

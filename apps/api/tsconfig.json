@@ -10,6 +10,7 @@
     { "path": "../../packages/capability-registry" },
     { "path": "../../packages/core" },
     { "path": "../../packages/policy-engine" },
+    { "path": "../../packages/skill-importer" },
     { "path": "../../packages/skill-indexer" }
   ]
 }

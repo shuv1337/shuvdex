@@ -5,6 +5,7 @@
  */
 import { Hono } from "hono";
 import { Effect, Runtime } from "effect";
+import { CapabilityRegistry } from "@codex-fleet/capability-registry";
 import { SkillIndexer } from "@codex-fleet/skill-indexer";
 import { handleError } from "../middleware/error-handler.js";
 
@@ -18,7 +19,7 @@ import { handleError } from "../middleware/error-handler.js";
  * @param localRepoPath  Absolute path to the local skills repository.
  */
 export function skillsRouter(
-  runtime: Runtime.Runtime<SkillIndexer>,
+  runtime: Runtime.Runtime<SkillIndexer | CapabilityRegistry>,
   localRepoPath: string,
 ): Hono {
   const run = Runtime.runPromise(runtime);
@@ -32,20 +33,36 @@ export function skillsRouter(
       const indexed = await run(
         Effect.gen(function* () {
           const indexer = yield* SkillIndexer;
-          return yield* indexer.indexRepository(localRepoPath);
+          const registry = yield* CapabilityRegistry;
+          const local = yield* indexer.indexRepository(localRepoPath);
+          const imported = (yield* registry.listPackages()).filter(
+            (pkg) => pkg.source?.type === "imported_archive",
+          );
+          return { local, imported };
         }),
       );
       return c.json({
         repoPath: localRepoPath,
-        count: indexed.artifacts.length,
-        skills: indexed.artifacts.map((artifact) => ({
-          skill: artifact.skillName,
-          packageId: artifact.package.id,
-          version: artifact.package.version,
-          warnings: artifact.warnings,
-          hosts: {},
-        })),
-        failures: indexed.failures,
+        count: indexed.local.artifacts.length + indexed.imported.length,
+        skills: [
+          ...indexed.local.artifacts.map((artifact) => ({
+            skill: artifact.skillName,
+            packageId: artifact.package.id,
+            version: artifact.package.version,
+            warnings: artifact.warnings,
+            hosts: {},
+            source: "local_repo" as const,
+          })),
+          ...indexed.imported.map((pkg) => ({
+            skill: pkg.source?.skillName ?? pkg.id.replace(/^skill\./, ""),
+            packageId: pkg.id,
+            version: pkg.version,
+            warnings: [],
+            hosts: {},
+            source: "imported_archive" as const,
+          })),
+        ],
+        failures: indexed.local.failures,
       });
     } catch (e) {
       return handleError(c, e);
