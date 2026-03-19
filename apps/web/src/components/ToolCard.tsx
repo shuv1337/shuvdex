@@ -13,11 +13,16 @@ interface ToolCardProps {
 
 const categoryVariant = (cat: string): "cyan" | "green" | "amber" | "purple" | "slate" => {
   switch (cat.toLowerCase()) {
-    case "fleet":     return "cyan";
-    case "git":       return "green";
-    case "skills":    return "amber";
-    case "system":    return "purple";
-    default:          return "slate";
+    case "gateway":
+      return "cyan";
+    case "integration":
+      return "green";
+    case "skill":
+      return "amber";
+    case "system":
+      return "purple";
+    default:
+      return "slate";
   }
 };
 

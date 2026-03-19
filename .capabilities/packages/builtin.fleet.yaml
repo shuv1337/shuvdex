@@ -1,0 +1,239 @@
+id: builtin.fleet
+version: 1.0.0
+title: Fleet Built-ins
+description: Built-in fleet tools served by codex-fleet.
+builtIn: true
+enabled: true
+tags:
+  - fleet
+  - builtin
+source:
+  type: builtin
+capabilities:
+  - id: fleet_status
+    packageId: builtin.fleet
+    version: 1.0.0
+    kind: tool
+    title: Fleet Status
+    description: "Get fleet status: connectivity, HEAD commit, branch, and dirty
+      state for each host."
+    enabled: true
+    visibility: public
+    riskLevel: medium
+    subjectScopes:
+      - fleet:read
+      - admin
+    tags:
+      - fleet
+      - builtin
+    executorRef:
+      executorType: builtin
+      target: fleet_status
+    tool:
+      inputSchema:
+        type: object
+        properties:
+          hosts:
+            type: array
+            items:
+              type: string
+      outputSchema:
+        type: object
+      sideEffectLevel: read
+  - id: fleet_sync
+    packageId: builtin.fleet
+    version: 1.0.0
+    kind: tool
+    title: Fleet Sync
+    description: Sync a skill from local repository to remote hosts.
+    enabled: true
+    visibility: public
+    riskLevel: medium
+    subjectScopes:
+      - fleet:write
+      - admin
+    tags:
+      - fleet
+      - builtin
+    executorRef:
+      executorType: builtin
+      target: fleet_sync
+    tool:
+      inputSchema:
+        type: object
+        required:
+          - skill
+        properties:
+          skill:
+            type: string
+          hosts:
+            type: array
+            items:
+              type: string
+      outputSchema:
+        type: object
+      sideEffectLevel: read
+  - id: fleet_activate
+    packageId: builtin.fleet
+    version: 1.0.0
+    kind: tool
+    title: Fleet Activate
+    description: Activate a skill on remote hosts by creating a symlink in the
+      active skills directory.
+    enabled: true
+    visibility: public
+    riskLevel: medium
+    subjectScopes:
+      - fleet:write
+      - admin
+    tags:
+      - fleet
+      - builtin
+    executorRef:
+      executorType: builtin
+      target: fleet_activate
+    tool:
+      inputSchema:
+        type: object
+        required:
+          - skill
+        properties:
+          skill:
+            type: string
+          hosts:
+            type: array
+            items:
+              type: string
+      outputSchema:
+        type: object
+      sideEffectLevel: read
+  - id: fleet_deactivate
+    packageId: builtin.fleet
+    version: 1.0.0
+    kind: tool
+    title: Fleet Deactivate
+    description: Deactivate a skill on remote hosts by removing its activation symlink.
+    enabled: true
+    visibility: public
+    riskLevel: medium
+    subjectScopes:
+      - fleet:write
+      - admin
+    tags:
+      - fleet
+      - builtin
+    executorRef:
+      executorType: builtin
+      target: fleet_deactivate
+    tool:
+      inputSchema:
+        type: object
+        required:
+          - skill
+        properties:
+          skill:
+            type: string
+          hosts:
+            type: array
+            items:
+              type: string
+      outputSchema:
+        type: object
+      sideEffectLevel: read
+  - id: fleet_pull
+    packageId: builtin.fleet
+    version: 1.0.0
+    kind: tool
+    title: Fleet Pull
+    description: Pull latest changes from the remote origin on each host's skills
+      repository.
+    enabled: true
+    visibility: public
+    riskLevel: medium
+    subjectScopes:
+      - fleet:write
+      - admin
+    tags:
+      - fleet
+      - builtin
+    executorRef:
+      executorType: builtin
+      target: fleet_pull
+    tool:
+      inputSchema:
+        type: object
+        properties:
+          hosts:
+            type: array
+            items:
+              type: string
+      outputSchema:
+        type: object
+      sideEffectLevel: read
+  - id: fleet_drift
+    packageId: builtin.fleet
+    version: 1.0.0
+    kind: tool
+    title: Fleet Drift
+    description: Detect commit drift across fleet hosts by comparing HEAD commits to
+      a reference.
+    enabled: true
+    visibility: public
+    riskLevel: medium
+    subjectScopes:
+      - fleet:read
+      - admin
+    tags:
+      - fleet
+      - builtin
+    executorRef:
+      executorType: builtin
+      target: fleet_drift
+    tool:
+      inputSchema:
+        type: object
+        properties:
+          referenceHost:
+            type: string
+          hosts:
+            type: array
+            items:
+              type: string
+      outputSchema:
+        type: object
+      sideEffectLevel: read
+  - id: fleet_rollback
+    packageId: builtin.fleet
+    version: 1.0.0
+    kind: tool
+    title: Fleet Rollback
+    description: Rollback hosts to a specific git ref (branch, tag, or SHA).
+    enabled: true
+    visibility: public
+    riskLevel: medium
+    subjectScopes:
+      - fleet:write
+      - admin
+    tags:
+      - fleet
+      - builtin
+    executorRef:
+      executorType: builtin
+      target: fleet_rollback
+    tool:
+      inputSchema:
+        type: object
+        required:
+          - ref
+        properties:
+          ref:
+            type: string
+          hosts:
+            type: array
+            items:
+              type: string
+      outputSchema:
+        type: object
+      sideEffectLevel: read
+createdAt: 2024-01-01T00:00:00.000Z
+updatedAt: 2024-01-01T00:00:00.000Z

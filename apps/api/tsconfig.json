@@ -7,11 +7,9 @@
   },
   "include": ["src/**/*.ts"],
   "references": [
+    { "path": "../../packages/capability-registry" },
     { "path": "../../packages/core" },
-    { "path": "../../packages/ssh" },
-    { "path": "../../packages/git-ops" },
-    { "path": "../../packages/skill-ops" },
-    { "path": "../../packages/telemetry" },
-    { "path": "../../packages/tool-registry" }
+    { "path": "../../packages/policy-engine" },
+    { "path": "../../packages/skill-indexer" }
   ]
 }

@@ -14,10 +14,10 @@ import type { Tool, ToolParam } from "@/api/client";
 // ---------------------------------------------------------------------------
 const categoryVariant = (cat: string): "cyan" | "green" | "amber" | "purple" | "slate" => {
   switch (cat.toLowerCase()) {
-    case "fleet":  return "cyan";
-    case "git":    return "green";
-    case "skills": return "amber";
-    case "system": return "purple";
+    case "gateway":     return "cyan";
+    case "integration": return "green";
+    case "skill":       return "amber";
+    case "system":      return "purple";
     default:       return "slate";
   }
 };
@@ -36,7 +36,7 @@ interface ToolFormState {
 const defaultFormState = (): ToolFormState => ({
   name: "",
   description: "",
-  category: "fleet",
+  category: "gateway",
   enabled: true,
   params: [],
 });
@@ -90,7 +90,7 @@ function ToolForm({ initial, onSubmit, onCancel, submitLabel = "Create Tool" }: 
           type="text"
           value={form.name}
           onChange={(e) => set("name", e.target.value)}
-          placeholder="fleet_status"
+          placeholder="echo"
           className="input-base mono text-xs px-3 py-2 w-full"
           required
         />
@@ -120,7 +120,7 @@ function ToolForm({ initial, onSubmit, onCancel, submitLabel = "Create Tool" }: 
           onChange={(e) => set("category", e.target.value)}
           className="input-base mono text-xs px-3 py-2 w-full appearance-none"
         >
-          {["fleet", "git", "skills", "system", "other"].map((c) => (
+          {["gateway", "integration", "skill", "system", "other"].map((c) => (
             <option key={c} value={c}>{c}</option>
           ))}
         </select>
@@ -549,5 +549,4 @@ export function ToolManager() {
     </div>
   );
 }
-
 

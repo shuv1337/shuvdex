@@ -1,13 +1,53 @@
 /**
  * MCP Server Protocol Tests
  *
- * Tests for VAL-MCP-001 (initialization), VAL-MCP-002 (tools/list),
- * VAL-MCP-012 (stdio transport compliance), VAL-MCP-015 (graceful shutdown).
+ * Covers initialization and dynamic tool advertisement for the capability gateway.
  */
-import { describe, expect, it, beforeEach, afterEach } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { createServer } from "../src/server.js";
+
+const samplePackage = {
+  id: "sample.echo",
+  version: "1.0.0",
+  title: "Sample Echo",
+  description: "Sample capability package used in protocol tests.",
+  builtIn: false,
+  enabled: true,
+  tags: ["gateway"],
+  source: { type: "generated" as const },
+  capabilities: [
+    {
+      id: "echo",
+      packageId: "sample.echo",
+      version: "1.0.0",
+      kind: "tool" as const,
+      title: "Echo",
+      description: "Return the supplied message.",
+      enabled: true,
+      visibility: "public" as const,
+      tags: ["gateway"],
+      subjectScopes: ["admin"],
+      riskLevel: "low" as const,
+      executorRef: { executorType: "module_runtime" as const },
+      tool: {
+        inputSchema: {
+          type: "object",
+          properties: {
+            message: {
+              type: "string",
+              description: "Message to echo back to the caller.",
+            },
+          },
+          required: ["message"],
+        },
+        outputSchema: { type: "object" },
+        sideEffectLevel: "read" as const,
+      },
+    },
+  ],
+};
 
 describe("MCP Server Protocol", () => {
   let client: Client;
@@ -32,19 +72,11 @@ describe("MCP Server Protocol", () => {
     await cleanup();
   });
 
-  // --- VAL-MCP-001: Server Initialization Response ---
-
-  describe("VAL-MCP-001: initialization", () => {
-    it("returns valid InitializeResult with protocolVersion", () => {
-      // The client.connect() above already performed the initialize handshake.
-      // If it didn't throw, the protocol was agreed upon.
+  describe("initialization", () => {
+    it("returns valid server capabilities", () => {
       const serverCapabilities = client.getServerCapabilities();
       expect(serverCapabilities).toBeDefined();
-    });
-
-    it("advertises tools capability", () => {
-      const caps = client.getServerCapabilities();
-      expect(caps?.tools).toBeDefined();
+      expect(serverCapabilities?.tools).toBeDefined();
     });
 
     it("returns server info with name and version", () => {
@@ -55,7 +87,6 @@ describe("MCP Server Protocol", () => {
     });
 
     it("completes initialization within 5 seconds", async () => {
-      // Create a fresh server/client pair with timing
       const server2 = createServer();
       const [ct, st] = InMemoryTransport.createLinkedPair();
       await server2.connect(st);
@@ -72,100 +103,37 @@ describe("MCP Server Protocol", () => {
     });
   });
 
-  // --- VAL-MCP-002: Tools List Response ---
-
-  describe("VAL-MCP-002: tools/list", () => {
-    const EXPECTED_TOOLS = [
-      "fleet_status",
-      "fleet_sync",
-      "fleet_activate",
-      "fleet_deactivate",
-      "fleet_pull",
-      "fleet_drift",
-      "fleet_rollback",
-    ];
-
-    it("returns exactly 7 tools", async () => {
-      const response = await client.listTools();
-      expect(response.tools).toHaveLength(7);
+  describe("tools/list", () => {
+    it("does not advertise a tools/list method for an empty catalog", async () => {
+      await expect(client.listTools()).rejects.toThrow(/Method not found/);
     });
 
-    it("returns all expected tool names", async () => {
-      const response = await client.listTools();
-      const names = response.tools.map((t) => t.name).sort();
-      expect(names).toEqual([...EXPECTED_TOOLS].sort());
-    });
+    it("registers dynamically supplied capability tools", async () => {
+      await cleanup();
 
-    it("each tool has a name", async () => {
-      const response = await client.listTools();
-      for (const tool of response.tools) {
-        expect(tool.name).toBeTruthy();
-        expect(typeof tool.name).toBe("string");
-      }
-    });
+      const server = createServer({ capabilities: [samplePackage] });
+      const [clientTransport, serverTransport] =
+        InMemoryTransport.createLinkedPair();
+      await server.connect(serverTransport);
 
-    it("each tool has a description", async () => {
-      const response = await client.listTools();
-      for (const tool of response.tools) {
-        expect(tool.description).toBeTruthy();
-        expect(typeof tool.description).toBe("string");
-      }
-    });
+      client = new Client({ name: "test-client", version: "0.0.1" });
+      await client.connect(clientTransport);
 
-    it("each tool has an inputSchema", async () => {
-      const response = await client.listTools();
-      for (const tool of response.tools) {
-        expect(tool.inputSchema).toBeDefined();
-        expect(tool.inputSchema.type).toBe("object");
-      }
-    });
+      cleanup = async () => {
+        await client.close();
+        await server.close();
+      };
 
-    it("fleet_status has no required parameters", async () => {
       const response = await client.listTools();
-      const tool = response.tools.find((t) => t.name === "fleet_status");
-      expect(tool).toBeDefined();
-      // fleet_status takes optional hosts filter
-      const required = (tool!.inputSchema as Record<string, unknown>)
-        .required as string[] | undefined;
-      expect(!required || required.length === 0).toBe(true);
-    });
+      expect(response.tools).toHaveLength(1);
 
-    it("fleet_sync requires skill parameter", async () => {
-      const response = await client.listTools();
-      const tool = response.tools.find((t) => t.name === "fleet_sync");
-      expect(tool).toBeDefined();
-      const required = (tool!.inputSchema as Record<string, unknown>)
-        .required as string[];
-      expect(required).toContain("skill");
-    });
-
-    it("fleet_activate requires skill parameter", async () => {
-      const response = await client.listTools();
-      const tool = response.tools.find((t) => t.name === "fleet_activate");
-      expect(tool).toBeDefined();
-      const required = (tool!.inputSchema as Record<string, unknown>)
-        .required as string[];
-      expect(required).toContain("skill");
-    });
-
-    it("fleet_deactivate requires skill parameter", async () => {
-      const response = await client.listTools();
-      const tool = response.tools.find(
-        (t) => t.name === "fleet_deactivate",
-      );
-      expect(tool).toBeDefined();
-      const required = (tool!.inputSchema as Record<string, unknown>)
-        .required as string[];
-      expect(required).toContain("skill");
-    });
-
-    it("fleet_rollback requires ref parameter", async () => {
-      const response = await client.listTools();
-      const tool = response.tools.find((t) => t.name === "fleet_rollback");
-      expect(tool).toBeDefined();
-      const required = (tool!.inputSchema as Record<string, unknown>)
-        .required as string[];
-      expect(required).toContain("ref");
+      const tool = response.tools[0];
+      expect(tool?.name).toBe("echo");
+      expect(tool?.description).toBe("Return the supplied message.");
+      expect(tool?.inputSchema.type).toBe("object");
+      expect(
+        ((tool?.inputSchema as Record<string, unknown>).required ?? []) as string[],
+      ).toContain("message");
     });
   });
 });

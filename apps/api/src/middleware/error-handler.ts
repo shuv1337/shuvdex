@@ -17,20 +17,28 @@ type HttpStatus = 400 | 403 | 404 | 409 | 500 | 502 | 503;
 const TAG_TO_STATUS: Record<string, HttpStatus> = {
   // 404 — resource not found
   ToolNotFound: 404,
+  CapabilityNotFound: 404,
+  CapabilityPackageNotFound: 404,
   HostNotFound: 404,
   ConfigNotFound: 404,
   SkillNotFound: 404,
+  PolicyNotFound: 404,
 
   // 409 — already exists
   ToolAlreadyExists: 409,
+  CapabilityAlreadyExists: 409,
+  CapabilityPackageAlreadyExists: 409,
 
   // 403 — forbidden
   CannotRemoveBuiltIn: 403,
+  CannotRemoveBuiltInPackage: 403,
 
   // 400 — bad input / validation
   ToolValidationError: 400,
+  CapabilityRegistryValidationError: 400,
   ConfigValidationError: 400,
   ConfigParseError: 400,
+  InvalidTokenError: 400,
 
   // 502 — upstream SSH failure
   ConnectionFailed: 502,

@@ -1,214 +1,183 @@
 # codex-fleet
 
-Fleet skills management system for Codex Desktop. Manage skills across multiple remote Codex instances via SSH.
+Centralized capability gateway for Codex hosts.
 
-## Overview
+`codex-fleet` is now organized around one idea: capability discovery and policy live centrally, while truly local execution can be delegated to host-bound executors later. The old model of pulling repos, syncing skill directories, and activating symlinks across hosts has been removed from the main product surface.
 
-codex-fleet provides tools to synchronize, activate, and manage skills across a fleet of remote machines running Codex Desktop. It supports both CLI and MCP (Model Context Protocol) server interfaces.
+## Current State
 
-**Features:**
-- Check connectivity and git state across all hosts
-- Pull latest changes from remote origins
-- Sync skills from local repository to remote hosts
-- Activate/deactivate skills on remote hosts
-- Rollback to specific git refs (branches, tags, or SHAs)
-- Create git tags across the fleet
-- Detect commit drift between hosts
+The repo currently exposes three primary surfaces:
 
-## Architecture
+- `@codex-fleet/mcp-server`: the client-facing MCP gateway
+- `@codex-fleet/api`: admin/control-plane API for packages, policies, tokens, audit, runners, hosts, and compatibility tool management
+- `@codex-fleet/web`: React/Vite UI for capability management
 
-Turborepo monorepo with npm workspaces, using Effect-TS for all async operations.
+The capability-gateway foundation is implemented:
 
-```
+- capability registry with package-scoped `tool`, `resource`, `prompt`, `module`, and `connector` definitions
+- skill indexer that compiles `SKILL.md` and optional `capability.yaml` into capability packages
+- policy engine with signed tokens, ACL checks, revocation, and audit logging
+- dynamic MCP registration with progressive disclosure for tools, resources, and prompts
+
+Execution provider types are wired, but only the generic scaffolding exists today. `host_runner`, `mcp_proxy`, `http_api`, and `module_runtime` still return structured not-yet-implemented responses.
+
+## Target Model
+
+The intended operating model is:
+
+- one client-configured MCP endpoint
+- centrally served capability packages
+- server-side discovery, ACLs, and progressive disclosure
+- optional per-host runners only for local shell, filesystem, browser, or device work
+
+The intended operating model is not:
+
+- cloning the same skill repo on every host
+- keeping host-local skill trees in sync
+- shipping capabilities through `pull`, `sync`, activation, or other git/file replication flows
+
+## Monorepo Layout
+
+```text
 codex-fleet/
 ├── apps/
-│   ├── cli/           # CLI application (fleet command)
-│   └── mcp-server/    # MCP server for Codex integration
+│   ├── api/           # HTTP admin/control-plane API
+│   ├── mcp-server/    # MCP capability gateway
+│   └── web/           # React/Vite frontend
 ├── packages/
-│   ├── core/          # Shared types, schemas, config loading
-│   ├── ssh/           # SSH execution layer
-│   ├── git-ops/       # Git operations (pull, checkout, tag)
-│   ├── skill-ops/     # Skill sync, activate, deactivate, drift
-│   └── telemetry/     # Observability and logging
-└── tests/             # Integration tests
+│   ├── capability-registry/   # capability/package model + storage
+│   ├── core/                  # host config types + loading helpers
+│   ├── execution-providers/   # executor abstraction and provider stubs
+│   ├── policy-engine/         # token issuance, ACLs, audit log
+│   ├── skill-indexer/         # compile skills into capability packages
+│   ├── ssh/                   # SSH execution layer retained for future host work
+│   └── telemetry/             # tracing/logging helpers
 ```
 
-## Quick Start
+## Requirements
 
-### Prerequisites
+- Node.js with npm workspaces support (`packageManager` is pinned to `npm@11.7.0`)
+- optional `fleet.yaml` only if you use the host-management API surface
 
-- Node.js (with npm 11.7.0+)
-- SSH access to target hosts
-- Skills repository cloned on remote hosts
-
-### Installation
+## Install
 
 ```bash
-# Clone and install dependencies
 git clone <repo-url> codex-fleet
 cd codex-fleet
 npm install
-
-# Build all packages
 npm run build
-```
-
-## CLI Usage
-
-```bash
-# Show help
-fleet --help
-
-# Check fleet status (connectivity, HEAD, branch, dirty state)
-fleet status [--json] [--config <path>]
-
-# Pull latest changes on all hosts
-fleet pull [hosts...] [--repo <path>] [--json]
-
-# Sync a skill from local to remote hosts
-fleet sync <skill> [hosts...] [--local-skill-path <path>] [--repo <path>]
-
-# Activate a skill (create symlink in active skills directory)
-fleet activate <skill> [hosts...] [--repo <path>] [--active-dir <path>]
-
-# Deactivate a skill (remove symlink)
-fleet deactivate <skill> [hosts...] [--active-dir <path>]
-
-# Rollback to a specific git ref
-fleet rollback <ref> [hosts...] [--repo <path>]
-
-# Create a git tag on all hosts
-fleet tag <name> [hosts...] [--repo <path>]
-```
-
-### Common Options
-
-| Option | Description | Default |
-|--------|-------------|---------|
-| `--config, -c <path>` | Path to fleet config file | `fleet.yaml` |
-| `--repo, -r <path>` | Path to skills repo on remote hosts | `~/repos/shuvbot-skills` |
-| `--active-dir, -a <path>` | Path to active skills directory | `~/.codex/skills` |
-| `--json` | Output as JSON | |
-| `--help, -h` | Show help | |
-
-### Exit Codes
-
-- `0` - All hosts succeeded
-- `1` - All hosts failed or error
-- `2` - Partial success (some hosts succeeded, some failed)
-
-## MCP Server Usage
-
-The MCP server exposes fleet management tools that can be called by Codex.
-
-### Available Tools
-
-| Tool | Description |
-|------|-------------|
-| `fleet_status` | Get connectivity, HEAD commit, branch, and dirty state for each host |
-| `fleet_sync` | Sync a skill from local repository to remote hosts |
-| `fleet_activate` | Activate a skill by creating a symlink |
-| `fleet_deactivate` | Deactivate a skill by removing its symlink |
-| `fleet_pull` | Pull latest changes from remote origin |
-| `fleet_drift` | Detect commit drift across fleet hosts |
-| `fleet_rollback` | Rollback hosts to a specific git ref |
-
-### Codex Configuration
-
-Add to your Codex MCP configuration (e.g., `~/.codex/config.json`):
-
-```json
-{
-  "mcpServers": {
-    "codex-fleet": {
-      "command": "node",
-      "args": ["/path/to/codex-fleet/apps/mcp-server/dist/main.js"],
-      "env": {
-        "FLEET_CONFIG": "/path/to/fleet.yaml",
-        "FLEET_REPO_PATH": "~/repos/shuvbot-skills"
-      }
-    }
-  }
-}
 ```
 
 ## Configuration
 
-Create a `fleet.yaml` file to define your host registry:
+Persistent gateway state defaults to local directories:
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `CAPABILITIES_DIR` | `./.capabilities/packages` | persisted capability package storage |
+| `POLICY_DIR` | `./.capabilities/policy` | persisted policies, revocations, and audit state |
+| `LOCAL_REPO_PATH` | current working directory | skill indexing source root |
+
+If you want to use the host-management API, provide a `fleet.yaml` in the repo root or current working directory:
 
 ```yaml
-# Host registry - map host names to their SSH configuration
 laptop:
   hostname: 192.168.1.100
-  user: myuser
+  connectionType: ssh
   port: 22
-  timeout: 30
-
-desktop:
-  hostname: desktop.local
   user: myuser
-  keyPath: ~/.ssh/id_rsa
-
-server:
-  hostname: server.example.com
-  user: deploy
-  keyPath: ~/.ssh/deploy_key
-  timeout: 60
 ```
 
-### Host Configuration Fields
+## MCP Server
 
-| Field | Type | Required | Default | Description |
-|-------|------|----------|---------|-------------|
-| `hostname` | string | Yes | - | Hostname or IP address |
-| `connectionType` | `"ssh"` \| `"local"` | No | `"ssh"` | Connection type |
-| `port` | number | No | `22` | SSH port (1-65535) |
-| `user` | string | No | Current user | SSH username |
-| `keyPath` | string | No | - | Path to SSH private key |
-| `timeout` | number | No | `30` | Connection timeout in seconds |
+The MCP server is the main agent-facing surface. On startup it:
+
+1. loads the capability registry and policy engine
+2. indexes local skills into capability packages
+3. serves MCP `tools`, `resources`, and `prompts`
+
+Run it with:
+
+```bash
+npm run build --workspace @codex-fleet/mcp-server
+node apps/mcp-server/dist/index.js
+```
+
+An isolated fresh server advertises no built-in fleet catalog. Tools, resources, and prompts come from indexed skills and stored capability packages.
+
+## HTTP API
+
+The API is the admin/control-plane surface.
+
+Start it with:
+
+```bash
+npm run dev --workspace @codex-fleet/api
+```
+
+Key routes:
+
+- `GET /health`
+- `GET /api/tools`
+- `GET /api/skills`
+- `GET /api/packages`
+- `GET /api/policies`
+- `GET /api/audit`
+- `GET /api/runners`
+- `GET /api/hosts`
+- `POST /api/tokens`
+
+`/api/tools` is a compatibility view over capability packages for the current UI. It no longer reflects a separate fleet-tool seed system.
+
+## Web App
+
+The web UI lives in `apps/web`.
+
+```bash
+npm run dev --workspace @codex-fleet/web
+```
+
+The current UI is focused on capability management through the API compatibility layer.
+
+## Capability Model
+
+Skills are treated as capability packages instead of files to distribute.
+
+- `SKILL.md` only: compiled with markdown-derived defaults
+- `SKILL.md` + `capability.yaml`: manifest metadata overrides defaults
+- generated outputs:
+  - summary resource
+  - instructions resource
+  - apply prompt
+  - optional manifest-defined capabilities
+
+This preserves skill authoring compatibility while moving discovery, policy, and disclosure to structured data.
 
 ## Development
 
-### Scripts
+Top-level scripts:
 
 ```bash
-# Build all packages
 npm run build
-
-# Run tests
 npm run test
-
-# Type checking
 npm run typecheck
-
-# Lint
 npm run lint
-
-# Clean build artifacts
 npm run clean
 ```
 
-### Package Dependencies
+Targeted examples:
 
-```
-cli ─────────────┬─► core
-                 ├─► ssh
-                 ├─► git-ops ────► ssh
-                 ├─► skill-ops ──► ssh, git-ops
-                 └─► telemetry
-
-mcp-server ──────┬─► core
-                 ├─► ssh
-                 ├─► git-ops
-                 └─► skill-ops
+```bash
+npm run test --workspace @codex-fleet/mcp-server
+npm run test --workspace @codex-fleet/skill-indexer
+npm run typecheck --workspace @codex-fleet/api
 ```
 
-## Environment Requirements
+## Notes
 
-- **Node.js** - Required for running the CLI and MCP server
-- **SSH access** - Passwordless SSH to all target hosts (key-based authentication recommended)
-- **Git** - Installed on all remote hosts
-- **Skills repository** - Cloned to the configured path on each remote host
+- running the API or MCP server creates local state under `.capabilities/` unless overridden by env vars
+- host management still exists as an admin surface, but capability delivery is no longer modeled as per-host repo synchronization
+- the gateway catalog is intentionally empty until you index skills or create capability packages
 
 ## License
 

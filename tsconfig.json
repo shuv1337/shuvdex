@@ -4,12 +4,11 @@
     { "path": "packages/core" },
     { "path": "packages/telemetry" },
     { "path": "packages/ssh" },
-    { "path": "packages/git-ops" },
-    { "path": "packages/skill-ops" },
-    { "path": "packages/tool-registry" },
-    { "path": "apps/cli" },
+    { "path": "packages/capability-registry" },
+    { "path": "packages/skill-indexer" },
+    { "path": "packages/policy-engine" },
+    { "path": "packages/execution-providers" },
     { "path": "apps/mcp-server" },
-    { "path": "apps/api" },
-    { "path": "tests/e2e" }
+    { "path": "apps/api" }
   ]
 }

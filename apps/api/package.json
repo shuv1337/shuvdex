@@ -18,12 +18,10 @@
     "@hono/node-server": "^1.14.0",
     "effect": "^3.19.0",
     "yaml": "^2.8.2",
+    "@codex-fleet/capability-registry": "*",
     "@codex-fleet/core": "*",
-    "@codex-fleet/ssh": "*",
-    "@codex-fleet/git-ops": "*",
-    "@codex-fleet/skill-ops": "*",
-    "@codex-fleet/telemetry": "*",
-    "@codex-fleet/tool-registry": "*"
+    "@codex-fleet/policy-engine": "*",
+    "@codex-fleet/skill-indexer": "*"
   },
   "devDependencies": {
     "@types/node": "^25.5.0",
