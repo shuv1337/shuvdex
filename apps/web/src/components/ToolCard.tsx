@@ -53,6 +53,9 @@ export function ToolCard({
           {tool.builtIn && (
             <Badge variant="slate" size="sm">built-in</Badge>
           )}
+          {tool.provenance === "imported_archive" && (
+            <Badge variant="green" size="sm">imported</Badge>
+          )}
         </div>
 
         <Toggle

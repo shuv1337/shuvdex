@@ -7,7 +7,13 @@ import { Badge } from "@/components/Badge";
 import { Toggle } from "@/components/Toggle";
 import { EmptyState } from "@/components/EmptyState";
 import { cn } from "@/lib/cn";
-import type { Tool, ToolParam } from "@/api/client";
+import {
+  importSkillFile,
+  inspectSkillFile,
+  type ArchiveInspection,
+  type Tool,
+  type ToolParam,
+} from "@/api/client";
 
 // ---------------------------------------------------------------------------
 // Category badge variant
@@ -214,6 +220,7 @@ function ToolDetail({
         <div className="flex items-center gap-2 flex-wrap">
           <Badge variant={categoryVariant(tool.category)}>{tool.category}</Badge>
           {tool.builtIn && <Badge variant="slate">built-in</Badge>}
+          {tool.provenance === "imported_archive" && <Badge variant="green">imported</Badge>}
         </div>
 
         <p className="text-xs text-slate-400 leading-relaxed">{tool.description || "—"}</p>
@@ -297,6 +304,7 @@ type Panel =
   | { type: "add" }
   | { type: "detail"; tool: Tool }
   | { type: "edit"; tool: Tool }
+  | { type: "import"; file: File; inspection: ArchiveInspection }
   | null;
 
 export function ToolManager() {
@@ -305,6 +313,8 @@ export function ToolManager() {
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [panel, setPanel] = useState<Panel>(null);
   const [togglingId, setTogglingId] = useState<string | null>(null);
+  const [importBusy, setImportBusy] = useState(false);
+  const [importError, setImportError] = useState<string | null>(null);
 
   const categories = useMemo(
     () => ["all", ...Array.from(new Set(tools.map((t) => t.category))).sort()],
@@ -359,12 +369,48 @@ export function ToolManager() {
     setPanel(null);
   };
 
+  const handleImportSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+
+    setImportBusy(true);
+    setImportError(null);
+    try {
+      const inspection = await inspectSkillFile(file);
+      setPanel({ type: "import", file, inspection });
+    } catch (error) {
+      setImportError(error instanceof Error ? error.message : "Failed to inspect import");
+    } finally {
+      setImportBusy(false);
+    }
+  };
+
+  const handleImportConfirm = async (preview: Extract<Panel, { type: "import" }>) => {
+    setImportBusy(true);
+    setImportError(null);
+    try {
+      const replaceableConflict = preview.inspection.conflicts.some(
+        (conflict) => conflict.resolution === "replaceable",
+      );
+      await importSkillFile(preview.file, replaceableConflict);
+      await refresh();
+      setPanel(null);
+    } catch (error) {
+      setImportError(error instanceof Error ? error.message : "Failed to import skill");
+    } finally {
+      setImportBusy(false);
+    }
+  };
+
   // Panel title / subtitle
   const panelTitle =
     panel?.type === "add"
       ? "Add Tool"
       : panel?.type === "edit"
       ? "Edit Tool"
+      : panel?.type === "import"
+      ? "Import Skill File"
       : panel?.type === "detail"
       ? panel.tool.name
       : "";
@@ -372,12 +418,18 @@ export function ToolManager() {
   const panelSubtitle =
     panel?.type === "detail"
       ? `${panel.tool.category} • ${panel.tool.schema.params.length} param${panel.tool.schema.params.length !== 1 ? "s" : ""}`
+      : panel?.type === "import"
+      ? `${panel.inspection.packageId} • ${panel.inspection.version}`
       : undefined;
+
+  const importBlocked =
+    panel?.type === "import" &&
+    panel.inspection.conflicts.some((conflict) => conflict.resolution === "blocked");
 
   return (
     <div className="px-6 py-5 space-y-5 max-w-screen-xl">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3">
         <div>
           <h1 className="text-sm font-semibold text-slate-200 uppercase tracking-widest mono">
             Tool Manager
@@ -388,16 +440,30 @@ export function ToolManager() {
             </p>
           )}
         </div>
-        <button
-          type="button"
-          onClick={() => setPanel({ type: "add" })}
-          className="btn-primary text-xs px-3 py-1.5 flex items-center gap-1.5"
-        >
-          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-          </svg>
-          Add Tool
-        </button>
+        <div className="flex items-center gap-2">
+          <label className="btn-ghost text-xs px-3 py-1.5 inline-flex items-center gap-1.5 cursor-pointer border border-slate-700/40">
+            <input
+              type="file"
+              accept=".md,.zip,.skill"
+              className="sr-only"
+              onChange={(event) => void handleImportSelect(event)}
+            />
+            <svg className={cn("w-3.5 h-3.5", importBusy && "animate-spin")} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 16.5V4.5m0 0L7.5 9m4.5-4.5L16.5 9M4.5 16.5v1.125A1.875 1.875 0 006.375 19.5h11.25A1.875 1.875 0 0019.5 17.625V16.5" />
+            </svg>
+            Import Skill File
+          </label>
+          <button
+            type="button"
+            onClick={() => setPanel({ type: "add" })}
+            className="btn-primary text-xs px-3 py-1.5 flex items-center gap-1.5"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+            </svg>
+            Add Tool
+          </button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -454,9 +520,9 @@ export function ToolManager() {
       </div>
 
       {/* Error */}
-      {error && (
+      {(error || importError) && (
         <div className="text-xs text-rose-400 mono bg-rose-500/10 border border-rose-500/20 px-3 py-2 rounded-sm">
-          {error}
+          {error ?? importError}
         </div>
       )}
 
@@ -514,6 +580,7 @@ export function ToolManager() {
         onClose={() => setPanel(null)}
         title={panelTitle}
         subtitle={panelSubtitle}
+        width={panel?.type === "import" ? "lg" : "md"}
       >
         {panel?.type === "add" && (
           <ToolForm
@@ -545,8 +612,85 @@ export function ToolManager() {
             toggling={togglingId === panel.tool.id}
           />
         )}
+        {panel?.type === "import" && (
+          <div className="space-y-5">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                <Badge variant="green">{panel.inspection.packageId}</Badge>
+                <Badge variant="slate">{panel.inspection.version}</Badge>
+                <Badge variant="cyan">{panel.inspection.capabilities.length} capabilities</Badge>
+              </div>
+              <p className="text-sm text-slate-200">{panel.inspection.title}</p>
+              <p className="text-xs text-slate-400 leading-relaxed">{panel.inspection.summary}</p>
+            </div>
+
+            {panel.inspection.conflicts.length > 0 && (
+              <div className="space-y-2">
+                <h3 className="text-[10px] mono uppercase tracking-wider text-slate-500">Conflicts</h3>
+                <div className="space-y-2">
+                  {panel.inspection.conflicts.map((conflict) => (
+                    <div key={conflict.packageId} className="border border-slate-700/40 rounded-sm px-3 py-2">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Badge variant={conflict.resolution === "blocked" ? "red" : "amber"} size="sm">
+                          {conflict.resolution}
+                        </Badge>
+                        <span className="text-xs mono text-slate-400">{conflict.existingSourceType}</span>
+                      </div>
+                      <p className="text-xs text-slate-400 mt-1">{conflict.reason}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {panel.inspection.warnings.length > 0 && (
+              <div className="space-y-2">
+                <h3 className="text-[10px] mono uppercase tracking-wider text-slate-500">Warnings</h3>
+                <div className="space-y-2">
+                  {panel.inspection.warnings.map((warning) => (
+                    <div key={warning} className="text-xs text-amber-300 bg-amber-500/10 border border-amber-500/20 rounded-sm px-3 py-2">
+                      {warning}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <h3 className="text-[10px] mono uppercase tracking-wider text-slate-500">Capabilities</h3>
+              <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+                {panel.inspection.capabilities.map((capability) => (
+                  <div key={capability.id} className="border border-slate-700/40 rounded-sm px-3 py-2 flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-xs text-slate-200 truncate">{capability.title}</p>
+                      <p className="text-[10px] mono text-slate-500 truncate">{capability.id}</p>
+                    </div>
+                    <Badge variant="slate" size="sm">{capability.kind}</Badge>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 border-t border-slate-700/30 pt-4">
+              <button type="button" onClick={() => setPanel(null)} className="btn-ghost text-xs px-3 py-1.5">
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={Boolean(importBlocked) || importBusy}
+                onClick={() => void handleImportConfirm(panel)}
+                className="btn-primary text-xs px-4 py-1.5 disabled:opacity-50"
+              >
+                {importBusy
+                  ? "Importing..."
+                  : panel.inspection.conflicts.some((conflict) => conflict.resolution === "replaceable")
+                    ? "Replace Imported Skill"
+                    : "Import Skill"}
+              </button>
+            </div>
+          </div>
+        )}
       </SlideOver>
     </div>
   );
 }
-
