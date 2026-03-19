@@ -6,3 +6,5 @@ export type {
   SkillIndexerService,
 } from "./types.js";
 export { SkillIndexerLive } from "./live.js";
+export { parseFrontmatter } from "./frontmatter.js";
+export { compileSkillDirectory } from "./compiler.js";
