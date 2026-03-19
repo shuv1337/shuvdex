@@ -1,3 +1,4 @@
+import * as fs from "node:fs";
 import { Effect } from "effect";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod/v4";
@@ -29,8 +30,25 @@ function json(data: unknown, isError = false) {
   };
 }
 
-function resourceText(capability: CapabilityDefinitionType): string {
-  return capability.resource?.contents ?? capability.resource?.summary ?? capability.description;
+function isTextLike(mimeType: string | undefined): boolean {
+  return Boolean(
+    mimeType?.startsWith("text/") ||
+      mimeType === "application/json" ||
+      mimeType === "image/svg+xml",
+  );
+}
+
+function resourcePayload(capability: CapabilityDefinitionType) {
+  if (capability.resource?.contents !== undefined) {
+    return { text: capability.resource.contents };
+  }
+  if (capability.sourceRef && fs.existsSync(capability.sourceRef)) {
+    if (isTextLike(capability.resource?.mimeType)) {
+      return { text: fs.readFileSync(capability.sourceRef, "utf-8") };
+    }
+    return { blob: fs.readFileSync(capability.sourceRef).toString("base64") };
+  }
+  return { text: capability.resource?.summary ?? capability.description };
 }
 
 function interpolate(template: string, args: Record<string, unknown>): string {
@@ -239,7 +257,7 @@ export function createServer(config?: ServerConfig): McpServer {
               {
                 uri: resource.uri,
                 mimeType: resource.mimeType,
-                text: resourceText(capability),
+                ...resourcePayload(capability),
               },
             ],
           };

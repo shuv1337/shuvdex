@@ -4,6 +4,9 @@
  * Covers initialization and dynamic tool advertisement for the capability gateway.
  */
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import * as fs from "node:fs";
+import * as os from "node:os";
+import * as path from "node:path";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { createServer } from "../src/server.js";
@@ -134,6 +137,82 @@ describe("MCP Server Protocol", () => {
       expect(
         ((tool?.inputSchema as Record<string, unknown>).required ?? []) as string[],
       ).toContain("message");
+    });
+  });
+
+  describe("resources/read", () => {
+    it("reads text and binary resources from sourceRef when contents are omitted", async () => {
+      await cleanup();
+
+      const dir = fs.mkdtempSync(path.join(os.tmpdir(), "mcp-resource-test-"));
+      const markdownPath = path.join(dir, "guide.md");
+      const imagePath = path.join(dir, "banner.png");
+      fs.writeFileSync(markdownPath, "# Guide\n\nHello from disk.\n", "utf-8");
+      fs.writeFileSync(imagePath, Buffer.from([0x89, 0x50, 0x4e, 0x47]));
+
+      const server = createServer({
+        capabilities: [
+          {
+            id: "sample.resources",
+            version: "1.0.0",
+            title: "Sample Resources",
+            description: "Sample resource package.",
+            builtIn: false,
+            enabled: true,
+            source: { type: "generated" },
+            capabilities: [
+              {
+                id: "sample.resources.guide",
+                packageId: "sample.resources",
+                version: "1.0.0",
+                kind: "resource",
+                title: "Guide",
+                description: "Guide resource",
+                enabled: true,
+                visibility: "public",
+                resource: {
+                  uri: "skill://sample/guide.md",
+                  mimeType: "text/markdown",
+                },
+                sourceRef: markdownPath,
+              },
+              {
+                id: "sample.resources.banner",
+                packageId: "sample.resources",
+                version: "1.0.0",
+                kind: "resource",
+                title: "Banner",
+                description: "Banner image",
+                enabled: true,
+                visibility: "public",
+                resource: {
+                  uri: "skill://sample/banner.png",
+                  mimeType: "image/png",
+                },
+                sourceRef: imagePath,
+              },
+            ],
+          },
+        ],
+      });
+      const [clientTransport, serverTransport] =
+        InMemoryTransport.createLinkedPair();
+      await server.connect(serverTransport);
+
+      client = new Client({ name: "resource-client", version: "0.0.1" });
+      await client.connect(clientTransport);
+
+      cleanup = async () => {
+        await client.close();
+        await server.close();
+        fs.rmSync(dir, { recursive: true, force: true });
+      };
+
+      const textResponse = await client.readResource({ uri: "skill://sample/guide.md" });
+      const imageResponse = await client.readResource({ uri: "skill://sample/banner.png" });
+
+      expect(textResponse.contents[0]?.text).toContain("Hello from disk.");
+      expect(imageResponse.contents[0]?.blob).toBe(Buffer.from([0x89, 0x50, 0x4e, 0x47]).toString("base64"));
     });
   });
 });

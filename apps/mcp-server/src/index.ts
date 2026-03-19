@@ -44,6 +44,10 @@ async function main(): Promise<void> {
       const indexer = yield* SkillIndexer;
       const indexed = yield* indexer.indexRepository(process.cwd());
       for (const artifact of indexed.artifacts) {
+        const existing = yield* Effect.either(capabilityRegistry.getPackage(artifact.package.id));
+        if (existing._tag === "Right" && existing.right.source?.type === "imported_archive") {
+          continue;
+        }
         yield* capabilityRegistry.upsertPackage(artifact.package);
       }
       return yield* capabilityRegistry.listPackages();

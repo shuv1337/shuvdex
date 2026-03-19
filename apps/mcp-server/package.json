@@ -16,6 +16,7 @@
     "@codex-fleet/capability-registry": "*",
     "@codex-fleet/execution-providers": "*",
     "@codex-fleet/policy-engine": "*",
+    "@codex-fleet/skill-importer": "*",
     "@codex-fleet/skill-indexer": "*",
     "@modelcontextprotocol/sdk": "^1.27.1",
     "effect": "^3.19.0",
