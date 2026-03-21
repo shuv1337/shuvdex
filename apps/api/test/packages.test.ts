@@ -87,4 +87,28 @@ describe("packagesRouter", () => {
       await managed.dispose();
     }
   });
+
+  it("rejects oversized uploads based on File.size even without relying on content-length", async () => {
+    const localRepoPath = fs.mkdtempSync(path.join(os.tmpdir(), "api-skills-repo-"));
+    const packagesDir = fs.mkdtempSync(path.join(os.tmpdir(), "api-capabilities-"));
+    const importsDir = fs.mkdtempSync(path.join(os.tmpdir(), "api-imports-"));
+    const { app, managed } = await makeApp(localRepoPath, packagesDir, importsDir);
+    try {
+      const payload = "x".repeat(10 * 1024 * 1024 + 1);
+      const form = new FormData();
+      form.set("file", new File([payload], "too-large.md", { type: "text/markdown" }));
+
+      const response = await app.request("http://localhost/api/packages/import/inspect", {
+        method: "POST",
+        body: form,
+      });
+
+      expect(response.status).toBe(400);
+      await expect(response.json()).resolves.toMatchObject({
+        error: "Upload exceeds size limit.",
+      });
+    } finally {
+      await managed.dispose();
+    }
+  });
 });

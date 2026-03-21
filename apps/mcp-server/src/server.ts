@@ -1,4 +1,5 @@
 import * as fs from "node:fs";
+import * as path from "node:path";
 import { Effect } from "effect";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod/v4";
@@ -38,11 +39,34 @@ function isTextLike(mimeType: string | undefined): boolean {
   );
 }
 
-function resourcePayload(capability: CapabilityDefinitionType) {
+function allowedSourceRoots(config: ServerConfig | undefined): string[] {
+  const packageRoots = capabilityPackages(config)
+    .map((pkg) => pkg.source?.path)
+    .filter((value): value is string => typeof value === "string" && value.length > 0)
+    .map((value) => path.resolve(value));
+
+  return Array.from(new Set(packageRoots));
+}
+
+function isSourceRefAllowed(config: ServerConfig | undefined, sourceRef: string): boolean {
+  const resolved = path.resolve(sourceRef);
+  return allowedSourceRoots(config).some((root) => {
+    const relative = path.relative(root, resolved);
+    return relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative));
+  });
+}
+
+function resourcePayload(
+  capability: CapabilityDefinitionType,
+  config: ServerConfig | undefined,
+) {
   if (capability.resource?.contents !== undefined) {
     return { text: capability.resource.contents };
   }
   if (capability.sourceRef && fs.existsSync(capability.sourceRef)) {
+    if (!isSourceRefAllowed(config, capability.sourceRef)) {
+      throw new Error(`Resource sourceRef is outside allowed package roots: ${capability.sourceRef}`);
+    }
     if (isTextLike(capability.resource?.mimeType)) {
       return { text: fs.readFileSync(capability.sourceRef, "utf-8") };
     }
@@ -257,7 +281,7 @@ export function createServer(config?: ServerConfig): McpServer {
               {
                 uri: resource.uri,
                 mimeType: resource.mimeType,
-                ...resourcePayload(capability),
+                ...resourcePayload(capability, config),
               },
             ],
           };

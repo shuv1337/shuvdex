@@ -6,6 +6,7 @@
   },
   "include": ["src/**/*.ts"],
   "references": [
-    { "path": "../capability-registry" }
+    { "path": "../capability-registry" },
+    { "path": "../telemetry" }
   ]
 }

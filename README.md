@@ -19,7 +19,7 @@ The capability-gateway foundation is implemented:
 - policy engine with signed tokens, ACL checks, revocation, and audit logging
 - dynamic MCP registration with progressive disclosure for tools, resources, and prompts
 
-Execution provider types are wired, but only the generic scaffolding exists today. `host_runner`, `mcp_proxy`, `http_api`, and `module_runtime` still return structured not-yet-implemented responses.
+Execution provider types are wired. `module_runtime` is implemented for local JS/Python-style tool entrypoints over stdin/stdout JSON, while `host_runner`, `mcp_proxy`, and `http_api` still return structured not-yet-implemented responses.
 
 ## Target Model
 
@@ -152,6 +152,14 @@ Skills are treated as capability packages instead of files to distribute.
   - optional manifest-defined capabilities
 
 This preserves skill authoring compatibility while moving discovery, policy, and disclosure to structured data.
+
+### Module runtime tool template
+
+A reusable example for manifest-backed local tools lives at:
+
+- `examples/module-runtime-skill-template/`
+
+Use it as the starting point for tool-first skill conversions such as `youtube-transcript`, `crawl`, `upload`, `model-usage`, and `ccusage`.
 
 ## Development
 

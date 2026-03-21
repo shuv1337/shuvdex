@@ -235,6 +235,27 @@ function findRelativeResourceIds(
   return [...ids];
 }
 
+function resolveCapabilityPaths(
+  capability: CapabilityDefinitionType,
+  skillPath: string,
+): CapabilityDefinitionType {
+  const resolveIfRelative = (value: string | undefined): string | undefined => {
+    if (!value) return value;
+    return path.isAbsolute(value) ? value : path.resolve(skillPath, value);
+  };
+
+  return {
+    ...capability,
+    sourceRef: resolveIfRelative(capability.sourceRef),
+    executorRef: capability.executorRef
+      ? {
+          ...capability.executorRef,
+          target: resolveIfRelative(capability.executorRef.target),
+        }
+      : capability.executorRef,
+  };
+}
+
 export function compileSkillDirectory(skillPath: string): CompiledSkillArtifact {
   const inferredSkillName = path.basename(skillPath);
   const skillMdPath = path.join(skillPath, "SKILL.md");
@@ -521,16 +542,21 @@ export function compileSkillDirectory(skillPath: string): CompiledSkillArtifact 
   }
 
   for (const capability of manifest?.capabilities ?? []) {
-    capabilities.push({
-      ...capability,
-      packageId,
-      version,
-      enabled: capability.enabled ?? true,
-      visibility: capability.visibility ?? visibility,
-      hostTags: capability.hostTags ?? manifest?.hostTags,
-      clientTags: capability.clientTags ?? manifest?.clientTags,
-      subjectScopes: capability.subjectScopes ?? scopeDefaults,
-    });
+    capabilities.push(
+      resolveCapabilityPaths(
+        {
+          ...capability,
+          packageId,
+          version,
+          enabled: capability.enabled ?? true,
+          visibility: capability.visibility ?? visibility,
+          hostTags: capability.hostTags ?? manifest?.hostTags,
+          clientTags: capability.clientTags ?? manifest?.clientTags,
+          subjectScopes: capability.subjectScopes ?? scopeDefaults,
+        },
+        skillPath,
+      ),
+    );
   }
 
   const pkg: CapabilityPackageType = {

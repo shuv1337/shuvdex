@@ -20,6 +20,7 @@
   },
   "dependencies": {
     "@codex-fleet/capability-registry": "*",
+    "@codex-fleet/telemetry": "*",
     "effect": "^3.19.0"
   },
   "devDependencies": {

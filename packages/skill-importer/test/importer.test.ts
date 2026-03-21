@@ -82,4 +82,34 @@ describe("SkillImporter", () => {
     expect(fs.existsSync(path.join(importsDir, result.imported.package.id, result.imported.package.version, "SKILL.md"))).toBe(true);
     expect(result.imported.extractedAssets.some((asset) => asset.includes("banner.png"))).toBe(true);
   });
+
+  it("treats same-checksum archive re-import as a no-op without rewriting managed files", async () => {
+    const packagesDir = fs.mkdtempSync(path.join(os.tmpdir(), "skill-importer-pkgs-"));
+    const importsDir = fs.mkdtempSync(path.join(os.tmpdir(), "skill-importer-assets-"));
+    const layer = makeRuntime(importsDir, packagesDir);
+    const zipPath = path.join(os.tmpdir(), `visual-explainer-${Date.now()}.zip`);
+
+    zipDirectory(path.join(REPO_ROOT, "examples", "visual-explainer"), zipPath);
+
+    const result = await Effect.runPromise(
+      Effect.promise(async () => {
+        const importer = await Effect.runPromise(
+          Effect.gen(function* () {
+            return yield* SkillImporter;
+          }).pipe(Effect.provide(layer)),
+        );
+        const first = await Effect.runPromise(importer.importFile(zipPath, "visual-explainer.zip"));
+        const skillMdPath = path.join(importsDir, first.package.id, first.package.version, "SKILL.md");
+        const beforeStat = fs.statSync(skillMdPath);
+        await new Promise((resolve) => setTimeout(resolve, 20));
+        const second = await Effect.runPromise(importer.importFile(zipPath, "visual-explainer.zip"));
+        const afterStat = fs.statSync(skillMdPath);
+        return { first, second, beforeStat, afterStat };
+      }),
+    );
+
+    expect(result.second.replaced).toBe(false);
+    expect(result.second.warnings).toContain("Same checksum already imported.");
+    expect(result.afterStat.mtimeMs).toBe(result.beforeStat.mtimeMs);
+  });
 });

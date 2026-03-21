@@ -37,6 +37,10 @@ function parseForce(body: Record<string, unknown>): boolean {
   return raw === true || raw === "true" || raw === "1" || raw === 1;
 }
 
+function isUploadTooLarge(file: File): boolean {
+  return Number.isFinite(file.size) && file.size > MAX_UPLOAD_BYTES;
+}
+
 export function packagesRouter(
   runtime: Runtime.Runtime<CapabilityRegistry | SkillIndexer | SkillImporter>,
   localRepoPath: string,
@@ -133,6 +137,9 @@ export function packagesRouter(
       if (!(file instanceof File)) {
         return c.json({ error: "Expected multipart field 'file'." }, 400);
       }
+      if (isUploadTooLarge(file)) {
+        return c.json({ error: "Upload exceeds size limit." }, 400);
+      }
       const uploaded = await writeUploadToTemp(file);
       try {
         const inspection = await run(
@@ -163,6 +170,9 @@ export function packagesRouter(
       const file = body["file"];
       if (!(file instanceof File)) {
         return c.json({ error: "Expected multipart field 'file'." }, 400);
+      }
+      if (isUploadTooLarge(file)) {
+        return c.json({ error: "Upload exceeds size limit." }, 400);
       }
       const uploaded = await writeUploadToTemp(file);
       try {

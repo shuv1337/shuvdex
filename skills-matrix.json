@@ -1,0 +1,4129 @@
+{
+  "generatedAt": "2026-03-20T11:12:33.352Z",
+  "skillsRoot": "/home/shuv/repos/shuvbot-skills",
+  "canonical": [
+    "visual-explainer",
+    "browser",
+    "dogfood",
+    "network-monitor",
+    "openclaw-manager",
+    "brave-search",
+    "youtube-transcript",
+    "make-api",
+    "discord"
+  ],
+  "totalSkills": 140,
+  "rows": [
+    {
+      "skill": "adapt",
+      "path": "/home/shuv/repos/shuvbot-skills/adapt",
+      "packageId": "skill.adapt",
+      "version": "c97ae7168268",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 0,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": false,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 1
+      }
+    },
+    {
+      "skill": "addigy",
+      "path": "/home/shuv/repos/shuvbot-skills/addigy",
+      "packageId": "skill.addigy",
+      "version": "224764a7fb1b",
+      "labels": [
+        "later-risky"
+      ],
+      "rolloutPhase": 4,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 1,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": true,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 2
+      }
+    },
+    {
+      "skill": "analyze-repo",
+      "path": "/home/shuv/repos/shuvbot-skills/analyze-repo",
+      "packageId": "skill.analyze_repo",
+      "version": "2e830c1e8611",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 0,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": false,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 1
+      }
+    },
+    {
+      "skill": "androidtv-control",
+      "path": "/home/shuv/repos/shuvbot-skills/androidtv-control",
+      "packageId": "skill.androidtv_control",
+      "version": "e5bc05e0388e",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 2,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": true,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 3
+      }
+    },
+    {
+      "skill": "animate",
+      "path": "/home/shuv/repos/shuvbot-skills/animate",
+      "packageId": "skill.animate",
+      "version": "11e33842b1c5",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 0,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": false,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 1
+      }
+    },
+    {
+      "skill": "audit",
+      "path": "/home/shuv/repos/shuvbot-skills/audit",
+      "packageId": "skill.audit",
+      "version": "a89e87c8a0f3",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 0,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": false,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 1
+      }
+    },
+    {
+      "skill": "backblaze-b2",
+      "path": "/home/shuv/repos/shuvbot-skills/backblaze-b2",
+      "packageId": "skill.backblaze_b2",
+      "version": "2bcfc1684445",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 2,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": true,
+        "hasShell": false,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 3
+      }
+    },
+    {
+      "skill": "bird",
+      "path": "/home/shuv/repos/shuvbot-skills/bird",
+      "packageId": "skill.bird",
+      "version": "5b66a528e0d5",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 0,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": false,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 1
+      }
+    },
+    {
+      "skill": "bolder",
+      "path": "/home/shuv/repos/shuvbot-skills/bolder",
+      "packageId": "skill.bolder",
+      "version": "39cdb284b205",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 0,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": false,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 1
+      }
+    },
+    {
+      "skill": "brave-search",
+      "path": "/home/shuv/repos/shuvbot-skills/brave-search",
+      "packageId": "skill.brave_search",
+      "version": "1.0.0",
+      "labels": [
+        "tool-first"
+      ],
+      "rolloutPhase": 2,
+      "canonical": true,
+      "counts": {
+        "resource": 3,
+        "prompt": 1,
+        "tool": 2
+      },
+      "warnings": [],
+      "assets": 2633,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": true,
+        "hasPython": false,
+        "hasShell": false,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": true,
+        "fileCount": 160
+      }
+    },
+    {
+      "skill": "browser",
+      "path": "/home/shuv/repos/shuvbot-skills/browser",
+      "packageId": "skill.browser",
+      "version": "0.0.1",
+      "labels": [
+        "current-fit"
+      ],
+      "rolloutPhase": 1,
+      "canonical": true,
+      "counts": {
+        "resource": 5,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 2983,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": true,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": true,
+        "hasPython": false,
+        "hasShell": true,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 743
+      }
+    },
+    {
+      "skill": "browser-tools",
+      "path": "/home/shuv/repos/shuvbot-skills/browser-tools",
+      "packageId": "skill.browser_tools",
+      "version": "1.0.0",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 3,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 12,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": true,
+        "hasPython": false,
+        "hasShell": false,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 13
+      }
+    },
+    {
+      "skill": "canvas",
+      "path": "/home/shuv/repos/shuvbot-skills/canvas",
+      "packageId": "skill.canvas",
+      "version": "926d198cdca1",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 0,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": false,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 1
+      }
+    },
+    {
+      "skill": "ccusage",
+      "path": "/home/shuv/repos/shuvbot-skills/ccusage",
+      "packageId": "skill.ccusage",
+      "version": "4426ffbbe738",
+      "labels": [
+        "tool-first"
+      ],
+      "rolloutPhase": 2,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 8,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": true,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 9
+      }
+    },
+    {
+      "skill": "clarify",
+      "path": "/home/shuv/repos/shuvbot-skills/clarify",
+      "packageId": "skill.clarify",
+      "version": "a29431fe0f32",
+      "labels": [
+        "current-fit"
+      ],
+      "rolloutPhase": 1,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 0,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": false,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 1
+      }
+    },
+    {
+      "skill": "cloudflare",
+      "path": "/home/shuv/repos/shuvbot-skills/cloudflare",
+      "packageId": "skill.cloudflare",
+      "version": "1f4c0d33192d",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 220,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": true,
+        "hasShell": false,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 36
+      }
+    },
+    {
+      "skill": "cloudflare-global",
+      "path": "/home/shuv/repos/shuvbot-skills/cloudflare-global",
+      "packageId": "skill.cloudflare_global",
+      "version": "61b4e33f2a26",
+      "labels": [
+        "tool-first",
+        "later-risky"
+      ],
+      "rolloutPhase": 4,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 11,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": true,
+        "hasShell": false,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 12
+      }
+    },
+    {
+      "skill": "cloudflare-mcp",
+      "path": "/home/shuv/repos/shuvbot-skills/cloudflare-mcp",
+      "packageId": "skill.cloudflare_mcp",
+      "version": "8f4d00f187a7",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 2,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": true,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 3
+      }
+    },
+    {
+      "skill": "codemode-scaffold",
+      "path": "/home/shuv/repos/shuvbot-skills/codemode-scaffold",
+      "packageId": "skill.codemode_scaffold",
+      "version": "f10ee0e6c258",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 24,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 34,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": true,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": true,
+        "hasShell": false,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 28
+      }
+    },
+    {
+      "skill": "codex-cloud",
+      "path": "/home/shuv/repos/shuvbot-skills/codex-cloud",
+      "packageId": "skill.codex_cloud",
+      "version": "4968959d9bd5",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 0,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": false,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 1
+      }
+    },
+    {
+      "skill": "coding-agent",
+      "path": "/home/shuv/repos/shuvbot-skills/coding-agent",
+      "packageId": "skill.coding_agent",
+      "version": "9ea43542149b",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 0,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": false,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 1
+      }
+    },
+    {
+      "skill": "coding-agent-shuvbot",
+      "path": "/home/shuv/repos/shuvbot-skills/coding-agent-shuvbot",
+      "packageId": "skill.coding_agent_shuvbot",
+      "version": "a0025053316c",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 0,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": false,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 1
+      }
+    },
+    {
+      "skill": "colorize",
+      "path": "/home/shuv/repos/shuvbot-skills/colorize",
+      "packageId": "skill.colorize",
+      "version": "3a451afcc42f",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 0,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": false,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 1
+      }
+    },
+    {
+      "skill": "context7",
+      "path": "/home/shuv/repos/shuvbot-skills/context7",
+      "packageId": "skill.context7",
+      "version": "cdca50cc1f19",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 1,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": false,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 2
+      }
+    },
+    {
+      "skill": "crawl",
+      "path": "/home/shuv/repos/shuvbot-skills/crawl",
+      "packageId": "skill.crawl",
+      "version": "2f6bf8b7d7ab",
+      "labels": [
+        "tool-first"
+      ],
+      "rolloutPhase": 2,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1,
+        "tool": 2
+      },
+      "warnings": [],
+      "assets": 3,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": true,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": true,
+        "fileCount": 4
+      }
+    },
+    {
+      "skill": "critique",
+      "path": "/home/shuv/repos/shuvbot-skills/critique",
+      "packageId": "skill.critique",
+      "version": "94ea8c553b96",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 0,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": false,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 1
+      }
+    },
+    {
+      "skill": "datto-bcdr",
+      "path": "/home/shuv/repos/shuvbot-skills/datto-bcdr",
+      "packageId": "skill.datto_bcdr",
+      "version": "caae2e004e2c",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 4,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": true,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 5
+      }
+    },
+    {
+      "skill": "delight",
+      "path": "/home/shuv/repos/shuvbot-skills/delight",
+      "packageId": "skill.delight",
+      "version": "1dbed39ab1ef",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 0,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": false,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 1
+      }
+    },
+    {
+      "skill": "dev-browser-bridge",
+      "path": "/home/shuv/repos/shuvbot-skills/dev-browser-bridge",
+      "packageId": "skill.dev_browser_bridge",
+      "version": "07ae7d849142",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 5,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": true,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 6
+      }
+    },
+    {
+      "skill": "dialectic",
+      "path": "/home/shuv/repos/shuvbot-skills/dialectic",
+      "packageId": "skill.dialectic",
+      "version": "fe0e1936e871",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 0,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": false,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 1
+      }
+    },
+    {
+      "skill": "discord",
+      "path": "/home/shuv/repos/shuvbot-skills/discord",
+      "packageId": "skill.discord",
+      "version": "d10d99e18094",
+      "labels": [
+        "tool-first",
+        "later-risky"
+      ],
+      "rolloutPhase": 4,
+      "canonical": true,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 23,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": true,
+        "hasShell": true,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 23
+      }
+    },
+    {
+      "skill": "distill",
+      "path": "/home/shuv/repos/shuvbot-skills/distill",
+      "packageId": "skill.distill",
+      "version": "b28c8fd31561",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 0,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": false,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 1
+      }
+    },
+    {
+      "skill": "dnsfilter",
+      "path": "/home/shuv/repos/shuvbot-skills/dnsfilter",
+      "packageId": "skill.dnsfilter",
+      "version": "658d12cae845",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 1,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": true,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 2
+      }
+    },
+    {
+      "skill": "dogfood",
+      "path": "/home/shuv/repos/shuvbot-skills/dogfood",
+      "packageId": "skill.dogfood",
+      "version": "d45ed434abc9",
+      "labels": [
+        "current-fit"
+      ],
+      "rolloutPhase": 1,
+      "canonical": true,
+      "counts": {
+        "resource": 4,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 2,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": true,
+        "hasTemplates": true,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": false,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 3
+      }
+    },
+    {
+      "skill": "dogfood-tui",
+      "path": "/home/shuv/repos/shuvbot-skills/dogfood-tui",
+      "packageId": "skill.dogfood_tui",
+      "version": "bf90cb6dcf31",
+      "labels": [
+        "current-fit"
+      ],
+      "rolloutPhase": 1,
+      "canonical": false,
+      "counts": {
+        "resource": 6,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 33,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": true,
+        "hasTemplates": true,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": true,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 15
+      }
+    },
+    {
+      "skill": "exa-search",
+      "path": "/home/shuv/repos/shuvbot-skills/exa-search",
+      "packageId": "skill.exa_search",
+      "version": "0b95aa3d41e4",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 0,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": false,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 1
+      }
+    },
+    {
+      "skill": "exe-dev",
+      "path": "/home/shuv/repos/shuvbot-skills/exe-dev",
+      "packageId": "skill.exe_dev",
+      "version": "506aa774291a",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 1,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": true,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 2
+      }
+    },
+    {
+      "skill": "extract",
+      "path": "/home/shuv/repos/shuvbot-skills/extract",
+      "packageId": "skill.extract",
+      "version": "abc3bb88440b",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 0,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": false,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 1
+      }
+    },
+    {
+      "skill": "fleet-nas-backup",
+      "path": "/home/shuv/repos/shuvbot-skills/fleet-nas-backup",
+      "packageId": "skill.fleet_nas_backup",
+      "version": "f5cca1606857",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 7,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": true,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 8
+      }
+    },
+    {
+      "skill": "fordpass-control",
+      "path": "/home/shuv/repos/shuvbot-skills/fordpass-control",
+      "packageId": "skill.fordpass_control",
+      "version": "1a115d8f03e6",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 1,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": true,
+        "hasShell": false,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 2
+      }
+    },
+    {
+      "skill": "frontend-design",
+      "path": "/home/shuv/repos/shuvbot-skills/frontend-design",
+      "packageId": "skill.frontend_design",
+      "version": "fcae81a3028e",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 8,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": false,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 9
+      }
+    },
+    {
+      "skill": "gemini",
+      "path": "/home/shuv/repos/shuvbot-skills/gemini",
+      "packageId": "skill.gemini",
+      "version": "19124c472121",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 0,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": false,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 1
+      }
+    },
+    {
+      "skill": "gh-grep",
+      "path": "/home/shuv/repos/shuvbot-skills/gh-grep",
+      "packageId": "skill.gh_grep",
+      "version": "f6b3111cf592",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 1,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": false,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 2
+      }
+    },
+    {
+      "skill": "gifgrep",
+      "path": "/home/shuv/repos/shuvbot-skills/gifgrep",
+      "packageId": "skill.gifgrep",
+      "version": "a7a7ba08bed5",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 0,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": false,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 1
+      }
+    },
+    {
+      "skill": "gitea",
+      "path": "/home/shuv/repos/shuvbot-skills/gitea",
+      "packageId": "skill.gitea",
+      "version": "f7167c0dfa0d",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 228,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": true,
+        "hasShell": false,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 44
+      }
+    },
+    {
+      "skill": "github",
+      "path": "/home/shuv/repos/shuvbot-skills/github",
+      "packageId": "skill.github",
+      "version": "201aaf0c470b",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 0,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": false,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 1
+      }
+    },
+    {
+      "skill": "gog",
+      "path": "/home/shuv/repos/shuvbot-skills/gog",
+      "packageId": "skill.gog",
+      "version": "a1f99f031d39",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 0,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": false,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 1
+      }
+    },
+    {
+      "skill": "harden",
+      "path": "/home/shuv/repos/shuvbot-skills/harden",
+      "packageId": "skill.harden",
+      "version": "ec35c8046518",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 0,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": false,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 1
+      }
+    },
+    {
+      "skill": "home-assistant",
+      "path": "/home/shuv/repos/shuvbot-skills/home-assistant",
+      "packageId": "skill.home_assistant",
+      "version": "3071890fe8cb",
+      "labels": [
+        "later-risky"
+      ],
+      "rolloutPhase": 4,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 1,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": true,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 2
+      }
+    },
+    {
+      "skill": "homeassistant",
+      "path": "/home/shuv/repos/shuvbot-skills/homeassistant",
+      "packageId": "skill.homeassistant",
+      "version": "3824845a16a6",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 0,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": false,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 1
+      }
+    },
+    {
+      "skill": "hostinger",
+      "path": "/home/shuv/repos/shuvbot-skills/hostinger",
+      "packageId": "skill.hostinger",
+      "version": "5cab5adf465a",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 3,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": true,
+        "hasShell": false,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 4
+      }
+    },
+    {
+      "skill": "hue",
+      "path": "/home/shuv/repos/shuvbot-skills/hue",
+      "packageId": "skill.hue",
+      "version": "8feb2ca8348a",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 1,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": true,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 2
+      }
+    },
+    {
+      "skill": "instagram-downloader",
+      "path": "/home/shuv/repos/shuvbot-skills/instagram-downloader",
+      "packageId": "skill.instagram_downloader",
+      "version": "bf9f2872df3e",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 1,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": true,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 2
+      }
+    },
+    {
+      "skill": "investigate",
+      "path": "/home/shuv/repos/shuvbot-skills/investigate",
+      "packageId": "skill.investigate",
+      "version": "8de140219cf5",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 0,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": false,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 1
+      }
+    },
+    {
+      "skill": "jj",
+      "path": "/home/shuv/repos/shuvbot-skills/jj",
+      "packageId": "skill.jj",
+      "version": "06d1ec6fe5a1",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 4,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 2,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": true,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": false,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 3
+      }
+    },
+    {
+      "skill": "jotform",
+      "path": "/home/shuv/repos/shuvbot-skills/jotform",
+      "packageId": "skill.jotform",
+      "version": "3b219ce3050b",
+      "labels": [
+        "tool-first"
+      ],
+      "rolloutPhase": 3,
+      "canonical": false,
+      "counts": {
+        "resource": 3,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 18,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": true,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": true,
+        "hasShell": true,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 19
+      }
+    },
+    {
+      "skill": "jules-api",
+      "path": "/home/shuv/repos/shuvbot-skills/jules-api",
+      "packageId": "skill.jules_api",
+      "version": "2afb36db9900",
+      "labels": [
+        "tool-first"
+      ],
+      "rolloutPhase": 3,
+      "canonical": false,
+      "counts": {
+        "resource": 8,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 8,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": true,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": true,
+        "hasShell": true,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 9
+      }
+    },
+    {
+      "skill": "lazy-bump",
+      "path": "/home/shuv/repos/shuvbot-skills/lazy-bump",
+      "packageId": "skill.lazy_bump",
+      "version": "b4745c8c3333",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 0,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": false,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 1
+      }
+    },
+    {
+      "skill": "lazy-commit",
+      "path": "/home/shuv/repos/shuvbot-skills/lazy-commit",
+      "packageId": "skill.lazy_commit",
+      "version": "1171b5154d67",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 0,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": false,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 1
+      }
+    },
+    {
+      "skill": "lazy-explorer",
+      "path": "/home/shuv/repos/shuvbot-skills/lazy-explorer",
+      "packageId": "skill.lazy_explorer",
+      "version": "3fc5f622a12f",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 0,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": false,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 1
+      }
+    },
+    {
+      "skill": "lazy-implementer",
+      "path": "/home/shuv/repos/shuvbot-skills/lazy-implementer",
+      "packageId": "skill.lazy_implementer",
+      "version": "114c7e98ccf6",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 0,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": false,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 1
+      }
+    },
+    {
+      "skill": "lazy-integration",
+      "path": "/home/shuv/repos/shuvbot-skills/lazy-integration",
+      "packageId": "skill.lazy_integration",
+      "version": "94d3c4aa037f",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 0,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": false,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 1
+      }
+    },
+    {
+      "skill": "lazy-issue",
+      "path": "/home/shuv/repos/shuvbot-skills/lazy-issue",
+      "packageId": "skill.lazy_issue",
+      "version": "07854dc6a9da",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 0,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": false,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 1
+      }
+    },
+    {
+      "skill": "lazy-merge",
+      "path": "/home/shuv/repos/shuvbot-skills/lazy-merge",
+      "packageId": "skill.lazy_merge",
+      "version": "32d5898ba103",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 0,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": false,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 1
+      }
+    },
+    {
+      "skill": "lazy-plan-reviewer",
+      "path": "/home/shuv/repos/shuvbot-skills/lazy-plan-reviewer",
+      "packageId": "skill.lazy_plan_reviewer",
+      "version": "d4e5f6ece62f",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 0,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": false,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 1
+      }
+    },
+    {
+      "skill": "lazy-planner",
+      "path": "/home/shuv/repos/shuvbot-skills/lazy-planner",
+      "packageId": "skill.lazy_planner",
+      "version": "f5451bf03763",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 0,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": false,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 1
+      }
+    },
+    {
+      "skill": "lazy-shuvcode-pr",
+      "path": "/home/shuv/repos/shuvbot-skills/lazy-shuvcode-pr",
+      "packageId": "skill.lazy_shuvcode_pr",
+      "version": "876f9dc7375d",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 0,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": false,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 1
+      }
+    },
+    {
+      "skill": "ltc-direct-api",
+      "path": "/home/shuv/repos/shuvbot-skills/ltc-direct-api",
+      "packageId": "skill.ltc_direct_api",
+      "version": "eff3b1a7ca26",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 18,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": true,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 19
+      }
+    },
+    {
+      "skill": "ltc-docs",
+      "path": "/home/shuv/repos/shuvbot-skills/ltc-docs",
+      "packageId": "skill.ltc_docs",
+      "version": "cd46a3c96e6c",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 1,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": true,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 2
+      }
+    },
+    {
+      "skill": "ltc-tools",
+      "path": "/home/shuv/repos/shuvbot-skills/ltc-tools",
+      "packageId": "skill.ltc_tools",
+      "version": "3537f8236737",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 1,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": true,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 2
+      }
+    },
+    {
+      "skill": "make-api",
+      "path": "/home/shuv/repos/shuvbot-skills/make-api",
+      "packageId": "skill.make_api",
+      "version": "fcbb369d875d",
+      "labels": [
+        "tool-first"
+      ],
+      "rolloutPhase": 3,
+      "canonical": true,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 22,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": true,
+        "hasShell": false,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 23
+      }
+    },
+    {
+      "skill": "mam",
+      "path": "/home/shuv/repos/shuvbot-skills/mam",
+      "packageId": "skill.mam",
+      "version": "fa7726e25ed2",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 2,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": true,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 3
+      }
+    },
+    {
+      "skill": "maple-otel",
+      "path": "/home/shuv/repos/shuvbot-skills/maple-otel",
+      "packageId": "skill.maple_otel",
+      "version": "771620cc5081",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 0,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": false,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 1
+      }
+    },
+    {
+      "skill": "mcporter",
+      "path": "/home/shuv/repos/shuvbot-skills/mcporter",
+      "packageId": "skill.mcporter",
+      "version": "c89b2f612b3d",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 0,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": false,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 1
+      }
+    },
+    {
+      "skill": "meal-planning",
+      "path": "/home/shuv/repos/shuvbot-skills/meal-planning",
+      "packageId": "skill.meal_planning",
+      "version": "eefd56a0d3c0",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 4,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 2,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": true,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": false,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 3
+      }
+    },
+    {
+      "skill": "media-copy",
+      "path": "/home/shuv/repos/shuvbot-skills/media-copy",
+      "packageId": "skill.media_copy",
+      "version": "94e33369f06d",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 1,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": true,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 2
+      }
+    },
+    {
+      "skill": "minimax",
+      "path": "/home/shuv/repos/shuvbot-skills/minimax",
+      "packageId": "skill.minimax",
+      "version": "dfbdb14240fe",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 0,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": false,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 1
+      }
+    },
+    {
+      "skill": "model-usage",
+      "path": "/home/shuv/repos/shuvbot-skills/model-usage",
+      "packageId": "skill.model_usage",
+      "version": "eb713cda0e44",
+      "labels": [
+        "tool-first"
+      ],
+      "rolloutPhase": 2,
+      "canonical": false,
+      "counts": {
+        "resource": 3,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 2,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": true,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": true,
+        "hasShell": false,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 3
+      }
+    },
+    {
+      "skill": "msgraph-kyle",
+      "path": "/home/shuv/repos/shuvbot-skills/msgraph-kyle",
+      "packageId": "skill.msgraph_kyle",
+      "version": "326f75920f3f",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 0,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": false,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 1
+      }
+    },
+    {
+      "skill": "msgraph-nick",
+      "path": "/home/shuv/repos/shuvbot-skills/msgraph-nick",
+      "packageId": "skill.msgraph_nick",
+      "version": "f2002d0ba8b5",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 2,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": true,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 3
+      }
+    },
+    {
+      "skill": "msgraph-reference",
+      "path": "/home/shuv/repos/shuvbot-skills/msgraph-reference",
+      "packageId": "skill.msgraph_reference",
+      "version": "5670515ae61c",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 0,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": false,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 1
+      }
+    },
+    {
+      "skill": "nano-banana-pro",
+      "path": "/home/shuv/repos/shuvbot-skills/nano-banana-pro",
+      "packageId": "skill.nano_banana_pro",
+      "version": "c014365cd27d",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 1,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": true,
+        "hasShell": false,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 2
+      }
+    },
+    {
+      "skill": "nano-pdf",
+      "path": "/home/shuv/repos/shuvbot-skills/nano-pdf",
+      "packageId": "skill.nano_pdf",
+      "version": "5b2fac031e15",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 0,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": false,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 1
+      }
+    },
+    {
+      "skill": "network-monitor",
+      "path": "/home/shuv/repos/shuvbot-skills/network-monitor",
+      "packageId": "skill.network_monitor",
+      "version": "d4eba50716ee",
+      "labels": [
+        "current-fit",
+        "tool-first"
+      ],
+      "rolloutPhase": 1,
+      "canonical": true,
+      "counts": {
+        "resource": 8,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 16,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": true,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": true,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 17
+      }
+    },
+    {
+      "skill": "normalize",
+      "path": "/home/shuv/repos/shuvbot-skills/normalize",
+      "packageId": "skill.normalize",
+      "version": "559c4bfd5726",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 0,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": false,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 1
+      }
+    },
+    {
+      "skill": "ombi",
+      "path": "/home/shuv/repos/shuvbot-skills/ombi",
+      "packageId": "skill.ombi",
+      "version": "2f71e5bd9909",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 1,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": true,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 2
+      }
+    },
+    {
+      "skill": "onboard",
+      "path": "/home/shuv/repos/shuvbot-skills/onboard",
+      "packageId": "skill.onboard",
+      "version": "05448f176c27",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 0,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": false,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 1
+      }
+    },
+    {
+      "skill": "openai-image-gen",
+      "path": "/home/shuv/repos/shuvbot-skills/openai-image-gen",
+      "packageId": "skill.openai_image_gen",
+      "version": "aa31614f5645",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 1,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": true,
+        "hasShell": false,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 2
+      }
+    },
+    {
+      "skill": "openai-whisper-api",
+      "path": "/home/shuv/repos/shuvbot-skills/openai-whisper-api",
+      "packageId": "skill.openai_whisper_api",
+      "version": "7fb8ad5b6c4c",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 1,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": true,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 2
+      }
+    },
+    {
+      "skill": "openclaw-manager",
+      "path": "/home/shuv/repos/shuvbot-skills/openclaw-manager",
+      "packageId": "skill.openclaw_manager",
+      "version": "2.0.0",
+      "labels": [
+        "current-fit",
+        "tool-first"
+      ],
+      "rolloutPhase": 1,
+      "canonical": true,
+      "counts": {
+        "resource": 5,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 7,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": true,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": true,
+        "hasPython": false,
+        "hasShell": true,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 8
+      }
+    },
+    {
+      "skill": "opencode-sdk",
+      "path": "/home/shuv/repos/shuvbot-skills/opencode-sdk",
+      "packageId": "skill.opencode_sdk",
+      "version": "2361b6874986",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 0,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": false,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 1
+      }
+    },
+    {
+      "skill": "opensrc",
+      "path": "/home/shuv/repos/shuvbot-skills/opensrc",
+      "packageId": "skill.opensrc",
+      "version": "227ae032bf1c",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 0,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": false,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 1
+      }
+    },
+    {
+      "skill": "optimize",
+      "path": "/home/shuv/repos/shuvbot-skills/optimize",
+      "packageId": "skill.optimize",
+      "version": "be0efceef1c8",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 0,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": false,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 1
+      }
+    },
+    {
+      "skill": "oracle",
+      "path": "/home/shuv/repos/shuvbot-skills/oracle",
+      "packageId": "skill.oracle",
+      "version": "489deb24a77c",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 0,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": false,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 1
+      }
+    },
+    {
+      "skill": "overseer",
+      "path": "/home/shuv/repos/shuvbot-skills/overseer",
+      "packageId": "skill.overseer",
+      "version": "af20924ca779",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 6,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 31,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": true,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": true,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 32
+      }
+    },
+    {
+      "skill": "pages-project-bootstrap",
+      "path": "/home/shuv/repos/shuvbot-skills/pages-project-bootstrap",
+      "packageId": "skill.pages_project_bootstrap",
+      "version": "b6d2cd8ef325",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 4,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 2,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": true,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": false,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 3
+      }
+    },
+    {
+      "skill": "pi-messenger-crew",
+      "path": "/home/shuv/repos/shuvbot-skills/pi-messenger-crew",
+      "packageId": "skill.pi_messenger_crew",
+      "version": "13c684b427f1",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 0,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": false,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 1
+      }
+    },
+    {
+      "skill": "pi-overseer",
+      "path": "/home/shuv/repos/shuvbot-skills/pi-overseer",
+      "packageId": "skill.pi_overseer",
+      "version": "5d1a2baaaa4e",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 0,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": false,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 1
+      }
+    },
+    {
+      "skill": "polish",
+      "path": "/home/shuv/repos/shuvbot-skills/polish",
+      "packageId": "skill.polish",
+      "version": "6d7c8d02f5ee",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 0,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": false,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 1
+      }
+    },
+    {
+      "skill": "polymarket",
+      "path": "/home/shuv/repos/shuvbot-skills/polymarket",
+      "packageId": "skill.polymarket",
+      "version": "e9983ab05d48",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 0,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": false,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 1
+      }
+    },
+    {
+      "skill": "prowlarr",
+      "path": "/home/shuv/repos/shuvbot-skills/prowlarr",
+      "packageId": "skill.prowlarr",
+      "version": "c651589d5cc3",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 1,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": true,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 2
+      }
+    },
+    {
+      "skill": "ps-az",
+      "path": "/home/shuv/repos/shuvbot-skills/ps-az",
+      "packageId": "skill.ps_az",
+      "version": "162cfff43808",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 3,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 1,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": true,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": false,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 2
+      }
+    },
+    {
+      "skill": "ps-exchangeonline",
+      "path": "/home/shuv/repos/shuvbot-skills/ps-exchangeonline",
+      "packageId": "skill.ps_exchangeonline",
+      "version": "7ff7f35bcd9d",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 3,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 1,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": true,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": false,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 2
+      }
+    },
+    {
+      "skill": "qbittorrent",
+      "path": "/home/shuv/repos/shuvbot-skills/qbittorrent",
+      "packageId": "skill.qbittorrent",
+      "version": "1edfba2b74b5",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 0,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": false,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 1
+      }
+    },
+    {
+      "skill": "quieter",
+      "path": "/home/shuv/repos/shuvbot-skills/quieter",
+      "packageId": "skill.quieter",
+      "version": "5849ad29d556",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 0,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": false,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 1
+      }
+    },
+    {
+      "skill": "radarr",
+      "path": "/home/shuv/repos/shuvbot-skills/radarr",
+      "packageId": "skill.radarr",
+      "version": "009109c831cb",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 0,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": false,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 1
+      }
+    },
+    {
+      "skill": "roblox-ts-dev",
+      "path": "/home/shuv/repos/shuvbot-skills/roblox-ts-dev",
+      "packageId": "skill.roblox_ts_dev",
+      "version": "301584370240",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 6,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 9,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": true,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": false,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 10
+      }
+    },
+    {
+      "skill": "session-logs",
+      "path": "/home/shuv/repos/shuvbot-skills/session-logs",
+      "packageId": "skill.session_logs",
+      "version": "caaff7ba8c13",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 0,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": false,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 1
+      }
+    },
+    {
+      "skill": "shiv-tester",
+      "path": "/home/shuv/repos/shuvbot-skills/shiv-tester",
+      "packageId": "skill.shiv_tester",
+      "version": "377dd5f57859",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 6,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 11,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": true,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": false,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 12
+      }
+    },
+    {
+      "skill": "shuvbot-backup",
+      "path": "/home/shuv/repos/shuvbot-skills/shuvbot-backup",
+      "packageId": "skill.shuvbot_backup",
+      "version": "8bf0d18db6c9",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 7,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": true,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 8
+      }
+    },
+    {
+      "skill": "shuvbot-merge",
+      "path": "/home/shuv/repos/shuvbot-skills/shuvbot-merge",
+      "packageId": "skill.shuvbot_merge",
+      "version": "74fb35e57810",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 0,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": false,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 1
+      }
+    },
+    {
+      "skill": "shuvdo",
+      "path": "/home/shuv/repos/shuvbot-skills/shuvdo",
+      "packageId": "skill.shuvdo",
+      "version": "0c2c61a956f5",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 2,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": false,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 3
+      }
+    },
+    {
+      "skill": "signal-cli",
+      "path": "/home/shuv/repos/shuvbot-skills/signal-cli",
+      "packageId": "skill.signal_cli",
+      "version": "2d737330049e",
+      "labels": [
+        "later-risky"
+      ],
+      "rolloutPhase": 4,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 2,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": true,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 3
+      }
+    },
+    {
+      "skill": "skill-audit",
+      "path": "/home/shuv/repos/shuvbot-skills/skill-audit",
+      "packageId": "skill.skill_audit",
+      "version": "987e0c388575",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 4,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": true,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 5
+      }
+    },
+    {
+      "skill": "skill-creator",
+      "path": "/home/shuv/repos/shuvbot-skills/skill-creator",
+      "packageId": "skill.skill_creator",
+      "version": "7ab11b2d0593",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 4,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 22,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": true,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": true,
+        "hasShell": false,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 23
+      }
+    },
+    {
+      "skill": "skill-manager",
+      "path": "/home/shuv/repos/shuvbot-skills/skill-manager",
+      "packageId": "skill.skill_manager",
+      "version": "3daf6a0abdd0",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 0,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": false,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 1
+      }
+    },
+    {
+      "skill": "slack-dev",
+      "path": "/home/shuv/repos/shuvbot-skills/slack-dev",
+      "packageId": "skill.slack_dev",
+      "version": "2f19d94b03c9",
+      "labels": [
+        "tool-first",
+        "later-risky"
+      ],
+      "rolloutPhase": 4,
+      "canonical": false,
+      "counts": {
+        "resource": 6,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 5,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": true,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": true,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 6
+      }
+    },
+    {
+      "skill": "sonarr",
+      "path": "/home/shuv/repos/shuvbot-skills/sonarr",
+      "packageId": "skill.sonarr",
+      "version": "e5aef0c5fd46",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 0,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": false,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 1
+      }
+    },
+    {
+      "skill": "sports",
+      "path": "/home/shuv/repos/shuvbot-skills/sports",
+      "packageId": "skill.sports",
+      "version": "26b55754af43",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 2,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": true,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 3
+      }
+    },
+    {
+      "skill": "spotify-player",
+      "path": "/home/shuv/repos/shuvbot-skills/spotify-player",
+      "packageId": "skill.spotify_player",
+      "version": "4453dcacfa3b",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 0,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": false,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 1
+      }
+    },
+    {
+      "skill": "squoosh",
+      "path": "/home/shuv/repos/shuvbot-skills/squoosh",
+      "packageId": "skill.squoosh",
+      "version": "ed8de4e1204b",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 3,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 5,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": true,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": true,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 6
+      }
+    },
+    {
+      "skill": "summarize",
+      "path": "/home/shuv/repos/shuvbot-skills/summarize",
+      "packageId": "skill.summarize",
+      "version": "b624a7fa9dd5",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 0,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": false,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 1
+      }
+    },
+    {
+      "skill": "syncro-ticket",
+      "path": "/home/shuv/repos/shuvbot-skills/syncro-ticket",
+      "packageId": "skill.syncro_ticket",
+      "version": "db4082609627",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 2,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": true,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 3
+      }
+    },
+    {
+      "skill": "teach-impeccable",
+      "path": "/home/shuv/repos/shuvbot-skills/teach-impeccable",
+      "packageId": "skill.teach_impeccable",
+      "version": "3532e74d198b",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 0,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": false,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 1
+      }
+    },
+    {
+      "skill": "telegram-cli",
+      "path": "/home/shuv/repos/shuvbot-skills/telegram-cli",
+      "packageId": "skill.telegram_cli",
+      "version": "9085ba376825",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 1314,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": true,
+        "hasShell": false,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 19
+      }
+    },
+    {
+      "skill": "tmux",
+      "path": "/home/shuv/repos/shuvbot-skills/tmux",
+      "packageId": "skill.tmux",
+      "version": "bbeb1e82b705",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 2,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": true,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 3
+      }
+    },
+    {
+      "skill": "unifi-api",
+      "path": "/home/shuv/repos/shuvbot-skills/unifi-api",
+      "packageId": "skill.unifi_api",
+      "version": "922926c32f01",
+      "labels": [
+        "tool-first"
+      ],
+      "rolloutPhase": 3,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 5,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": true,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 6
+      }
+    },
+    {
+      "skill": "upload",
+      "path": "/home/shuv/repos/shuvbot-skills/upload",
+      "packageId": "skill.upload",
+      "version": "5a459caca8dd",
+      "labels": [
+        "tool-first"
+      ],
+      "rolloutPhase": 2,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 2,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": true,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 3
+      }
+    },
+    {
+      "skill": "uptime-robot",
+      "path": "/home/shuv/repos/shuvbot-skills/uptime-robot",
+      "packageId": "skill.uptime_robot",
+      "version": "58d9179fe065",
+      "labels": [
+        "tool-first"
+      ],
+      "rolloutPhase": 3,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 4,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": true,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 5
+      }
+    },
+    {
+      "skill": "video-frames",
+      "path": "/home/shuv/repos/shuvbot-skills/video-frames",
+      "packageId": "skill.video_frames",
+      "version": "a48351b4ce26",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 1,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": true,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 2
+      }
+    },
+    {
+      "skill": "visual-explainer",
+      "path": "/home/shuv/repos/shuvbot-skills/visual-explainer",
+      "packageId": "skill.visual_explainer",
+      "version": "0.4.3",
+      "labels": [
+        "current-fit",
+        "tool-first"
+      ],
+      "rolloutPhase": 1,
+      "canonical": true,
+      "counts": {
+        "resource": 13,
+        "prompt": 8
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 20,
+      "structure": {
+        "hasPrompts": true,
+        "hasReferences": true,
+        "hasTemplates": true,
+        "hasExamples": false,
+        "hasPackageJson": true,
+        "hasPython": false,
+        "hasShell": false,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 21
+      }
+    },
+    {
+      "skill": "vscode",
+      "path": "/home/shuv/repos/shuvbot-skills/vscode",
+      "packageId": "skill.vscode",
+      "version": "4472e67987cf",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 0,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": false,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 1
+      }
+    },
+    {
+      "skill": "walmart-grocery",
+      "path": "/home/shuv/repos/shuvbot-skills/walmart-grocery",
+      "packageId": "skill.walmart_grocery",
+      "version": "e5bd50e2b4b4",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 0,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": false,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 1
+      }
+    },
+    {
+      "skill": "watchos-dev",
+      "path": "/home/shuv/repos/shuvbot-skills/watchos-dev",
+      "packageId": "skill.watchos_dev",
+      "version": "d95a76dc156b",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 9,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 7,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": true,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": false,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 8
+      }
+    },
+    {
+      "skill": "weather",
+      "path": "/home/shuv/repos/shuvbot-skills/weather",
+      "packageId": "skill.weather",
+      "version": "5e8a1bfbcd29",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 0,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": false,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 1
+      }
+    },
+    {
+      "skill": "wix",
+      "path": "/home/shuv/repos/shuvbot-skills/wix",
+      "packageId": "skill.wix",
+      "version": "f91a801ff684",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 5,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 24,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": true,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": true,
+        "hasShell": true,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 25
+      }
+    },
+    {
+      "skill": "youtube-transcript",
+      "path": "/home/shuv/repos/shuvbot-skills/youtube-transcript",
+      "packageId": "skill.youtube_transcript",
+      "version": "1.0.0",
+      "labels": [
+        "tool-first"
+      ],
+      "rolloutPhase": 2,
+      "canonical": true,
+      "counts": {
+        "resource": 3,
+        "prompt": 1,
+        "tool": 1
+      },
+      "warnings": [],
+      "assets": 17,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": true,
+        "hasPython": false,
+        "hasShell": false,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": true,
+        "fileCount": 9
+      }
+    },
+    {
+      "skill": "zed-dev",
+      "path": "/home/shuv/repos/shuvbot-skills/zed-dev",
+      "packageId": "skill.zed_dev",
+      "version": "605b3313b68e",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 0,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": false,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 1
+      }
+    },
+    {
+      "skill": "zellij",
+      "path": "/home/shuv/repos/shuvbot-skills/zellij",
+      "packageId": "skill.zellij",
+      "version": "4a3621b9d333",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 0,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": false,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 1
+      }
+    },
+    {
+      "skill": "zoom-api",
+      "path": "/home/shuv/repos/shuvbot-skills/zoom-api",
+      "packageId": "skill.zoom_api",
+      "version": "f8578870c256",
+      "labels": [],
+      "rolloutPhase": null,
+      "canonical": false,
+      "counts": {
+        "resource": 2,
+        "prompt": 1
+      },
+      "warnings": [
+        "Compiled without capability manifest; using markdown-derived defaults."
+      ],
+      "assets": 0,
+      "structure": {
+        "hasPrompts": false,
+        "hasReferences": false,
+        "hasTemplates": false,
+        "hasExamples": false,
+        "hasPackageJson": false,
+        "hasPython": false,
+        "hasShell": false,
+        "hasPackedSkill": false,
+        "hasCapabilityYaml": false,
+        "fileCount": 1
+      }
+    }
+  ]
+}

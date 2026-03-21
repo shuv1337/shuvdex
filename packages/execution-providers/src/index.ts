@@ -4,3 +4,4 @@ export type {
   ExecutionProvidersService,
 } from "./types.js";
 export { makeExecutionProvidersLive } from "./live.js";
+export { executeModuleRuntime } from "./module-runtime.js";

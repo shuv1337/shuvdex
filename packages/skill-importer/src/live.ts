@@ -364,6 +364,12 @@ function rewritePackagePaths(pkg: CapabilityPackage, sourceRoot: string, managed
     capabilities: pkg.capabilities.map((capability) => ({
       ...capability,
       sourceRef: rewrite(capability.sourceRef),
+      executorRef: capability.executorRef
+        ? {
+            ...capability.executorRef,
+            target: rewrite(capability.executorRef.target),
+          }
+        : capability.executorRef,
     })),
     assets: pkg.assets?.map((asset) => rewrite(asset) ?? asset),
   };
@@ -632,6 +638,17 @@ export function makeSkillImporterLive(
             }
 
             const managedRoot = path.join(config.importsDir, inspected.compiledPackage.id, inspected.compiledPackage.version);
+            const existing = await lookupExistingPackage(inspected.compiledPackage.id);
+            if (existing?.source?.type === "imported_archive" && existing.source.checksum === inspected.inspection.checksum) {
+              cleanupPath(inspected.tempRoot);
+              return {
+                package: existing,
+                extractedAssets: relativeAssetPaths(existing.source.path ?? managedRoot, existing),
+                replaced: false,
+                warnings: [...inspected.inspection.warnings, "Same checksum already imported."],
+              } satisfies ImportResult;
+            }
+
             cleanupPath(managedRoot);
             copyDirectoryContents(inspected.skillRoot, managedRoot);
 
@@ -648,17 +665,6 @@ export function makeSkillImporterLive(
                 importMode: "upload",
               },
             };
-
-            const existing = await lookupExistingPackage(packageToPersist.id);
-            if (existing?.source?.type === "imported_archive" && existing.source.checksum === inspected.inspection.checksum) {
-              cleanupPath(inspected.tempRoot);
-              return {
-                package: existing,
-                extractedAssets: relativeAssetPaths(managedRoot, packageToPersist),
-                replaced: false,
-                warnings: [...inspected.inspection.warnings, "Same checksum already imported."],
-              } satisfies ImportResult;
-            }
 
             const persisted = await Effect.runPromise(registry.upsertPackage(packageToPersist));
 

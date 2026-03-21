@@ -1,0 +1,44 @@
+id: skill.module_runtime_template
+version: 1.0.0
+title: Module Runtime Template
+description: Reusable template for packaging a local script as a module_runtime MCP tool.
+tags:
+  - template
+  - tool
+  - module-runtime
+visibility: public
+subjectScopes:
+  - skill:read
+  - skill:apply
+  - admin
+capabilities:
+  - id: skill.module_runtime_template.echo
+    kind: tool
+    title: Echo template tool
+    description: Example module_runtime tool that echoes its input.
+    riskLevel: low
+    enabled: true
+    visibility: public
+    tags:
+      - template
+      - example
+    executorRef:
+      executorType: module_runtime
+      target: ./echo.mcp.mjs
+      timeoutMs: 10000
+    tool:
+      sideEffectLevel: read
+      timeoutMs: 10000
+      inputSchema:
+        type: object
+        properties:
+          message:
+            type: string
+            description: Message to echo back.
+        required:
+          - message
+      outputSchema:
+        type: object
+        properties:
+          echoed:
+            type: string
