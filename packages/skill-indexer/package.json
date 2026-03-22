@@ -20,7 +20,7 @@
   },
   "dependencies": {
     "@shuvdex/capability-registry": "*",
-    "effect": "^3.19.0",
+    "effect": "^3.21.0",
     "yaml": "^2.8.2"
   },
   "devDependencies": {

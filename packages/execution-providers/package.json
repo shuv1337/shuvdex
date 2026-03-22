@@ -21,7 +21,7 @@
   "dependencies": {
     "@shuvdex/capability-registry": "*",
     "@shuvdex/telemetry": "*",
-    "effect": "^3.19.0"
+    "effect": "^3.21.0"
   },
   "devDependencies": {
     "@types/node": "^25.5.0",
