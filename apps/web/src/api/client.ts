@@ -1,5 +1,5 @@
 /**
- * API client for the codex-fleet REST API.
+ * API client for the shuvdex REST API.
  */
 
 const API_BASE =

@@ -12,7 +12,7 @@
         "file": "tests/e2e/drift.test.ts",
         "line": 50,
         "severity": "blocking",
-        "description": "The test hard-codes `repoPath = \"~/repos/shuvbot-skills\"` and then performs live `checkoutRef`, `git checkout HEAD~1`, and `git pull` operations against that shared repo on both hosts (see lines 140-143, 214-215, 294-301, and 395-400). That directly contradicts the mission safety rules in `/home/shuv/.factory/missions/53d67669-5ba8-4745-9fd5-71906b40773d/AGENTS.md:16` and `/home/shuv/repos/codex-fleet/.factory/library/user-testing.md:22-23`, which require isolated temp sandboxes and explicitly say never to modify `~/repos/shuvbot-skills`. Because the feature mutates shared remote state rather than validator-owned sandboxes, it is not safe or reliable evidence for the requested drift-resolution workflow."
+        "description": "The test hard-codes `repoPath = \"~/repos/shuvbot-skills\"` and then performs live `checkoutRef`, `git checkout HEAD~1`, and `git pull` operations against that shared repo on both hosts (see lines 140-143, 214-215, 294-301, and 395-400). That directly contradicts the mission safety rules in `/home/shuv/.factory/missions/53d67669-5ba8-4745-9fd5-71906b40773d/AGENTS.md:16` and `/home/shuv/repos/shuvdex/.factory/library/user-testing.md:22-23`, which require isolated temp sandboxes and explicitly say never to modify `~/repos/shuvbot-skills`. Because the feature mutates shared remote state rather than validator-owned sandboxes, it is not safe or reliable evidence for the requested drift-resolution workflow."
       },
       {
         "file": "tests/e2e/drift.test.ts",
@@ -26,7 +26,7 @@
     {
       "area": "skills",
       "observation": "The `backend-worker` skill does not match the e2e-polish workflow well enough to reinforce the mission's sandbox rules. It is scoped to `packages/*` work, tells workers to create tests under `packages/<name>/test/`, and its SSH verification examples use real hosts directly, but this feature actually modified `tests/e2e/drift.test.ts` and then mutated the shared remote repo. The sandbox requirement exists in shared-state docs, but the active skill did not surface it for this kind of feature.",
-      "evidence": "`/home/shuv/repos/codex-fleet/.factory/skills/backend-worker/SKILL.md:12-17` scopes the skill to `packages/*`; `:30` says to create tests in `packages/<name>/test/`; `:82-85` gives direct real-host SSH verification examples. The reviewed change is `tests/e2e/drift.test.ts`, and that file targets `~/repos/shuvbot-skills` at line 50 despite `/home/shuv/repos/codex-fleet/.factory/library/user-testing.md:22-23` requiring validator-owned temp sandboxes."
+      "evidence": "`/home/shuv/repos/shuvdex/.factory/skills/backend-worker/SKILL.md:12-17` scopes the skill to `packages/*`; `:30` says to create tests in `packages/<name>/test/`; `:82-85` gives direct real-host SSH verification examples. The reviewed change is `tests/e2e/drift.test.ts`, and that file targets `~/repos/shuvbot-skills` at line 50 despite `/home/shuv/repos/shuvdex/.factory/library/user-testing.md:22-23` requiring validator-owned temp sandboxes."
     }
   ],
   "addressesFailureFrom": null,

@@ -1,5 +1,5 @@
 {
-  "name": "@codex-fleet/policy-engine",
+  "name": "@shuvdex/policy-engine",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -19,7 +19,7 @@
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "dependencies": {
-    "@codex-fleet/capability-registry": "*",
+    "@shuvdex/capability-registry": "*",
     "effect": "^3.19.0",
     "yaml": "^2.8.2"
   },

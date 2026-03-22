@@ -6,8 +6,8 @@
  */
 import { Hono } from "hono";
 import { Effect, Runtime } from "effect";
-import { CapabilityRegistry } from "@codex-fleet/capability-registry";
-import type { CapabilityDefinition, CapabilityPackage } from "@codex-fleet/capability-registry";
+import { CapabilityRegistry } from "@shuvdex/capability-registry";
+import type { CapabilityDefinition, CapabilityPackage } from "@shuvdex/capability-registry";
 import { handleError } from "../middleware/error-handler.js";
 
 // ---------------------------------------------------------------------------

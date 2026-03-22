@@ -20,12 +20,12 @@
     {
       "area": "skills",
       "observation": "The `cli-worker` skill's implementation guidance is stale about CLI parsing. It still tells workers to add command parsing with commander.js or yargs even though the actual CLI architecture uses a hand-rolled parser in `apps/cli/src/cli.ts`.",
-      "evidence": "`/home/shuv/repos/codex-fleet/.factory/skills/cli-worker/SKILL.md:60-64` says 'Add command parser using commander.js or yargs'. The reviewed transcript skeleton at `/home/shuv/.factory/missions/53d67669-5ba8-4745-9fd5-71906b40773d/worker-transcripts.jsonl:36` explicitly notes 'The CLI uses a hand-rolled arg parser (no commander/yargs)' before proceeding with the existing pattern."
+      "evidence": "`/home/shuv/repos/shuvdex/.factory/skills/cli-worker/SKILL.md:60-64` says 'Add command parser using commander.js or yargs'. The reviewed transcript skeleton at `/home/shuv/.factory/missions/53d67669-5ba8-4745-9fd5-71906b40773d/worker-transcripts.jsonl:36` explicitly notes 'The CLI uses a hand-rolled arg parser (no commander/yargs)' before proceeding with the existing pattern."
     },
     {
       "area": "skills",
       "observation": "The `cli-worker` skill's manual-verification step conflicts with the mission's shared-state safety rules for git/skill operations. It instructs workers to run `fleet pull` directly against the shared skills repos on real hosts, which contradicts the documented requirement to keep write-path validation inside isolated temp sandboxes and not modify `~/repos/shuvbot-skills`.",
-      "evidence": "`/home/shuv/repos/codex-fleet/.factory/skills/cli-worker/SKILL.md:81-92` tells workers to run `./apps/cli/bin/fleet pull shuvtest`; `/home/shuv/.factory/missions/53d67669-5ba8-4745-9fd5-71906b40773d/AGENTS.md:16` says existing skills repos on test hosts are read-only; `/home/shuv/repos/codex-fleet/.factory/library/user-testing.md:22` and `:74` say to use validator-owned sandboxes and 'Never read from or modify `~/repos/shuvbot-skills`'; the reviewed handoff shows the worker followed the skill anyway with `./apps/cli/bin/fleet.js pull shuvtest` and `./apps/cli/bin/fleet.js pull` at lines 36-43."
+      "evidence": "`/home/shuv/repos/shuvdex/.factory/skills/cli-worker/SKILL.md:81-92` tells workers to run `./apps/cli/bin/fleet pull shuvtest`; `/home/shuv/.factory/missions/53d67669-5ba8-4745-9fd5-71906b40773d/AGENTS.md:16` says existing skills repos on test hosts are read-only; `/home/shuv/repos/shuvdex/.factory/library/user-testing.md:22` and `:74` say to use validator-owned sandboxes and 'Never read from or modify `~/repos/shuvbot-skills`'; the reviewed handoff shows the worker followed the skill anyway with `./apps/cli/bin/fleet.js pull shuvtest` and `./apps/cli/bin/fleet.js pull` at lines 36-43."
     }
   ],
   "addressesFailureFrom": null,

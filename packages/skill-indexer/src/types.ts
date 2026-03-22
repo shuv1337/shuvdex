@@ -1,5 +1,5 @@
 import { Context, Effect } from "effect";
-import type { CapabilityPackage } from "@codex-fleet/capability-registry";
+import type { CapabilityPackage } from "@shuvdex/capability-registry";
 
 export interface CompiledSkillArtifact {
   readonly skillName: string;

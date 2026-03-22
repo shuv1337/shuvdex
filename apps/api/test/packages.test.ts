@@ -4,9 +4,9 @@ import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
 import { Effect, Layer, ManagedRuntime } from "effect";
-import { CapabilityRegistry, makeCapabilityRegistryLive } from "@codex-fleet/capability-registry";
-import { makeSkillImporterLive } from "@codex-fleet/skill-importer";
-import { SkillIndexerLive } from "@codex-fleet/skill-indexer";
+import { CapabilityRegistry, makeCapabilityRegistryLive } from "@shuvdex/capability-registry";
+import { makeSkillImporterLive } from "@shuvdex/skill-importer";
+import { SkillIndexerLive } from "@shuvdex/skill-indexer";
 import { packagesRouter } from "../src/routes/packages.js";
 import { skillsRouter } from "../src/routes/skills.js";
 

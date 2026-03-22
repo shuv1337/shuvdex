@@ -1,5 +1,5 @@
 /**
- * @codex-fleet/mcp-server
+ * @shuvdex/mcp-server
  *
  * MCP server for the centralized capability gateway. On startup the server
  * loads capability packages from local storage, indexes local skills into
@@ -10,13 +10,13 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import {
   CapabilityRegistry,
   makeCapabilityRegistryLive,
-} from "@codex-fleet/capability-registry";
+} from "@shuvdex/capability-registry";
 import {
   ExecutionProviders,
   makeExecutionProvidersLive,
-} from "@codex-fleet/execution-providers";
-import { makePolicyEngineLive, PolicyEngine } from "@codex-fleet/policy-engine";
-import { SkillIndexer, SkillIndexerLive } from "@codex-fleet/skill-indexer";
+} from "@shuvdex/execution-providers";
+import { makePolicyEngineLive, PolicyEngine } from "@shuvdex/policy-engine";
+import { SkillIndexer, SkillIndexerLive } from "@shuvdex/skill-indexer";
 import { createServer } from "./server.js";
 import type { ServerConfig } from "./server.js";
 import * as path from "node:path";

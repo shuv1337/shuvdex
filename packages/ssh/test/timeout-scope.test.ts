@@ -10,8 +10,8 @@ import {
   ConnectionTimeout,
   CommandTimeout,
 } from "../src/index.js";
-import { TelemetryTest, CollectedSpans } from "@codex-fleet/telemetry";
-import type { HostConfig } from "@codex-fleet/core";
+import { TelemetryTest, CollectedSpans } from "@shuvdex/telemetry";
+import type { HostConfig } from "@shuvdex/core";
 
 /**
  * Test host configuration for shuvtest (confirmed accessible).

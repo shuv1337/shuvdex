@@ -3,7 +3,7 @@ import type {
   CapabilityKindType,
   CapabilityPackage,
   CapabilityRegistryIOError,
-} from "@codex-fleet/capability-registry";
+} from "@shuvdex/capability-registry";
 import type { ArchiveValidationError, ImportConflictError } from "./errors.js";
 
 export interface ArchiveInspection {

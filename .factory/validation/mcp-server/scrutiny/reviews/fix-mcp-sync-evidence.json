@@ -17,6 +17,6 @@
     ]
   },
   "sharedStateObservations": [],
-  "addressesFailureFrom": "/home/shuv/repos/codex-fleet/.factory/validation/mcp-server/scrutiny/reviews/mcp-status-sync-tools.json",
+  "addressesFailureFrom": "/home/shuv/repos/shuvdex/.factory/validation/mcp-server/scrutiny/reviews/mcp-status-sync-tools.json",
   "summary": "Pass. The rerun fix adequately addresses the original blocking review finding: `fleet_sync` no longer reports misleading git HEAD values and now returns sync-specific evidence via `filesTransferred` plus source provenance. Remaining concern is limited to non-blocking success-path test coverage in `fleet-sync.test.ts`."
 }

@@ -9,12 +9,12 @@
       "timeout": 10
     },
     "paths": {
-      "origin": "/tmp/codex-fleet-user-testing-git-write/origin.git",
-      "repoUnderTest": "/tmp/codex-fleet-user-testing-git-write/repo-under-test",
-      "peer": "/tmp/codex-fleet-user-testing-git-write/peer"
+      "origin": "/tmp/shuvdex-user-testing-git-write/origin.git",
+      "repoUnderTest": "/tmp/shuvdex-user-testing-git-write/repo-under-test",
+      "peer": "/tmp/shuvdex-user-testing-git-write/peer"
     },
     "remoteAccess": "mutate only the assigned /tmp sandbox on shuvtest",
-    "localScratchDir": "/tmp/codex-fleet-user-testing-git-write-happy",
+    "localScratchDir": "/tmp/shuvdex-user-testing-git-write-happy",
     "evidenceDir": "/home/shuv/.factory/missions/53d67669-5ba8-4745-9fd5-71906b40773d/evidence/git-skill-ops/git-write-happy"
   },
   "toolsUsed": [
@@ -29,7 +29,7 @@
       "status": "pass",
       "steps": [
         {
-          "action": "Reset the isolated sandbox, then run the public `@codex-fleet/git-ops` API `pull` against `/tmp/codex-fleet-user-testing-git-write/repo-under-test` via `node --input-type=module`.",
+          "action": "Reset the isolated sandbox, then run the public `@shuvdex/git-ops` API `pull` against `/tmp/shuvdex-user-testing-git-write/repo-under-test` via `node --input-type=module`.",
           "expected": "The repo under test fast-forwards from the initial local commit to the newer origin/main commit and reports an update.",
           "observed": "The API succeeded with before HEAD `d429b67b6312d9a0794ea9b15fe5a5fb22855fae`, after HEAD `80510e3ec5a5749342df9078c1ca0d05257cc2ea`, and result `{'outcome': 'success', 'value': {'updated': True, 'summary': 'Updating d429b67..80510e3\\nFast-forward\\n story.txt | 1 +\\n 1 file changed, 1 insertion(+)'}}`."
         },
@@ -60,7 +60,7 @@
             "port": 22,
             "timeout": 10
           },
-          "repoPath": "/tmp/codex-fleet-user-testing-git-write/repo-under-test",
+          "repoPath": "/tmp/shuvdex-user-testing-git-write/repo-under-test",
           "before": {
             "head": "d429b67b6312d9a0794ea9b15fe5a5fb22855fae",
             "branch": "main"
@@ -96,9 +96,9 @@
       "status": "pass",
       "steps": [
         {
-          "action": "Create a new local commit in the isolated repo-under-test, then run the public `@codex-fleet/git-ops` API `push` via `node --input-type=module`.",
+          "action": "Create a new local commit in the isolated repo-under-test, then run the public `@shuvdex/git-ops` API `push` via `node --input-type=module`.",
           "expected": "The local ahead commit is pushed successfully to the sandbox origin remote.",
-          "observed": "Preparation created local HEAD `4682869c824a37ea04a8fcb43440b821c5a499fb` while origin/main remained `80510e3ec5a5749342df9078c1ca0d05257cc2ea`; the API then succeeded with summary `{'outcome': 'success', 'value': {'summary': '** WARNING: connection is not using a post-quantum key exchange algorithm.\\r\\n** This session may be vulnerable to \"store now, decrypt later\" attacks.\\r\\n** The server may need to be upgraded. See https://openssh.com/pq.html\\r\\nTo /tmp/codex-fleet-user-testing-git-write/origin.git\\n   80510e3..4682869  main -> main'}}`."
+          "observed": "Preparation created local HEAD `4682869c824a37ea04a8fcb43440b821c5a499fb` while origin/main remained `80510e3ec5a5749342df9078c1ca0d05257cc2ea`; the API then succeeded with summary `{'outcome': 'success', 'value': {'summary': '** WARNING: connection is not using a post-quantum key exchange algorithm.\\r\\n** This session may be vulnerable to \"store now, decrypt later\" attacks.\\r\\n** The server may need to be upgraded. See https://openssh.com/pq.html\\r\\nTo /tmp/shuvdex-user-testing-git-write/origin.git\\n   80510e3..4682869  main -> main'}}`."
         },
         {
           "action": "Verify the remote state directly over SSH/git after the push.",
@@ -127,7 +127,7 @@
             "port": 22,
             "timeout": 10
           },
-          "repoPath": "/tmp/codex-fleet-user-testing-git-write/repo-under-test",
+          "repoPath": "/tmp/shuvdex-user-testing-git-write/repo-under-test",
           "before": {
             "head": "4682869c824a37ea04a8fcb43440b821c5a499fb",
             "branch": "main"
@@ -135,7 +135,7 @@
           "operation": {
             "outcome": "success",
             "value": {
-              "summary": "** WARNING: connection is not using a post-quantum key exchange algorithm.\r\n** This session may be vulnerable to \"store now, decrypt later\" attacks.\r\n** The server may need to be upgraded. See https://openssh.com/pq.html\r\nTo /tmp/codex-fleet-user-testing-git-write/origin.git\n   80510e3..4682869  main -> main"
+              "summary": "** WARNING: connection is not using a post-quantum key exchange algorithm.\r\n** This session may be vulnerable to \"store now, decrypt later\" attacks.\r\n** The server may need to be upgraded. See https://openssh.com/pq.html\r\nTo /tmp/shuvdex-user-testing-git-write/origin.git\n   80510e3..4682869  main -> main"
             }
           },
           "after": {
@@ -158,7 +158,7 @@
       "status": "pass",
       "steps": [
         {
-          "action": "Run the public `@codex-fleet/git-ops` API `createTag` with tag name `happy-v1` and ref `main~1` via `node --input-type=module`.",
+          "action": "Run the public `@shuvdex/git-ops` API `createTag` with tag name `happy-v1` and ref `main~1` via `node --input-type=module`.",
           "expected": "A lightweight tag named `happy-v1` is created at the specified prior commit.",
           "observed": "The API succeeded; tags changed from `[]` to `['happy-v1']` while current HEAD remained `4682869c824a37ea04a8fcb43440b821c5a499fb`."
         },
@@ -186,7 +186,7 @@
             "port": 22,
             "timeout": 10
           },
-          "repoPath": "/tmp/codex-fleet-user-testing-git-write/repo-under-test",
+          "repoPath": "/tmp/shuvdex-user-testing-git-write/repo-under-test",
           "tagName": "happy-v1",
           "tagRef": "main~1",
           "beforeTags": [],
@@ -213,7 +213,7 @@
       "status": "pass",
       "steps": [
         {
-          "action": "Run the public `@codex-fleet/git-ops` API `checkoutRef` with ref `happy-v1` via `node --input-type=module`.",
+          "action": "Run the public `@shuvdex/git-ops` API `checkoutRef` with ref `happy-v1` via `node --input-type=module`.",
           "expected": "The repository checks out the tagged commit, moving HEAD from the pushed commit to the tagged ref and updating the working tree.",
           "observed": "The API succeeded with before HEAD `4682869c824a37ea04a8fcb43440b821c5a499fb`, after HEAD `80510e3ec5a5749342df9078c1ca0d05257cc2ea`, and post-checkout branch `HEAD`."
         },
@@ -241,7 +241,7 @@
             "port": 22,
             "timeout": 10
           },
-          "repoPath": "/tmp/codex-fleet-user-testing-git-write/repo-under-test",
+          "repoPath": "/tmp/shuvdex-user-testing-git-write/repo-under-test",
           "checkoutRef": "happy-v1",
           "before": {
             "head": "4682869c824a37ea04a8fcb43440b821c5a499fb",

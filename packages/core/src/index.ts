@@ -1,5 +1,5 @@
 /**
- * @codex-fleet/core
+ * @shuvdex/core
  *
  * Shared types, schemas, and configuration for the fleet skills management system.
  */

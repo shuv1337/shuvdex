@@ -5,8 +5,8 @@
  */
 import { Hono } from "hono";
 import { Effect, Runtime } from "effect";
-import { CapabilityRegistry } from "@codex-fleet/capability-registry";
-import { SkillIndexer } from "@codex-fleet/skill-indexer";
+import { CapabilityRegistry } from "@shuvdex/capability-registry";
+import { SkillIndexer } from "@shuvdex/skill-indexer";
 import { handleError } from "../middleware/error-handler.js";
 
 // ---------------------------------------------------------------------------

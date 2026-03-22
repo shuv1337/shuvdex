@@ -6,13 +6,13 @@ import { z } from "zod/v4";
 import type {
   CapabilityDefinitionType,
   CapabilityPackageType,
-} from "@codex-fleet/capability-registry";
+} from "@shuvdex/capability-registry";
 import type {
   AuditEvent,
   PolicyEngineService,
   TokenClaims,
-} from "@codex-fleet/policy-engine";
-import type { ExecutionProvidersService } from "@codex-fleet/execution-providers";
+} from "@shuvdex/policy-engine";
+import type { ExecutionProvidersService } from "@shuvdex/execution-providers";
 
 export interface ServerConfig {
   readonly capabilities?: ReadonlyArray<CapabilityPackageType>;
@@ -175,7 +175,7 @@ function capabilityPackages(config?: ServerConfig): CapabilityPackageType[] {
 export function createServer(config?: ServerConfig): McpServer {
   const server = new McpServer(
     {
-      name: "codex-fleet",
+      name: "shuvdex",
       version: "0.0.0",
     },
     {

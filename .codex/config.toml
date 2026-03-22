@@ -1,9 +1,9 @@
-# Codex Desktop MCP Configuration for codex-fleet
+# Codex Desktop MCP Configuration for shuvdex
 #
-# This project-scoped config makes the codex-fleet MCP server automatically
+# This project-scoped config makes the shuvdex MCP server automatically
 # available when using Codex CLI or IDE extension in this repository.
 #
-# Global alternative: copy the [mcp_servers.codex_fleet] section to
+# Global alternative: copy the [mcp_servers.shuvdex] section to
 #   ~/.codex/config.toml
 #
 # Usage:
@@ -13,8 +13,8 @@
 #   4. Use /mcp in the TUI to verify the server is connected
 #
 # Manual add via CLI:
-#   codex mcp add codex-fleet -- node apps/mcp-server/dist/index.js
+#   codex mcp add shuvdex -- node apps/mcp-server/dist/index.js
 
-[mcp_servers.codex_fleet]
+[mcp_servers.shuvdex]
 command = "node"
 args = ["apps/mcp-server/dist/index.js"]

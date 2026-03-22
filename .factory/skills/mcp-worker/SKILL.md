@@ -54,7 +54,7 @@ describe("MCP fleet_status tool", () => {
 
 Run tests to confirm they FAIL (red):
 ```bash
-npm test -- --filter @codex-fleet/mcp-server
+npm test -- --filter @shuvdex/mcp-server
 ```
 
 ### 3. Implement the Tool
@@ -77,7 +77,7 @@ server.tool("fleet_status", schema, async (args) => {
 ### 4. Verify Tests Pass (green)
 
 ```bash
-npm test -- --filter @codex-fleet/mcp-server
+npm test -- --filter @shuvdex/mcp-server
 ```
 
 ### 5. Run Validators
@@ -114,7 +114,7 @@ Record exact commands and responses in handoff.
   "whatWasLeftUndone": "",
   "verification": {
     "commandsRun": [
-      { "command": "npm test -- --filter @codex-fleet/mcp-server", "exitCode": 0, "observation": "6 tests passed for fleet_status tool" },
+      { "command": "npm test -- --filter @shuvdex/mcp-server", "exitCode": 0, "observation": "6 tests passed for fleet_status tool" },
       { "command": "npm run build", "exitCode": 0, "observation": "MCP server built successfully" },
       { "command": "echo '{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\"...}' | node apps/mcp-server/dist/index.js", "exitCode": 0, "observation": "Returns valid InitializeResult with protocolVersion and capabilities" }
     ],

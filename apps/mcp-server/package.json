@@ -1,5 +1,5 @@
 {
-  "name": "@codex-fleet/mcp-server",
+  "name": "@shuvdex/mcp-server",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -13,11 +13,11 @@
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "dependencies": {
-    "@codex-fleet/capability-registry": "*",
-    "@codex-fleet/execution-providers": "*",
-    "@codex-fleet/policy-engine": "*",
-    "@codex-fleet/skill-importer": "*",
-    "@codex-fleet/skill-indexer": "*",
+    "@shuvdex/capability-registry": "*",
+    "@shuvdex/execution-providers": "*",
+    "@shuvdex/policy-engine": "*",
+    "@shuvdex/skill-importer": "*",
+    "@shuvdex/skill-indexer": "*",
     "@modelcontextprotocol/sdk": "^1.27.1",
     "effect": "^3.19.0",
     "zod": "^3.25.0 || ^4.0.0"

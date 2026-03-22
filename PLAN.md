@@ -1,8 +1,8 @@
-# codex-fleet Capability Gateway Plan
+# shuvdex Capability Gateway Plan
 
 **Summary**
 
-Build `codex-fleet` into the single client-facing MCP server for fleet capabilities, with full replacement as the end state for local skills and local MCP servers. The server becomes the control plane for discovery, policy, auth, and routing; a thin per-host runner remains only for capabilities that must execute locally such as shell, filesystem, browser, and device control. Skill authoring follows a hybrid transition: existing `SKILL.md` remains supported, but the system introduces structured capability manifests and compiles both into one registry-backed catalog with progressive disclosure.
+Build `shuvdex` into the single client-facing MCP server for fleet capabilities, with full replacement as the end state for local skills and local MCP servers. The server becomes the control plane for discovery, policy, auth, and routing; a thin per-host runner remains only for capabilities that must execute locally such as shell, filesystem, browser, and device control. Skill authoring follows a hybrid transition: existing `SKILL.md` remains supported, but the system introduces structured capability manifests and compiles both into one registry-backed catalog with progressive disclosure.
 
 **Implementation Changes**
 
@@ -46,7 +46,7 @@ Build `codex-fleet` into the single client-facing MCP server for fleet capabilit
   - execution adapters that resolve an invocation to the correct provider.
 
 **4. Introduce policy and token-based ACLs**
-- Add a `policy-engine` package and a small auth service inside codex-fleet.
+- Add a `policy-engine` package and a small auth service inside shuvdex.
 - Fleet-issued tokens are the default auth mechanism in v1.
 - Token claims should include at minimum:
   - `subjectType` such as `host`, `install`, `user`, or `service`,
@@ -75,14 +75,14 @@ Build `codex-fleet` into the single client-facing MCP server for fleet capabilit
   - stream or return result,
   - record audit and telemetry.
 - Required providers:
-  - `builtin`: current fleet operations and future native codex-fleet actions.
+  - `builtin`: current fleet operations and future native shuvdex actions.
   - `host_runner`: thin per-host runner for local shell/fs/browser/device capabilities.
   - `mcp_proxy`: wraps existing external or local MCP servers behind the gateway.
   - `http_api`: direct REST/OpenAPI-backed tools.
   - `module_runtime`: code-mode style programmable execution for long-tail workflows.
 - Host runner contract:
   - one lightweight authenticated process per host,
-  - outbound registration or polling against codex-fleet,
+  - outbound registration or polling against shuvdex,
   - receives capability jobs only for capabilities bound to that host,
   - supports stdout/stderr/log streaming and structured result envelopes,
   - exposes minimal local operations rather than the full current skill repo model.
@@ -180,14 +180,14 @@ Build `codex-fleet` into the single client-facing MCP server for fleet capabilit
 
 **Migration**
 - Existing skills without manifests remain discoverable.
-- Existing local MCP servers can be wrapped without changing the client-facing codex-fleet endpoint.
+- Existing local MCP servers can be wrapped without changing the client-facing shuvdex endpoint.
 - A migrated capability can replace a local MCP capability without changing its visible id or policy envelope.
 - Skill sync is not required for capabilities served fully via gateway + host runner.
 
 **Assumptions and Defaults**
 
 - End state is full replacement of local skills and local MCP servers from the client’s point of view.
-- `codex-fleet` remains the only client-configured MCP endpoint.
+- `shuvdex` remains the only client-configured MCP endpoint.
 - Fleet-issued bearer tokens are the default v1 auth model; OAuth-style remote MCP auth is deferred unless later needed for third-party distribution.
 - A thin host runner is mandatory for local shell/fs/browser/device access and is the only per-host runtime kept in the target architecture.
 - Skill authoring follows a hybrid transition: `SKILL.md` remains supported, but structured manifests are added for new ACL, routing, and execution metadata.

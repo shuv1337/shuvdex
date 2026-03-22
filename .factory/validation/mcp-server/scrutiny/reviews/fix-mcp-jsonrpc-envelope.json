@@ -16,6 +16,6 @@
       "evidence": ".factory/skills/mcp-worker/SKILL.md:90-104 only prescribes initialize/tools/list examples; the 6466eaa7-e1de-4c1c-a4fd-b48feef059d6 transcript shows the worker had to inspect @modelcontextprotocol/sdk stdio internals and manually probe [], {}, and {\"foo\":\"bar\"} to implement this fix."
     }
   ],
-  "addressesFailureFrom": "/home/shuv/repos/codex-fleet/.factory/validation/mcp-server/scrutiny/reviews/mcp-error-handling.json",
+  "addressesFailureFrom": "/home/shuv/repos/shuvdex/.factory/validation/mcp-server/scrutiny/reviews/mcp-error-handling.json",
   "summary": "Pass. After reviewing the original failing commit 8b51a0c, the fix commit d0a5df5, both handoffs, and the fix transcript skeleton, I confirmed the prior blocking issue is resolved: valid JSON that is not a JSON-RPC envelope now yields a -32600 Invalid Request response instead of being silently dropped, and regression tests cover the specified payloads plus continued processing."
 }

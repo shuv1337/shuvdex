@@ -1,10 +1,10 @@
 import { Layer, ManagedRuntime } from "effect";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { HostRegistry } from "@codex-fleet/core";
-import { SshExecutorLive } from "@codex-fleet/ssh";
-import { GitOpsLive } from "@codex-fleet/git-ops";
-import { SkillOpsLive } from "@codex-fleet/skill-ops";
-import { TelemetryLive } from "@codex-fleet/telemetry";
+import { HostRegistry } from "@shuvdex/core";
+import { SshExecutorLive } from "@shuvdex/ssh";
+import { GitOpsLive } from "@shuvdex/git-ops";
+import { SkillOpsLive } from "@shuvdex/skill-ops";
+import { TelemetryLive } from "@shuvdex/telemetry";
 import { createServer } from "../../../../../apps/mcp-server/dist/server.js";
 import { readFileSync } from "node:fs";
 

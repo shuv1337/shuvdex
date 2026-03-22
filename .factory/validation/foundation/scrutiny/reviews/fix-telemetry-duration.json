@@ -23,6 +23,6 @@
       "evidence": "validation-contract.md:61-62 omits durationMs; features.json:887 and 948-955 require durationMs; .factory/library/architecture.md:42-43 lists durationMs as a standard telemetry attribute."
     }
   ],
-  "addressesFailureFrom": "/home/shuv/repos/codex-fleet/.factory/validation/foundation/scrutiny/reviews/foundation-telemetry-package.json",
+  "addressesFailureFrom": "/home/shuv/repos/shuvdex/.factory/validation/foundation/scrutiny/reviews/foundation-telemetry-package.json",
   "summary": "Fail. The fix adds durationMs for the common success and typed-failure cases and improves test coverage, but withSpan still skips durationMs when an effect dies or is interrupted, so the helper does not yet record durationMs on every span end path."
 }

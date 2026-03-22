@@ -298,7 +298,7 @@ export function makeCapabilityRegistryLive(
 ): Layer.Layer<CapabilityRegistry> {
   const dir =
     packagesDir ??
-    fs.mkdtempSync(path.join(os.tmpdir(), "codex-fleet-capabilities-"));
+    fs.mkdtempSync(path.join(os.tmpdir(), "shuvdex-capabilities-"));
   fs.mkdirSync(dir, { recursive: true });
 
   const storeRef = Ref.unsafeMake(

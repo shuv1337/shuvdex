@@ -2,7 +2,7 @@
  * Types and service definitions for the SSH executor.
  */
 import { Context, Effect } from "effect";
-import type { HostConfig } from "@codex-fleet/core";
+import type { HostConfig } from "@shuvdex/core";
 import type { ConnectionFailed, ConnectionTimeout, CommandFailed, CommandTimeout } from "./errors.js";
 
 /**

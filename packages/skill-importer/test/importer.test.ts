@@ -5,7 +5,7 @@ import * as path from "node:path";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { Effect, Layer } from "effect";
-import { CapabilityRegistry, makeCapabilityRegistryLive } from "@codex-fleet/capability-registry";
+import { CapabilityRegistry, makeCapabilityRegistryLive } from "@shuvdex/capability-registry";
 import { makeSkillImporterLive, SkillImporter } from "../src/index.js";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");

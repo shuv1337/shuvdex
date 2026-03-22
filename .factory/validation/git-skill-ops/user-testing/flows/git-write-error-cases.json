@@ -9,18 +9,18 @@
       "timeout": 10
     },
     "allowedSandboxes": [
-      "/tmp/codex-fleet-user-testing-git-write",
-      "/tmp/codex-fleet-user-testing-git-conflict"
+      "/tmp/shuvdex-user-testing-git-write",
+      "/tmp/shuvdex-user-testing-git-conflict"
     ],
     "paths": {
-      "nonRepoDir": "/tmp/codex-fleet-user-testing-git-write/not-a-repo",
-      "authRepo": "/tmp/codex-fleet-user-testing-git-write/auth-repo",
-      "timeoutRepo": "/tmp/codex-fleet-user-testing-git-write/timeout-repo",
-      "conflictOrigin": "/tmp/codex-fleet-user-testing-git-conflict/origin.git",
-      "conflictRepo": "/tmp/codex-fleet-user-testing-git-conflict/repo-under-test",
-      "conflictPeer": "/tmp/codex-fleet-user-testing-git-conflict/peer"
+      "nonRepoDir": "/tmp/shuvdex-user-testing-git-write/not-a-repo",
+      "authRepo": "/tmp/shuvdex-user-testing-git-write/auth-repo",
+      "timeoutRepo": "/tmp/shuvdex-user-testing-git-write/timeout-repo",
+      "conflictOrigin": "/tmp/shuvdex-user-testing-git-conflict/origin.git",
+      "conflictRepo": "/tmp/shuvdex-user-testing-git-conflict/repo-under-test",
+      "conflictPeer": "/tmp/shuvdex-user-testing-git-conflict/peer"
     },
-    "localScratchDir": "/tmp/codex-fleet-user-testing-git-write-errors"
+    "localScratchDir": "/tmp/shuvdex-user-testing-git-write-errors"
   },
   "toolsUsed": [
     "node --input-type=module",
@@ -34,12 +34,12 @@
       "status": "pass",
       "steps": [
         {
-          "action": "Reset `/tmp/codex-fleet-user-testing-git-write/not-a-repo` to a plain directory and call `GitOps.getHead` through the public `@codex-fleet/git-ops` API.",
+          "action": "Reset `/tmp/shuvdex-user-testing-git-write/not-a-repo` to a plain directory and call `GitOps.getHead` through the public `@shuvdex/git-ops` API.",
           "expected": "The API fails with a typed non-repository error and does not create `.git` metadata or other files.",
-          "observed": "The API failed with `_tag=NotARepository` for `/tmp/codex-fleet-user-testing-git-write/not-a-repo`; the before/after directory listings were identical."
+          "observed": "The API failed with `_tag=NotARepository` for `/tmp/shuvdex-user-testing-git-write/not-a-repo`; the before/after directory listings were identical."
         },
         {
-          "action": "Verify directly over SSH/git with `git -C /tmp/codex-fleet-user-testing-git-write/not-a-repo rev-parse HEAD` and list the directory contents.",
+          "action": "Verify directly over SSH/git with `git -C /tmp/shuvdex-user-testing-git-write/not-a-repo rev-parse HEAD` and list the directory contents.",
           "expected": "Raw git exits non-zero with a not-a-repository error while the directory remains a plain non-repo path.",
           "observed": "Direct verification reported `NON_REPO_GIT_EXIT=128`, stderr contained `fatal: not a git repository`, and the directory still showed only `README.txt` with no `.git`."
         }
@@ -59,10 +59,10 @@
         "apiError": {
           "name": "NotARepository",
           "_tag": "NotARepository",
-          "message": "Not a git repository on shuvtest: /tmp/codex-fleet-user-testing-git-write/not-a-repo",
-          "stack": "NotARepository: Not a git repository on shuvtest: /tmp/codex-fleet-user-testing-git-write/not-a-repo\n    at file:///home/shuv/repos/codex-fleet/packages/git-ops/dist/live.js:85:32\n    at EffectPrimitive.effect_instruction_i1 (file:///home/shuv/repos/codex-fleet/node_modules/effect/dist/esm/internal/core.js:320:39)\n    at file:///home/shuv/repos/codex-fleet/node_modules/effect/dist/esm/internal/fiberRuntime.js:983:46\n    at effect_internal_function (file:///home/shuv/repos/codex-fleet/node_modules/effect/dist/esm/Utils.js:333:12)\n    at FiberRuntime.Failure (file:///home/shuv/repos/codex-fleet/node_modules/effect/dist/esm/internal/fiberRuntime.js:983:22)\n    at file:///home/shuv/repos/codex-fleet/node_modules/effect/dist/esm/internal/fiberRuntime.js:1151:31\n    at Object.context (file:///home/shuv/repos/codex-fleet/packages/telemetry/dist/test.js:83:21)\n    at FiberRuntime.runLoop (file:///home/shuv/repos/codex-fleet/node_modules/effect/dist/esm/internal/fiberRuntime.js:1142:34)\n    at FiberRuntime.evaluateEffect (file:///home/shuv/repos/codex-fleet/node_modules/effect/dist/esm/internal/fiberRuntime.js:746:27)\n    at FiberRuntime.evaluateMessageWhileSuspended (file:///home/shuv/repos/codex-fleet/node_modules/effect/dist/esm/internal/fiberRuntime.js:721:16)",
+          "message": "Not a git repository on shuvtest: /tmp/shuvdex-user-testing-git-write/not-a-repo",
+          "stack": "NotARepository: Not a git repository on shuvtest: /tmp/shuvdex-user-testing-git-write/not-a-repo\n    at file:///home/shuv/repos/shuvdex/packages/git-ops/dist/live.js:85:32\n    at EffectPrimitive.effect_instruction_i1 (file:///home/shuv/repos/shuvdex/node_modules/effect/dist/esm/internal/core.js:320:39)\n    at file:///home/shuv/repos/shuvdex/node_modules/effect/dist/esm/internal/fiberRuntime.js:983:46\n    at effect_internal_function (file:///home/shuv/repos/shuvdex/node_modules/effect/dist/esm/Utils.js:333:12)\n    at FiberRuntime.Failure (file:///home/shuv/repos/shuvdex/node_modules/effect/dist/esm/internal/fiberRuntime.js:983:22)\n    at file:///home/shuv/repos/shuvdex/node_modules/effect/dist/esm/internal/fiberRuntime.js:1151:31\n    at Object.context (file:///home/shuv/repos/shuvdex/packages/telemetry/dist/test.js:83:21)\n    at FiberRuntime.runLoop (file:///home/shuv/repos/shuvdex/node_modules/effect/dist/esm/internal/fiberRuntime.js:1142:34)\n    at FiberRuntime.evaluateEffect (file:///home/shuv/repos/shuvdex/node_modules/effect/dist/esm/internal/fiberRuntime.js:746:27)\n    at FiberRuntime.evaluateMessageWhileSuspended (file:///home/shuv/repos/shuvdex/node_modules/effect/dist/esm/internal/fiberRuntime.js:721:16)",
           "host": "shuvtest",
-          "path": "/tmp/codex-fleet-user-testing-git-write/not-a-repo"
+          "path": "/tmp/shuvdex-user-testing-git-write/not-a-repo"
         },
         "sshVerification": "NON_REPO_GIT_EXIT=128; PLAIN_DIR=yes",
         "noFilesystemModification": true
@@ -100,10 +100,10 @@
           "name": "MergeConflict",
           "_tag": "MergeConflict",
           "message": "Merge conflict on shuvtest: ",
-          "stack": "MergeConflict: Merge conflict on shuvtest: \n    at file:///home/shuv/repos/codex-fleet/packages/git-ops/dist/live.js:185:40\n    at EffectPrimitive.effect_instruction_i1 (file:///home/shuv/repos/codex-fleet/node_modules/effect/dist/esm/internal/core.js:320:39)\n    at file:///home/shuv/repos/codex-fleet/node_modules/effect/dist/esm/internal/fiberRuntime.js:983:46\n    at effect_internal_function (file:///home/shuv/repos/codex-fleet/node_modules/effect/dist/esm/Utils.js:333:12)\n    at FiberRuntime.Failure (file:///home/shuv/repos/codex-fleet/node_modules/effect/dist/esm/internal/fiberRuntime.js:983:22)\n    at file:///home/shuv/repos/codex-fleet/node_modules/effect/dist/esm/internal/fiberRuntime.js:1151:31\n    at Object.context (file:///home/shuv/repos/codex-fleet/packages/telemetry/dist/test.js:83:21)\n    at FiberRuntime.runLoop (file:///home/shuv/repos/codex-fleet/node_modules/effect/dist/esm/internal/fiberRuntime.js:1142:34)\n    at FiberRuntime.evaluateEffect (file:///home/shuv/repos/codex-fleet/node_modules/effect/dist/esm/internal/fiberRuntime.js:746:27)\n    at FiberRuntime.evaluateMessageWhileSuspended (file:///home/shuv/repos/codex-fleet/node_modules/effect/dist/esm/internal/fiberRuntime.js:721:16)",
+          "stack": "MergeConflict: Merge conflict on shuvtest: \n    at file:///home/shuv/repos/shuvdex/packages/git-ops/dist/live.js:185:40\n    at EffectPrimitive.effect_instruction_i1 (file:///home/shuv/repos/shuvdex/node_modules/effect/dist/esm/internal/core.js:320:39)\n    at file:///home/shuv/repos/shuvdex/node_modules/effect/dist/esm/internal/fiberRuntime.js:983:46\n    at effect_internal_function (file:///home/shuv/repos/shuvdex/node_modules/effect/dist/esm/Utils.js:333:12)\n    at FiberRuntime.Failure (file:///home/shuv/repos/shuvdex/node_modules/effect/dist/esm/internal/fiberRuntime.js:983:22)\n    at file:///home/shuv/repos/shuvdex/node_modules/effect/dist/esm/internal/fiberRuntime.js:1151:31\n    at Object.context (file:///home/shuv/repos/shuvdex/packages/telemetry/dist/test.js:83:21)\n    at FiberRuntime.runLoop (file:///home/shuv/repos/shuvdex/node_modules/effect/dist/esm/internal/fiberRuntime.js:1142:34)\n    at FiberRuntime.evaluateEffect (file:///home/shuv/repos/shuvdex/node_modules/effect/dist/esm/internal/fiberRuntime.js:746:27)\n    at FiberRuntime.evaluateMessageWhileSuspended (file:///home/shuv/repos/shuvdex/node_modules/effect/dist/esm/internal/fiberRuntime.js:721:16)",
           "host": "shuvtest",
           "files": [],
-          "stderr": "** WARNING: connection is not using a post-quantum key exchange algorithm.\r\n** This session may be vulnerable to \"store now, decrypt later\" attacks.\r\n** The server may need to be upgraded. See https://openssh.com/pq.html\r\nFrom /tmp/codex-fleet-user-testing-git-conflict/origin\n   f5bf3a5..2e8c7ae  main       -> origin/main\n"
+          "stderr": "** WARNING: connection is not using a post-quantum key exchange algorithm.\r\n** This session may be vulnerable to \"store now, decrypt later\" attacks.\r\n** The server may need to be upgraded. See https://openssh.com/pq.html\r\nFrom /tmp/shuvdex-user-testing-git-conflict/origin\n   f5bf3a5..2e8c7ae  main       -> origin/main\n"
         },
         "apiReportedFiles": [],
         "sshVerification": "STATUS=UU conflict.txt; CONFLICTS=conflict.txt; MERGE_HEAD_PRESENT=yes",
@@ -122,7 +122,7 @@
           "observed": "The API failed with `_tag=AuthError` in 350 ms; stderr contained `Permission denied (publickey)` / `Could not read from remote repository`, and `HEAD` plus branch status were unchanged."
         },
         {
-          "action": "Verify directly over SSH/git with `git -C /tmp/codex-fleet-user-testing-git-write/auth-repo pull origin`.",
+          "action": "Verify directly over SSH/git with `git -C /tmp/shuvdex-user-testing-git-write/auth-repo pull origin`.",
           "expected": "Raw git fails immediately for authentication and leaves the repository unchanged without exposing secrets.",
           "observed": "Direct verification returned `AUTH_PULL_EXIT=1` in 94 ms, preserved the same `HEAD`, and stderr contained only the SSH auth failure plus git access-rights message with no password/token disclosure."
         }
@@ -141,7 +141,7 @@
           "name": "AuthError",
           "_tag": "AuthError",
           "message": "Authentication failed for git remote on shuvtest",
-          "stack": "AuthError: Authentication failed for git remote on shuvtest\n    at file:///home/shuv/repos/codex-fleet/packages/git-ops/dist/live.js:92:32\n    at EffectPrimitive.effect_instruction_i1 (file:///home/shuv/repos/codex-fleet/node_modules/effect/dist/esm/internal/core.js:320:39)\n    at file:///home/shuv/repos/codex-fleet/node_modules/effect/dist/esm/internal/fiberRuntime.js:983:46\n    at effect_internal_function (file:///home/shuv/repos/codex-fleet/node_modules/effect/dist/esm/Utils.js:333:12)\n    at FiberRuntime.Failure (file:///home/shuv/repos/codex-fleet/node_modules/effect/dist/esm/internal/fiberRuntime.js:983:22)\n    at file:///home/shuv/repos/codex-fleet/node_modules/effect/dist/esm/internal/fiberRuntime.js:1151:31\n    at Object.context (file:///home/shuv/repos/codex-fleet/packages/telemetry/dist/test.js:83:21)\n    at FiberRuntime.runLoop (file:///home/shuv/repos/codex-fleet/node_modules/effect/dist/esm/internal/fiberRuntime.js:1142:34)\n    at FiberRuntime.evaluateEffect (file:///home/shuv/repos/codex-fleet/node_modules/effect/dist/esm/internal/fiberRuntime.js:746:27)\n    at FiberRuntime.evaluateMessageWhileSuspended (file:///home/shuv/repos/codex-fleet/node_modules/effect/dist/esm/internal/fiberRuntime.js:721:16)",
+          "stack": "AuthError: Authentication failed for git remote on shuvtest\n    at file:///home/shuv/repos/shuvdex/packages/git-ops/dist/live.js:92:32\n    at EffectPrimitive.effect_instruction_i1 (file:///home/shuv/repos/shuvdex/node_modules/effect/dist/esm/internal/core.js:320:39)\n    at file:///home/shuv/repos/shuvdex/node_modules/effect/dist/esm/internal/fiberRuntime.js:983:46\n    at effect_internal_function (file:///home/shuv/repos/shuvdex/node_modules/effect/dist/esm/Utils.js:333:12)\n    at FiberRuntime.Failure (file:///home/shuv/repos/shuvdex/node_modules/effect/dist/esm/internal/fiberRuntime.js:983:22)\n    at file:///home/shuv/repos/shuvdex/node_modules/effect/dist/esm/internal/fiberRuntime.js:1151:31\n    at Object.context (file:///home/shuv/repos/shuvdex/packages/telemetry/dist/test.js:83:21)\n    at FiberRuntime.runLoop (file:///home/shuv/repos/shuvdex/node_modules/effect/dist/esm/internal/fiberRuntime.js:1142:34)\n    at FiberRuntime.evaluateEffect (file:///home/shuv/repos/shuvdex/node_modules/effect/dist/esm/internal/fiberRuntime.js:746:27)\n    at FiberRuntime.evaluateMessageWhileSuspended (file:///home/shuv/repos/shuvdex/node_modules/effect/dist/esm/internal/fiberRuntime.js:721:16)",
           "host": "shuvtest",
           "stderr": "** WARNING: connection is not using a post-quantum key exchange algorithm.\r\n** This session may be vulnerable to \"store now, decrypt later\" attacks.\r\n** The server may need to be upgraded. See https://openssh.com/pq.html\r\ninvaliduser@localhost: Permission denied (publickey).\r\nfatal: Could not read from remote repository.\n\nPlease make sure you have the correct access rights\nand the repository exists.\n"
         },
@@ -159,12 +159,12 @@
       "status": "pass",
       "steps": [
         {
-          "action": "Call `GitOps.pull` against `timeout-repo`, whose origin is `https://does-not-exist.invalid/codex-fleet-user-testing.git`.",
+          "action": "Call `GitOps.pull` against `timeout-repo`, whose origin is `https://does-not-exist.invalid/shuvdex-user-testing.git`.",
           "expected": "The API surfaces a typed timeout/network error quickly and leaves the repository state intact.",
           "observed": "The API failed with `_tag=TimeoutError` in 328 ms; stderr reported `Could not resolve host: does-not-exist.invalid`, and `HEAD` plus branch status were unchanged."
         },
         {
-          "action": "Verify directly over SSH/git with `git -C /tmp/codex-fleet-user-testing-git-write/timeout-repo pull origin`.",
+          "action": "Verify directly over SSH/git with `git -C /tmp/shuvdex-user-testing-git-write/timeout-repo pull origin`.",
           "expected": "Raw git fails quickly with DNS/timeout semantics and the repository remains uncorrupted.",
           "observed": "Direct verification returned `TIMEOUT_PULL_EXIT=1` in 575 ms, reported `Could not resolve host`, and preserved the same `HEAD` / clean branch state."
         }
@@ -183,10 +183,10 @@
           "name": "TimeoutError",
           "_tag": "TimeoutError",
           "message": "Network timeout during git pull origin on shuvtest",
-          "stack": "TimeoutError: Network timeout during git pull origin on shuvtest\n    at file:///home/shuv/repos/codex-fleet/packages/git-ops/dist/live.js:99:32\n    at EffectPrimitive.effect_instruction_i1 (file:///home/shuv/repos/codex-fleet/node_modules/effect/dist/esm/internal/core.js:320:39)\n    at file:///home/shuv/repos/codex-fleet/node_modules/effect/dist/esm/internal/fiberRuntime.js:983:46\n    at effect_internal_function (file:///home/shuv/repos/codex-fleet/node_modules/effect/dist/esm/Utils.js:333:12)\n    at FiberRuntime.Failure (file:///home/shuv/repos/codex-fleet/node_modules/effect/dist/esm/internal/fiberRuntime.js:983:22)\n    at file:///home/shuv/repos/codex-fleet/node_modules/effect/dist/esm/internal/fiberRuntime.js:1151:31\n    at Object.context (file:///home/shuv/repos/codex-fleet/packages/telemetry/dist/test.js:83:21)\n    at FiberRuntime.runLoop (file:///home/shuv/repos/codex-fleet/node_modules/effect/dist/esm/internal/fiberRuntime.js:1142:34)\n    at FiberRuntime.evaluateEffect (file:///home/shuv/repos/codex-fleet/node_modules/effect/dist/esm/internal/fiberRuntime.js:746:27)\n    at FiberRuntime.evaluateMessageWhileSuspended (file:///home/shuv/repos/codex-fleet/node_modules/effect/dist/esm/internal/fiberRuntime.js:721:16)",
+          "stack": "TimeoutError: Network timeout during git pull origin on shuvtest\n    at file:///home/shuv/repos/shuvdex/packages/git-ops/dist/live.js:99:32\n    at EffectPrimitive.effect_instruction_i1 (file:///home/shuv/repos/shuvdex/node_modules/effect/dist/esm/internal/core.js:320:39)\n    at file:///home/shuv/repos/shuvdex/node_modules/effect/dist/esm/internal/fiberRuntime.js:983:46\n    at effect_internal_function (file:///home/shuv/repos/shuvdex/node_modules/effect/dist/esm/Utils.js:333:12)\n    at FiberRuntime.Failure (file:///home/shuv/repos/shuvdex/node_modules/effect/dist/esm/internal/fiberRuntime.js:983:22)\n    at file:///home/shuv/repos/shuvdex/node_modules/effect/dist/esm/internal/fiberRuntime.js:1151:31\n    at Object.context (file:///home/shuv/repos/shuvdex/packages/telemetry/dist/test.js:83:21)\n    at FiberRuntime.runLoop (file:///home/shuv/repos/shuvdex/node_modules/effect/dist/esm/internal/fiberRuntime.js:1142:34)\n    at FiberRuntime.evaluateEffect (file:///home/shuv/repos/shuvdex/node_modules/effect/dist/esm/internal/fiberRuntime.js:746:27)\n    at FiberRuntime.evaluateMessageWhileSuspended (file:///home/shuv/repos/shuvdex/node_modules/effect/dist/esm/internal/fiberRuntime.js:721:16)",
           "host": "shuvtest",
           "operation": "git pull origin",
-          "stderr": "** WARNING: connection is not using a post-quantum key exchange algorithm.\r\n** This session may be vulnerable to \"store now, decrypt later\" attacks.\r\n** The server may need to be upgraded. See https://openssh.com/pq.html\r\nfatal: unable to access 'https://does-not-exist.invalid/codex-fleet-user-testing.git/': Could not resolve host: does-not-exist.invalid\n"
+          "stderr": "** WARNING: connection is not using a post-quantum key exchange algorithm.\r\n** This session may be vulnerable to \"store now, decrypt later\" attacks.\r\n** The server may need to be upgraded. See https://openssh.com/pq.html\r\nfatal: unable to access 'https://does-not-exist.invalid/shuvdex-user-testing.git/': Could not resolve host: does-not-exist.invalid\n"
         },
         "apiElapsedMs": 328,
         "sshVerification": "TIMEOUT_PULL_EXIT=1; TIMEOUT_PULL_ELAPSED_MS=575; HEAD unchanged",

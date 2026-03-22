@@ -1,5 +1,5 @@
 {
-  "name": "@codex-fleet/execution-providers",
+  "name": "@shuvdex/execution-providers",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -19,8 +19,8 @@
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "dependencies": {
-    "@codex-fleet/capability-registry": "*",
-    "@codex-fleet/telemetry": "*",
+    "@shuvdex/capability-registry": "*",
+    "@shuvdex/telemetry": "*",
     "effect": "^3.19.0"
   },
   "devDependencies": {

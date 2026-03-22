@@ -20,9 +20,9 @@
     {
       "area": "skills",
       "observation": "The `cli-worker` skill's manual-verification guidance conflicts with the mission boundary that existing skills repos on test hosts are read-only. That mismatch likely encouraged the worker to add live `pull` coverage against `~/repos/shuvbot-skills` instead of keeping the auth proof strictly read-only.",
-      "evidence": "`/home/shuv/repos/codex-fleet/.factory/skills/cli-worker/SKILL.md` tells workers to run `./apps/cli/bin/fleet pull shuvtest` during manual verification, while `/home/shuv/.factory/missions/53d67669-5ba8-4745-9fd5-71906b40773d/AGENTS.md:16` says existing skills repos on test hosts are read-only and isolated test directories should be used. The fix commit then hard-codes `~/repos/shuvbot-skills` in `apps/cli/test/ssh-live.test.ts:36` and exercises `runPull(...)` at lines 115 and 129."
+      "evidence": "`/home/shuv/repos/shuvdex/.factory/skills/cli-worker/SKILL.md` tells workers to run `./apps/cli/bin/fleet pull shuvtest` during manual verification, while `/home/shuv/.factory/missions/53d67669-5ba8-4745-9fd5-71906b40773d/AGENTS.md:16` says existing skills repos on test hosts are read-only and isolated test directories should be used. The fix commit then hard-codes `~/repos/shuvbot-skills` in `apps/cli/test/ssh-live.test.ts:36` and exercises `runPull(...)` at lines 115 and 129."
     }
   ],
-  "addressesFailureFrom": "/home/shuv/repos/codex-fleet/.factory/validation/cli/scrutiny/reviews/cli-ssh-handling.json",
+  "addressesFailureFrom": "/home/shuv/repos/shuvdex/.factory/validation/cli/scrutiny/reviews/cli-ssh-handling.json",
   "summary": "Reviewed the prior failed `cli-ssh-handling` report, the fix feature handoff, transcript skeleton, skill guidance, mission guidance, and commit diff for `7d76703348fdc7869d4d76439bbd2cbaca37ca4f`. The original blocking issue is fixed: the CLI milestone now includes live `SshExecutorLive` coverage showing successful key-based SSH auth to `shuvtest` without password-prompt failures. I noted one non-blocking concern about the added pull-based live test using the shared remote skills repo, plus a related skill-guidance mismatch."
 }

@@ -1,5 +1,5 @@
 import { Context, Effect } from "effect";
-import type { CapabilityDefinition } from "@codex-fleet/capability-registry";
+import type { CapabilityDefinition } from "@shuvdex/capability-registry";
 import type { InvalidTokenError, PolicyEngineIOError, PolicyNotFound } from "./errors.js";
 
 export type SubjectType = "host" | "install" | "user" | "service";

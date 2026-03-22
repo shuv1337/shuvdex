@@ -1,5 +1,5 @@
 /**
- * @codex-fleet/ssh
+ * @shuvdex/ssh
  *
  * SSH command execution service for the fleet skills management system.
  *

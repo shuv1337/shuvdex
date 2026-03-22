@@ -2,7 +2,7 @@
 
 ## Summary
 
-Add a first-class import flow for skill files so `codex-fleet` can ingest:
+Add a first-class import flow for skill files so `shuvdex` can ingest:
 
 - a standalone Markdown skill file
 - a `.zip` archive
@@ -328,8 +328,8 @@ class SkillImporter extends Context.Tag("SkillImporter")<
 ```
 
 **Dependencies:**
-- `@codex-fleet/skill-indexer` — reuses `compileSkillDirectory()` for compilation after extraction, and the shared `parseFrontmatter()` utility for YAML frontmatter parsing.
-- `@codex-fleet/capability-registry` — checks for conflicts, persists the final package.
+- `@shuvdex/skill-indexer` — reuses `compileSkillDirectory()` for compilation after extraction, and the shared `parseFrontmatter()` utility for YAML frontmatter parsing.
+- `@shuvdex/capability-registry` — checks for conflicts, persists the final package.
 - `yauzl` — zip extraction with Unix permission support. Add as a new dependency. Prefer over `adm-zip` because `yauzl` provides access to external file attributes for accurate permission restoration.
 
 **Implementation flow:**
@@ -780,10 +780,10 @@ These reference fixtures ensure the importer handles real-world skill structures
 
 ```bash
 # Per-package during development:
-npm run test -- --filter=@codex-fleet/skill-importer
-npm run test -- --filter=@codex-fleet/capability-registry
-npm run test -- --filter=@codex-fleet/api
-npm run test -- --filter=@codex-fleet/mcp-server
+npm run test -- --filter=@shuvdex/skill-importer
+npm run test -- --filter=@shuvdex/capability-registry
+npm run test -- --filter=@shuvdex/api
+npm run test -- --filter=@shuvdex/mcp-server
 
 # Full gates before merge:
 npm run typecheck

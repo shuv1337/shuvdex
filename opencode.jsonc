@@ -1,14 +1,10 @@
    {
      "$schema": "https://opencode.ai/config.json",
      "mcp": {
-       "codex-fleet": {
+       "shuvdex": {
          "type": "local",
          "command": ["node", "apps/mcp-server/dist/index.js"],
-         "enabled": true,
-         "environment": {
-           "CAPABILITIES_DIR": "/home/shuv/repos/codex-fleet/.run/ui-demo-20260321-001506/state/packages",
-           "POLICY_DIR": "/home/shuv/repos/codex-fleet/.run/ui-demo-20260321-001506/state/policy"
-         }
+         "enabled": true
        }
      }
    }

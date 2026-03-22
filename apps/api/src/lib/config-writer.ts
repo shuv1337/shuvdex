@@ -17,7 +17,7 @@
  */
 import * as fs from "node:fs";
 import * as YAML from "yaml";
-import type { HostConfig } from "@codex-fleet/core";
+import type { HostConfig } from "@shuvdex/core";
 
 // ---------------------------------------------------------------------------
 // Types

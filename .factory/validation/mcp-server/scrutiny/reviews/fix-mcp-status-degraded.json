@@ -10,6 +10,6 @@
     "issues": []
   },
   "sharedStateObservations": [],
-  "addressesFailureFrom": "/home/shuv/repos/codex-fleet/.factory/validation/mcp-server/scrutiny/reviews/mcp-status-sync-tools.json",
+  "addressesFailureFrom": "/home/shuv/repos/shuvdex/.factory/validation/mcp-server/scrutiny/reviews/mcp-status-sync-tools.json",
   "summary": "Pass. I reviewed the prior failed feature report, both handoffs, the fix transcript skeleton, the original ffce905 implementation, and the fix commit 9981918547e1b298b4c5a1c9f254ef0135fc6410. The targeted degraded-status failure is fixed: apps/mcp-server/src/server.ts now reports reachable hosts with repo-state lookup failures as degraded and includes error details, and apps/mcp-server/test/fleet-status.test.ts adds focused regression coverage for full and partial lookup failures. No new issues were found in this fix's scope; the separate fleet_sync blocker from the original review is unchanged and outside this fix feature's scope."
 }

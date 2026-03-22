@@ -14,12 +14,12 @@ Testing surface, resource cost classification, and validation approach.
 
 **Foundation Surface:** Terminal-driven Node package API checks
 - Run `node --input-type=module` from the repo root and import built workspace packages from their `dist` entrypoints.
-- Use this surface for pre-CLI milestones where the real consumable interface is the package API itself (`@codex-fleet/core`, `@codex-fleet/ssh`, `@codex-fleet/telemetry`).
+- Use this surface for pre-CLI milestones where the real consumable interface is the package API itself (`@shuvdex/core`, `@shuvdex/ssh`, `@shuvdex/telemetry`).
 - Keep each validation flow isolated with its own temp directory under `/tmp` and avoid mutating shared remote state.
 
 **Git/Skill Ops Surface:** Terminal-driven Node package API checks with isolated git/skill sandboxes
-- Use this same `node --input-type=module` surface for `@codex-fleet/git-ops` and `@codex-fleet/skill-ops` milestone validation.
-- Real remote mutations are allowed only inside validator-owned temp sandboxes under `/tmp/codex-fleet-user-testing-*`; never modify `~/repos/shuvbot-skills`.
+- Use this same `node --input-type=module` surface for `@shuvdex/git-ops` and `@shuvdex/skill-ops` milestone validation.
+- Real remote mutations are allowed only inside validator-owned temp sandboxes under `/tmp/shuvdex-user-testing-*`; never modify `~/repos/shuvbot-skills`.
 - When a flow needs pull/push/drift behavior, provision temporary bare repos and clones inside the assigned sandbox so each flow owns its git history.
 
 **Verification:** SSH to test hosts (shuvtest, shuvbot) for state verification
@@ -62,8 +62,8 @@ Testing surface, resource cost classification, and validation approach.
 - Create/destroy test skill directories per test
 - Reset git state between tests
 - The live host skill repos are asymmetric: `test-skill` is present on `shuvbot` but not on `shuvtest`. For cross-host comparisons, use a common skill already present on both hosts (for example `adapt`) or provision a sandboxed fixture on each host.
-- For foundation package validation, use per-flow temp dirs under `/tmp/codex-fleet-user-testing-*` and only run read-only remote SSH commands (`echo`, `hostname`, `whoami`, controlled non-zero exits).
-- For git/skill package validation, create separate local and remote `/tmp/codex-fleet-user-testing-<group>` sandboxes per flow and keep every mutation, clone, tag, symlink, and cleanup operation inside those directories.
+- For foundation package validation, use per-flow temp dirs under `/tmp/shuvdex-user-testing-*` and only run read-only remote SSH commands (`echo`, `hostname`, `whoami`, controlled non-zero exits).
+- For git/skill package validation, create separate local and remote `/tmp/shuvdex-user-testing-<group>` sandboxes per flow and keep every mutation, clone, tag, symlink, and cleanup operation inside those directories.
 - For git merge-conflict validation on Git 2.53, set `git config pull.rebase false` inside the isolated conflict repo before calling `git pull origin`; otherwise Git may stop at the pull-strategy prompt instead of reaching the actual content-conflict path.
 
 ## Resource Considerations
@@ -75,25 +75,25 @@ Testing surface, resource cost classification, and validation approach.
 ## E2E Milestone Harness Notes
 
 - For the `e2e-polish` milestone, the correct validation harness is the shipped `tests/e2e/*.test.ts` Vitest suite because each file exercises the real CLI and/or MCP user surface against live SSH hosts and the OTEL collector.
-- Run targeted files from `/home/shuv/repos/codex-fleet/tests/e2e` with `npm test -- <file>.test.ts` so evidence maps cleanly to the single validation-contract assertion covered by that file.
+- Run targeted files from `/home/shuv/repos/shuvdex/tests/e2e` with `npm test -- <file>.test.ts` so evidence maps cleanly to the single validation-contract assertion covered by that file.
 - Do **not** run more than one `tests/e2e` file at a time, even across separate worker sessions: the suite mutates shared remote state on `shuvtest`/`shuvbot` and the package config already enforces `fileParallelism: false` for this reason.
 - Capture raw stdout/stderr/exit-code artifacts for each targeted run and treat the Vitest step summaries as the primary user-visible evidence for the covered assertion.
 
 ## Flow Validator Guidance: terminal-node-api
 
-- Work from `/home/shuv/repos/codex-fleet` only.
+- Work from `/home/shuv/repos/shuvdex` only.
 - Exercise the public package interface through terminal-run Node scripts, not by editing source or calling internal test helpers unless they are exported as part of the package surface.
-- Use isolated temp paths under `/tmp/codex-fleet-user-testing-<group>` for generated YAML/files.
+- Use isolated temp paths under `/tmp/shuvdex-user-testing-<group>` for generated YAML/files.
 - Foundation-only remote SSH validation should stay read-only against `shuvtest`.
-- Git/skill validation may create and destroy temporary repos, skill directories, and active-symlink directories on `shuvtest`, but only inside the exact `/tmp/codex-fleet-user-testing-<group>` sandbox assigned to that flow.
+- Git/skill validation may create and destroy temporary repos, skill directories, and active-symlink directories on `shuvtest`, but only inside the exact `/tmp/shuvdex-user-testing-<group>` sandbox assigned to that flow.
 - For `skill.checkDrift` validation in the current environment, prefer SSH-reachable hosts (for example `shuvbot` + `shuvtest`) over `localhost`; the shipped live executor still routes through SSH, so localhost validation requires working localhost key auth.
 - Never read from or modify `~/repos/shuvbot-skills`; use validator-owned sandboxes for all write-path assertions.
 - Save evidence into the assigned mission evidence directory and write the flow report JSON exactly to the assigned path.
 
 ## Flow Validator Guidance: cli-terminal
 
-- Work from `/home/shuv/repos/codex-fleet` and invoke the real CLI via `node apps/cli/bin/fleet.js ...` so validation exercises the shipped user surface.
-- Keep every write-path assertion inside its assigned local and remote `/tmp/codex-fleet-user-testing-cli-*` sandbox; never mutate `~/repos/shuvbot-skills` or `~/.codex/skills`.
+- Work from `/home/shuv/repos/shuvdex` and invoke the real CLI via `node apps/cli/bin/fleet.js ...` so validation exercises the shipped user surface.
+- Keep every write-path assertion inside its assigned local and remote `/tmp/shuvdex-user-testing-cli-*` sandbox; never mutate `~/repos/shuvbot-skills` or `~/.codex/skills`.
 - Use the exact config files, remote repo paths, local skill roots, and active-dir paths assigned by the validator orchestrator for your group.
 - For git-backed CLI flows, verify user-visible output first, then confirm resulting remote state with direct `ssh` + `git`/`ls` commands against the same sandbox paths.
 - For `sync`, `activate`, and `deactivate`, keep remote skill repos and active directories isolated per group and treat repeated `activate`/`deactivate` calls as idempotency checks rather than setup failures.
@@ -106,7 +106,7 @@ Testing surface, resource cost classification, and validation approach.
 
 - Exercise the MCP server through real stdio JSON-RPC only: line-delimited requests on stdin and JSON responses on stdout.
 - Use `node apps/mcp-server/dist/index.js` for protocol/discovery assertions that depend on the shipped Codex launch path (`initialize`, `notifications/initialized`, `tools/list`, malformed JSON-RPC handling, EOF shutdown, `.codex/config.toml`).
-- For write-path assertions (`fleet_sync`, `fleet_activate`, `fleet_deactivate`, `fleet_pull`, `fleet_drift`, `fleet_rollback`), launch the validator-provided wrapper script instead of the default entrypoint so the real server logic runs against validator-owned `/tmp/codex-fleet-user-testing-mcp-*` sandboxes rather than `~/repos/shuvbot-skills` or `~/.codex/skills`.
+- For write-path assertions (`fleet_sync`, `fleet_activate`, `fleet_deactivate`, `fleet_pull`, `fleet_drift`, `fleet_rollback`), launch the validator-provided wrapper script instead of the default entrypoint so the real server logic runs against validator-owned `/tmp/shuvdex-user-testing-mcp-*` sandboxes rather than `~/repos/shuvbot-skills` or `~/.codex/skills`.
 - Stay strictly inside the assigned local skill root, remote repo path, active-dir path, and any remote bare origins; never read from or modify the real fleet repo paths on `shuvtest` or `shuvbot`.
 - Verify both the user-visible MCP response payload and the resulting remote filesystem/git state with direct `ssh` commands against the same sandbox paths.
 - Capture raw request/response transcripts plus stdout/stderr/exit-code artifacts for each server run in the assigned evidence directory.
@@ -114,7 +114,7 @@ Testing surface, resource cost classification, and validation approach.
 
 ## Flow Validator Guidance: e2e-vitest
 
-- Work from `/home/shuv/repos/codex-fleet/tests/e2e` and invoke only the shipped targeted test files with `npm test -- <file>.test.ts`.
+- Work from `/home/shuv/repos/shuvdex/tests/e2e` and invoke only the shipped targeted test files with `npm test -- <file>.test.ts`.
 - Treat each test file as the real-user harness for its covered assertion because the file drives the actual CLI entrypoint and/or MCP stdio server instead of mocked interfaces.
 - Run one file at a time. Do not overlap validators that touch `tests/e2e`, because these flows mutate shared remote repos, activation symlinks, and collector-visible traces.
 - Stay within the existing test boundaries: never rewrite the test files, never point them at `~/repos/overseer`, `~/repos/executor`, `~/repos/maple`, and never mutate off-limits ports/resources.

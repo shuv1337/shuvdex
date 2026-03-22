@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { Effect, Runtime } from "effect";
-import { PolicyEngine } from "@codex-fleet/policy-engine";
+import { PolicyEngine } from "@shuvdex/policy-engine";
 import { handleError } from "../middleware/error-handler.js";
 
 export function auditRouter(runtime: Runtime.Runtime<PolicyEngine>): Hono {

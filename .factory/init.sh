@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-cd /home/shuv/repos/codex-fleet
+cd /home/shuv/repos/shuvdex
 
 # Install dependencies if node_modules is missing or stale
 if [ ! -d "node_modules" ] || [ "package.json" -nt "node_modules" ]; then

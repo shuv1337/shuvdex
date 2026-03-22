@@ -99,12 +99,12 @@
         ],
         "observations": {
           "assertionId": "VAL-INFRA-003",
-          "filePath": "/tmp/codex-fleet-user-testing-core-config/VAL-INFRA-003-missing-config.yaml",
+          "filePath": "/tmp/shuvdex-user-testing-core-config/VAL-INFRA-003-missing-config.yaml",
           "unexpectedSuccess": false,
           "error": {
             "tag": "ConfigNotFound",
-            "path": "/tmp/codex-fleet-user-testing-core-config/VAL-INFRA-003-missing-config.yaml",
-            "message": "Configuration file not found: /tmp/codex-fleet-user-testing-core-config/VAL-INFRA-003-missing-config.yaml"
+            "path": "/tmp/shuvdex-user-testing-core-config/VAL-INFRA-003-missing-config.yaml",
+            "message": "Configuration file not found: /tmp/shuvdex-user-testing-core-config/VAL-INFRA-003-missing-config.yaml"
           }
         }
       }
@@ -208,5 +208,5 @@
   ],
   "frictions": [],
   "blockers": [],
-  "summary": "Tested 5 assertions via the built @codex-fleet/core package API: 5 passed, 0 failed, 0 blocked."
+  "summary": "Tested 5 assertions via the built @shuvdex/core package API: 5 passed, 0 failed, 0 blocked."
 }

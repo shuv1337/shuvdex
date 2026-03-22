@@ -152,7 +152,7 @@ export const TelemetryTest: Layer.Layer<Telemetry | CollectedSpans> =
 
       return Layer.mergeAll(
         Layer.succeed(Telemetry, {
-          serviceName: "codex-fleet",
+          serviceName: "shuvdex",
           collectorUrl: "http://localhost:4318",
         }),
         Layer.succeed(CollectedSpans, spansRef),

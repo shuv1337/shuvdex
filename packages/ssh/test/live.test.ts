@@ -8,8 +8,8 @@ import {
   ConnectionTimeout,
   CommandFailed,
 } from "../src/index.js";
-import { TelemetryTest } from "@codex-fleet/telemetry";
-import type { HostConfig } from "@codex-fleet/core";
+import { TelemetryTest } from "@shuvdex/telemetry";
+import type { HostConfig } from "@shuvdex/core";
 
 /**
  * Test host configuration for shuvtest (confirmed accessible).

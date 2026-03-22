@@ -23,6 +23,6 @@
       "evidence": ".factory/skills/mcp-worker/SKILL.md:28-30 and 90-106 require tests-first plus stdio manual verification for every MCP task, while the fix handoff at /home/shuv/.factory/missions/53d67669-5ba8-4745-9fd5-71906b40773d/handoffs/2026-03-16T00-58-11-544Z__fix-mcp-zod-dep__f0ef6728-3e41-4b6a-b865-9b728ced2add.json:43-48 explicitly asks for a lighter dependency/config-fix procedure."
     }
   ],
-  "addressesFailureFrom": "/home/shuv/repos/codex-fleet/.factory/validation/mcp-server/scrutiny/reviews/mcp-codex-integration.json",
+  "addressesFailureFrom": "/home/shuv/repos/shuvdex/.factory/validation/mcp-server/scrutiny/reviews/mcp-codex-integration.json",
   "summary": "Review failed. Commit `b9a0ab1` correctly adds `zod` as a direct `apps/mcp-server` dependency and improves server launchability when hoisting is absent, but it does not address the prior blocking scrutiny failure for Codex integration: the project still lacks Codex-owned discovery/tool-visibility evidence."
 }

@@ -1,5 +1,5 @@
 import { Context, Effect } from "effect";
-import type { CapabilityDefinition } from "@codex-fleet/capability-registry";
+import type { CapabilityDefinition } from "@shuvdex/capability-registry";
 
 export interface ExecutionResult {
   readonly payload: unknown;

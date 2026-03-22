@@ -34,6 +34,6 @@
       "evidence": "packages/git-ops/test/git-ops.test.ts:712 and :753 plus packages/git-ops/test/security.test.ts assert only the emitted command strings. A temp-repo git repro showed the semantic mismatch directly: `git checkout main` succeeded, while `git checkout -- main` failed as a pathspec. A note in shared guidance/library about validating git CLI semantics with an isolated local repo would have caught this regression."
     }
   ],
-  "addressesFailureFrom": "/home/shuv/repos/codex-fleet/.factory/validation/git-skill-ops/scrutiny/reviews/git-ops-write-operations.json; /home/shuv/repos/codex-fleet/.factory/validation/git-skill-ops/scrutiny/reviews/git-ops-error-handling.json",
+  "addressesFailureFrom": "/home/shuv/repos/shuvdex/.factory/validation/git-skill-ops/scrutiny/reviews/git-ops-write-operations.json; /home/shuv/repos/shuvdex/.factory/validation/git-skill-ops/scrutiny/reviews/git-ops-error-handling.json",
   "summary": "Reviewed the fix handoff, transcript skeleton, prior failed reviews, and commit 1905ed4. createTag() is now quoted safely, but checkoutRef() became functionally incorrect by switching to git's pathspec form, and AuthError redaction still leaks password suffixes for credentials containing '@', so the fix does not yet clear the prior blocking issues."
 }

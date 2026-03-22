@@ -1,5 +1,5 @@
 /**
- * @codex-fleet/api
+ * @shuvdex/api
  *
  * HTTP API server (Hono + @hono/node-server) that exposes capability
  * management, policy/auth administration, host management, and compatibility
@@ -12,10 +12,10 @@ import { Effect, Layer, ManagedRuntime } from "effect";
 import {
   CapabilityRegistry,
   makeCapabilityRegistryLive,
-} from "@codex-fleet/capability-registry";
-import { makePolicyEngineLive } from "@codex-fleet/policy-engine";
-import { makeSkillImporterLive } from "@codex-fleet/skill-importer";
-import { SkillIndexer, SkillIndexerLive } from "@codex-fleet/skill-indexer";
+} from "@shuvdex/capability-registry";
+import { makePolicyEngineLive } from "@shuvdex/policy-engine";
+import { makeSkillImporterLive } from "@shuvdex/skill-importer";
+import { SkillIndexer, SkillIndexerLive } from "@shuvdex/skill-indexer";
 import { auditRouter } from "./routes/audit.js";
 import { toolsRouter } from "./routes/tools.js";
 import { packagesRouter } from "./routes/packages.js";
@@ -114,14 +114,14 @@ async function main(): Promise<void> {
 
   serve({ fetch: app.fetch, port: PORT }, (info) => {
     process.stderr.write(
-      `[codex-fleet/api] listening on http://localhost:${info.port}\n`,
+      `[shuvdex/api] listening on http://localhost:${info.port}\n`,
     );
-    process.stderr.write(`[codex-fleet/api] capabilities dir: ${capabilitiesDir}\n`);
-    process.stderr.write(`[codex-fleet/api] local repo: ${localRepoPath}\n`);
+    process.stderr.write(`[shuvdex/api] capabilities dir: ${capabilitiesDir}\n`);
+    process.stderr.write(`[shuvdex/api] local repo: ${localRepoPath}\n`);
   });
 
   const shutdown = async (): Promise<void> => {
-    process.stderr.write("[codex-fleet/api] shutting down...\n");
+    process.stderr.write("[shuvdex/api] shutting down...\n");
     await managedRuntime.dispose();
     process.exit(0);
   };
@@ -135,6 +135,6 @@ async function main(): Promise<void> {
 }
 
 main().catch((err) => {
-  process.stderr.write(`[codex-fleet/api] fatal: ${String(err)}\n`);
+  process.stderr.write(`[shuvdex/api] fatal: ${String(err)}\n`);
   process.exit(1);
 });

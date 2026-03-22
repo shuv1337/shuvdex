@@ -13,9 +13,9 @@
     {
       "area": "skills",
       "observation": "The cli-worker skill still requires writing tests before implementation, but this fix session edited the production code before adding the regression test and still reported `skillFeedback.followedProcedure: true`. That makes the skill-following signal unreliable for scrutiny triage.",
-      "evidence": "`/home/shuv/repos/codex-fleet/.factory/skills/cli-worker/SKILL.md` says to create tests before implementation. In transcript session `8d57b46e-9e74-4ac1-8fa5-ef1e6bc1f391`, the worker edits `apps/cli/src/commands/status.ts` first, then later reads `apps/cli/test/status.test.ts` and adds the new regression test; the handoff at `/home/shuv/.factory/missions/53d67669-5ba8-4745-9fd5-71906b40773d/handoffs/2026-03-15T22-55-29-309Z__fix-cli-status-hostname__8d57b46e-9e74-4ac1-8fa5-ef1e6bc1f391.json` still records `skillFeedback.followedProcedure: true`."
+      "evidence": "`/home/shuv/repos/shuvdex/.factory/skills/cli-worker/SKILL.md` says to create tests before implementation. In transcript session `8d57b46e-9e74-4ac1-8fa5-ef1e6bc1f391`, the worker edits `apps/cli/src/commands/status.ts` first, then later reads `apps/cli/test/status.test.ts` and adds the new regression test; the handoff at `/home/shuv/.factory/missions/53d67669-5ba8-4745-9fd5-71906b40773d/handoffs/2026-03-15T22-55-29-309Z__fix-cli-status-hostname__8d57b46e-9e74-4ac1-8fa5-ef1e6bc1f391.json` still records `skillFeedback.followedProcedure: true`."
     }
   ],
-  "addressesFailureFrom": "/home/shuv/repos/codex-fleet/.factory/validation/cli/scrutiny/reviews/cli-status-command.json",
+  "addressesFailureFrom": "/home/shuv/repos/shuvdex/.factory/validation/cli/scrutiny/reviews/cli-status-command.json",
   "summary": "Reviewed the prior failed `cli-status-command` report, the fix feature transcript skeleton, handoff, skill guidance, and commit diff for `910f006578b2e19ae7f57f92c97ae8c6c1e86160`. The original blocking issue is fixed: text-mode `fleet status` now displays configured hostnames instead of registry aliases, and the added regression test covers the previously missing mismatch scenario. No remaining code issues were found within this fix's scope."
 }

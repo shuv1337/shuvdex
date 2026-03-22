@@ -7,7 +7,7 @@
  */
 import { Hono } from "hono";
 import { Effect, Schema } from "effect";
-import { HostConfig, loadConfig } from "@codex-fleet/core";
+import { HostConfig, loadConfig } from "@shuvdex/core";
 import { readFleetYaml, writeFleetYaml } from "../lib/config-writer.js";
 import { handleError } from "../middleware/error-handler.js";
 

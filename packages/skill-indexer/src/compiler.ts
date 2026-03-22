@@ -5,7 +5,7 @@ import { parse as yamlParse } from "yaml";
 import type {
   CapabilityDefinitionType,
   CapabilityPackageType,
-} from "@codex-fleet/capability-registry";
+} from "@shuvdex/capability-registry";
 import { parseFrontmatter } from "./frontmatter.js";
 import type { CompiledSkillArtifact } from "./types.js";
 

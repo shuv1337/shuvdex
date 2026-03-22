@@ -12,7 +12,7 @@
   "failedAssertions": [
     {
       "id": "VAL-GIT-010",
-      "reason": "Retest against the public @codex-fleet/git-ops API still failed. In a real merge-conflict sandbox on shuvtest, direct git verification showed a recoverable conflict on conflict.txt, but GitOps.pull surfaced `_tag=GitCommandFailed` for `git pull origin` and did not report the conflicted file list."
+      "reason": "Retest against the public @shuvdex/git-ops API still failed. In a real merge-conflict sandbox on shuvtest, direct git verification showed a recoverable conflict on conflict.txt, but GitOps.pull surfaced `_tag=GitCommandFailed` for `git pull origin` and did not report the conflicted file list."
     }
   ],
   "blockedAssertions": [],

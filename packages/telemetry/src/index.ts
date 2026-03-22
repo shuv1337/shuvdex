@@ -1,5 +1,5 @@
 /**
- * @codex-fleet/telemetry
+ * @shuvdex/telemetry
  *
  * OTEL instrumentation for the fleet skills management system.
  *

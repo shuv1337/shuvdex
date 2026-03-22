@@ -4,8 +4,8 @@ import * as os from "node:os";
 import * as path from "node:path";
 import { Effect, Layer } from "effect";
 import yauzl from "yauzl";
-import { CapabilityRegistry, type CapabilityPackage, type CapabilityRegistryIOError } from "@codex-fleet/capability-registry";
-import { compileSkillDirectory, parseFrontmatter } from "@codex-fleet/skill-indexer";
+import { CapabilityRegistry, type CapabilityPackage, type CapabilityRegistryIOError } from "@shuvdex/capability-registry";
+import { compileSkillDirectory, parseFrontmatter } from "@shuvdex/skill-indexer";
 import { ArchiveValidationError, ImportConflictError } from "./errors.js";
 import type {
   ArchiveInspection,

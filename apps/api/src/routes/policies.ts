@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { Effect, Runtime } from "effect";
-import { PolicyEngine } from "@codex-fleet/policy-engine";
-import type { CapabilitySubjectPolicy } from "@codex-fleet/policy-engine";
+import { PolicyEngine } from "@shuvdex/policy-engine";
+import type { CapabilitySubjectPolicy } from "@shuvdex/policy-engine";
 import { handleError } from "../middleware/error-handler.js";
 
 export function policiesRouter(runtime: Runtime.Runtime<PolicyEngine>): Hono {

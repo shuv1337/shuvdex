@@ -26,17 +26,17 @@
     {
       "area": "conventions",
       "observation": "Shared-state guidance and the repository's E2E test pattern are out of sync. Mission/docs say remote write-path assertions must stay inside isolated sandboxes and must not touch `~/repos/shuvbot-skills` / `~/.codex/skills`, but this feature still mutates those live paths directly.",
-      "evidence": "/home/shuv/.factory/missions/53d67669-5ba8-4745-9fd5-71906b40773d/AGENTS.md:16 and /home/shuv/repos/codex-fleet/.factory/library/user-testing.md:22,87 versus /home/shuv/repos/codex-fleet/tests/e2e/multiplatform.test.ts:51-54,106-110,424-449,558-595,781,860-889"
+      "evidence": "/home/shuv/.factory/missions/53d67669-5ba8-4745-9fd5-71906b40773d/AGENTS.md:16 and /home/shuv/repos/shuvdex/.factory/library/user-testing.md:22,87 versus /home/shuv/repos/shuvdex/tests/e2e/multiplatform.test.ts:51-54,106-110,424-449,558-595,781,860-889"
     },
     {
       "area": "skills",
       "observation": "The assigned `backend-worker` skill is still package/TDD-oriented and even its manual-verification example points workers at the live `~/repos/shuvbot-skills` checkout. That guidance does not fit `tests/e2e` features and likely contributes to workers bypassing the documented sandbox rules.",
-      "evidence": "/home/shuv/repos/codex-fleet/.factory/skills/backend-worker/SKILL.md:12-17,28-30,80-88 and /home/shuv/.factory/missions/53d67669-5ba8-4745-9fd5-71906b40773d/handoffs/2026-03-16T02-03-54-324Z__e2e-multi-platform__eeeab54c-b4e4-441b-abd0-0f4c9e68158b.json :: handoff.skillFeedback.suggestedChanges[0]"
+      "evidence": "/home/shuv/repos/shuvdex/.factory/skills/backend-worker/SKILL.md:12-17,28-30,80-88 and /home/shuv/.factory/missions/53d67669-5ba8-4745-9fd5-71906b40773d/handoffs/2026-03-16T02-03-54-324Z__e2e-multi-platform__eeeab54c-b4e4-441b-abd0-0f4c9e68158b.json :: handoff.skillFeedback.suggestedChanges[0]"
     },
     {
       "area": "knowledge",
       "observation": "The two cross-platform host checkouts are not fully symmetric: `test-skill` exists on `shuvbot` but not on `shuvtest`, so cross-host E2E tests currently need to use a common skill such as `adapt`. That environment quirk is encoded in this feature and its handoff but is not captured in the shared library docs.",
-      "evidence": "/home/shuv/repos/codex-fleet/tests/e2e/multiplatform.test.ts:57-64 and /home/shuv/.factory/missions/53d67669-5ba8-4745-9fd5-71906b40773d/handoffs/2026-03-16T02-03-54-324Z__e2e-multi-platform__eeeab54c-b4e4-441b-abd0-0f4c9e68158b.json :: handoff.discoveredIssues[0]"
+      "evidence": "/home/shuv/repos/shuvdex/tests/e2e/multiplatform.test.ts:57-64 and /home/shuv/.factory/missions/53d67669-5ba8-4745-9fd5-71906b40773d/handoffs/2026-03-16T02-03-54-324Z__e2e-multi-platform__eeeab54c-b4e4-441b-abd0-0f4c9e68158b.json :: handoff.discoveredIssues[0]"
     }
   ],
   "addressesFailureFrom": null,

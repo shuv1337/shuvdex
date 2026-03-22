@@ -2,8 +2,8 @@ import { spawn } from "node:child_process";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { Effect } from "effect";
-import type { CapabilityDefinition } from "@codex-fleet/capability-registry";
-import { recordError, withSpan } from "@codex-fleet/telemetry";
+import type { CapabilityDefinition } from "@shuvdex/capability-registry";
+import { recordError, withSpan } from "@shuvdex/telemetry";
 import type { ExecutionResult } from "./types.js";
 
 interface ModuleRuntimeRequest {

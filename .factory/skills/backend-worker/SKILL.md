@@ -99,7 +99,7 @@ Record exact commands and observations in handoff.
   "whatWasLeftUndone": "",
   "verification": {
     "commandsRun": [
-      { "command": "npm test -- --filter @codex-fleet/ssh", "exitCode": 0, "observation": "12 tests passed covering execute, timeout, error cases" },
+      { "command": "npm test -- --filter @shuvdex/ssh", "exitCode": 0, "observation": "12 tests passed covering execute, timeout, error cases" },
       { "command": "npm run typecheck", "exitCode": 0, "observation": "No type errors" },
       { "command": "ssh shuvtest 'hostname'", "exitCode": 0, "observation": "Returns 'shuvtest' confirming SSH works" }
     ],

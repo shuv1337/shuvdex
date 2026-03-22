@@ -23,6 +23,6 @@
       "evidence": "`.factory/skills/backend-worker/SKILL.md:28-30` requires creating the test file before implementation, and `:49-50` requires confirming the tests fail first. In the transcript skeleton for worker session `de213b6d-a51c-43f2-8d35-9722b2d508a9`, the worker says 'First, I'll write tests:' and then performs Edit operations on `packages/ssh/src/types.ts`, `packages/ssh/src/errors.ts`, `packages/ssh/src/live.ts`, and `packages/ssh/src/test.ts` before later saying 'Now let me write the new tests. I'll add a new test file specifically for the timeout scope separation.'"
     }
   ],
-  "addressesFailureFrom": "/home/shuv/repos/codex-fleet/.factory/validation/foundation/scrutiny/reviews/foundation-ssh-package.json",
+  "addressesFailureFrom": "/home/shuv/repos/shuvdex/.factory/validation/foundation/scrutiny/reviews/foundation-ssh-package.json",
   "summary": "Pass. The original blocking timeout-scope bug is fixed: long-running SSH commands are no longer killed by `ConnectTimeout`, and the added regression tests cover that behavior directly. I noted one non-blocking follow-up: the new optional `commandTimeoutMs` still includes SSH connection time because it is implemented with `execFile`'s process-wide timeout."
 }

@@ -2,11 +2,11 @@
   "groupId": "skill-ops",
   "testedAt": "2026-03-15T20:56:08.351Z",
   "isolation": {
-    "sourceRepo": "/tmp/codex-fleet-user-testing-skill-ops/source-repo",
-    "remoteRepo": "/tmp/codex-fleet-user-testing-skill-ops/remote-repo",
-    "activeDir": "/tmp/codex-fleet-user-testing-skill-ops/active-dir",
-    "driftOrigin": "/tmp/codex-fleet-user-testing-skill-drift/origin.git",
-    "driftRepo": "/tmp/codex-fleet-user-testing-skill-drift/repo",
+    "sourceRepo": "/tmp/shuvdex-user-testing-skill-ops/source-repo",
+    "remoteRepo": "/tmp/shuvdex-user-testing-skill-ops/remote-repo",
+    "activeDir": "/tmp/shuvdex-user-testing-skill-ops/active-dir",
+    "driftOrigin": "/tmp/shuvdex-user-testing-skill-drift/origin.git",
+    "driftRepo": "/tmp/shuvdex-user-testing-skill-drift/repo",
     "hosts": {
       "localhost": {
         "hostname": "localhost",
@@ -147,7 +147,7 @@
         {
           "action": "Verify the active-dir entry on shuvtest",
           "expected": "readlink resolves to the synced alpha-skill directory",
-          "observed": "LINK_PRESENT\n/tmp/codex-fleet-user-testing-skill-ops/remote-repo/alpha-skill\nlrwxrwxrwx 1 exedev exedev 63 Mar 15 13:56 /tmp/codex-fleet-user-testing-skill-ops/active-dir/alpha-skill -> /tmp/codex-fleet-user-testing-skill-ops/remote-repo/alpha-skill"
+          "observed": "LINK_PRESENT\n/tmp/shuvdex-user-testing-skill-ops/remote-repo/alpha-skill\nlrwxrwxrwx 1 exedev exedev 63 Mar 15 13:56 /tmp/shuvdex-user-testing-skill-ops/active-dir/alpha-skill -> /tmp/shuvdex-user-testing-skill-ops/remote-repo/alpha-skill"
         }
       ],
       "evidence": {
@@ -199,7 +199,7 @@
         {
           "action": "Call SkillOps.checkDrift with localhost as the reference host",
           "expected": "Report includes per-host HEAD SHAs for localhost and shuvtest",
-          "observed": "{\"name\":\"(FiberFailure) DriftCheckFailed\",\"message\":\"Drift check failed: could not get reference HEAD from localhost: ConnectionFailed: SSH connection failed to localhost: shuv@localhost: Permission denied (publickey,password).\\r\\n\",\"stack\":\"DriftCheckFailed: Drift check failed: could not get reference HEAD from localhost: ConnectionFailed: SSH connection failed to localhost: shuv@localhost: Permission denied (publickey,password).\\r\\n\\n    at Object.onFailure (file:///home/shuv/repos/codex-fleet/packages/skill-ops/dist/live.js:456:125)\\n    at file:///home/shuv/repos/codex-fleet/node_modules/effect/dist/esm/internal/core.js:453:22\\n    at file:///home/shuv/repos/codex-fleet/node_modules/effect/dist/esm/internal/fiberRuntime.js:983:46\\n    at skill.checkDrift (file:///home/shuv/repos/codex-fleet/packages/telemetry/dist/span.js:38:20)\"}"
+          "observed": "{\"name\":\"(FiberFailure) DriftCheckFailed\",\"message\":\"Drift check failed: could not get reference HEAD from localhost: ConnectionFailed: SSH connection failed to localhost: shuv@localhost: Permission denied (publickey,password).\\r\\n\",\"stack\":\"DriftCheckFailed: Drift check failed: could not get reference HEAD from localhost: ConnectionFailed: SSH connection failed to localhost: shuv@localhost: Permission denied (publickey,password).\\r\\n\\n    at Object.onFailure (file:///home/shuv/repos/shuvdex/packages/skill-ops/dist/live.js:456:125)\\n    at file:///home/shuv/repos/shuvdex/node_modules/effect/dist/esm/internal/core.js:453:22\\n    at file:///home/shuv/repos/shuvdex/node_modules/effect/dist/esm/internal/fiberRuntime.js:983:46\\n    at skill.checkDrift (file:///home/shuv/repos/shuvdex/packages/telemetry/dist/span.js:38:20)\"}"
         }
       ],
       "evidence": {
@@ -222,7 +222,7 @@
         {
           "action": "Inspect the drift report for the shuvtest host",
           "expected": "shuvtest is marked drifted with direction and ahead/behind counts",
-          "observed": "{\"name\":\"(FiberFailure) DriftCheckFailed\",\"message\":\"Drift check failed: could not get reference HEAD from localhost: ConnectionFailed: SSH connection failed to localhost: shuv@localhost: Permission denied (publickey,password).\\r\\n\",\"stack\":\"DriftCheckFailed: Drift check failed: could not get reference HEAD from localhost: ConnectionFailed: SSH connection failed to localhost: shuv@localhost: Permission denied (publickey,password).\\r\\n\\n    at Object.onFailure (file:///home/shuv/repos/codex-fleet/packages/skill-ops/dist/live.js:456:125)\\n    at file:///home/shuv/repos/codex-fleet/node_modules/effect/dist/esm/internal/core.js:453:22\\n    at file:///home/shuv/repos/codex-fleet/node_modules/effect/dist/esm/internal/fiberRuntime.js:983:46\\n    at skill.checkDrift (file:///home/shuv/repos/codex-fleet/packages/telemetry/dist/span.js:38:20)\"}"
+          "observed": "{\"name\":\"(FiberFailure) DriftCheckFailed\",\"message\":\"Drift check failed: could not get reference HEAD from localhost: ConnectionFailed: SSH connection failed to localhost: shuv@localhost: Permission denied (publickey,password).\\r\\n\",\"stack\":\"DriftCheckFailed: Drift check failed: could not get reference HEAD from localhost: ConnectionFailed: SSH connection failed to localhost: shuv@localhost: Permission denied (publickey,password).\\r\\n\\n    at Object.onFailure (file:///home/shuv/repos/shuvdex/packages/skill-ops/dist/live.js:456:125)\\n    at file:///home/shuv/repos/shuvdex/node_modules/effect/dist/esm/internal/core.js:453:22\\n    at file:///home/shuv/repos/shuvdex/node_modules/effect/dist/esm/internal/fiberRuntime.js:983:46\\n    at skill.checkDrift (file:///home/shuv/repos/shuvdex/packages/telemetry/dist/span.js:38:20)\"}"
         },
         {
           "action": "Directly verify rev-list counts on shuvtest",

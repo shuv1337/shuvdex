@@ -22,7 +22,7 @@ import type { WithSpanOptions } from "./types.js";
  *
  * @example
  * ```ts
- * import { withSpan } from "@codex-fleet/telemetry";
+ * import { withSpan } from "@shuvdex/telemetry";
  *
  * const traced = withSpan("ssh.execute", {
  *   attributes: { host: "shuvtest", operation: "git status" },

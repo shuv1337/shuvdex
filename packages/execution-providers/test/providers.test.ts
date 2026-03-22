@@ -4,7 +4,7 @@ import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
 import { makeExecutionProvidersLive, ExecutionProviders } from "../src/index.js";
-import { CollectedSpans, TelemetryTest } from "@codex-fleet/telemetry";
+import { CollectedSpans, TelemetryTest } from "@shuvdex/telemetry";
 
 describe("ExecutionProviders", () => {
   it("executes module_runtime targets and records telemetry", async () => {

@@ -15,7 +15,7 @@ const SERVER_ENTRY = resolve(PROJECT_ROOT, "apps/mcp-server/dist/index.js");
 
 const tempDirs: string[] = [];
 
-function parseCodexFleetConfig(toml: string): {
+function parseShuvdexConfig(toml: string): {
   command?: string;
   args?: string[];
 } {
@@ -27,7 +27,7 @@ function parseCodexFleetConfig(toml: string): {
   for (const line of lines) {
     const trimmed = line.trim();
     if (trimmed.startsWith("[")) {
-      inSection = trimmed === "[mcp_servers.codex_fleet]";
+      inSection = trimmed === "[mcp_servers.shuvdex]";
       continue;
     }
     if (!inSection) continue;
@@ -50,7 +50,7 @@ function parseCodexFleetConfig(toml: string): {
 }
 
 function makeServerEnv(): NodeJS.ProcessEnv {
-  const baseDir = mkdtempSync(resolve(tmpdir(), "codex-fleet-codex-"));
+  const baseDir = mkdtempSync(resolve(tmpdir(), "shuvdex-codex-"));
   tempDirs.push(baseDir);
   return {
     ...process.env,
@@ -135,14 +135,14 @@ describe("Codex Desktop integration discovery", () => {
       expect(existsSync(CODEX_CONFIG_PATH)).toBe(true);
     });
 
-    it("config contains [mcp_servers.codex_fleet] section", () => {
+    it("config contains [mcp_servers.shuvdex] section", () => {
       const content = readFileSync(CODEX_CONFIG_PATH, "utf-8");
-      expect(content).toContain("[mcp_servers.codex_fleet]");
+      expect(content).toContain("[mcp_servers.shuvdex]");
     });
 
     it("config specifies command and args for the stdio server", () => {
       const content = readFileSync(CODEX_CONFIG_PATH, "utf-8");
-      const config = parseCodexFleetConfig(content);
+      const config = parseShuvdexConfig(content);
 
       expect(config.command).toBe("node");
       expect(config.args).toBeDefined();
@@ -158,7 +158,7 @@ describe("Codex Desktop integration discovery", () => {
   describe("server launch from config", () => {
     it("server starts and responds to initialize within 5 seconds", { timeout: 10000 }, async () => {
       const content = readFileSync(CODEX_CONFIG_PATH, "utf-8");
-      const config = parseCodexFleetConfig(content);
+      const config = parseShuvdexConfig(content);
 
       const initRequest = JSON.stringify({
         jsonrpc: "2.0",
@@ -183,7 +183,7 @@ describe("Codex Desktop integration discovery", () => {
 
       expect(lines.length).toBeGreaterThan(0);
       expect(response.id).toBe(1);
-      expect(response.result.serverInfo.name).toBe("codex-fleet");
+      expect(response.result.serverInfo.name).toBe("shuvdex");
       expect(exitCode).toBe(0);
     });
   });
@@ -191,7 +191,7 @@ describe("Codex Desktop integration discovery", () => {
   describe("tools visible after initialization", () => {
     it("full Codex init sequence reports no tools/list method for an isolated empty server", { timeout: 10000 }, async () => {
       const content = readFileSync(CODEX_CONFIG_PATH, "utf-8");
-      const config = parseCodexFleetConfig(content);
+      const config = parseShuvdexConfig(content);
 
       const messages = [
         JSON.stringify({

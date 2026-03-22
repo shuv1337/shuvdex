@@ -1,10 +1,10 @@
-# Dogfood Report: codex-fleet
+# Dogfood Report: shuvdex
 
 | Field | Value |
 |-------|-------|
 | **Date** | 2026-03-17 |
 | **App URL** | http://localhost:5173 |
-| **Session** | codex-fleet-qa |
+| **Session** | shuvdex-qa |
 | **Scope** | Full app exploratory browser QA across dashboard, hosts, tools, and skills workflows |
 
 ## Summary

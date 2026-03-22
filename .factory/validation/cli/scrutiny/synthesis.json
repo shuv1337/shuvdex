@@ -37,7 +37,7 @@
     {
       "target": "cli-worker skill",
       "suggestion": "Clarify the required manual-verification policy and require workers to report `followedProcedure: false` with deviations whenever the mandated CLI manual checks are skipped.",
-      "evidence": "The `fix-cli-sync-local-default` handoff recorded only automated validators (`npm test -- --filter @codex-fleet/cli`, `npm run typecheck`, `npm run lint`) while `.factory/skills/cli-worker/SKILL.md:81-92` still labels manual CLI verification as required, yet `skillFeedback.followedProcedure` remained true.",
+      "evidence": "The `fix-cli-sync-local-default` handoff recorded only automated validators (`npm test -- --filter @shuvdex/cli`, `npm run typecheck`, `npm run lint`) while `.factory/skills/cli-worker/SKILL.md:81-92` still labels manual CLI verification as required, yet `skillFeedback.followedProcedure` remained true.",
       "isSystemic": true
     }
   ],

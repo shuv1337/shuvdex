@@ -1,7 +1,7 @@
 id: builtin.fleet
 version: 1.0.0
 title: Fleet Built-ins
-description: Built-in fleet tools served by codex-fleet.
+description: Built-in fleet tools served by shuvdex.
 builtIn: true
 enabled: true
 tags:

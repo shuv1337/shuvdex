@@ -16,7 +16,7 @@ const SERVER_ENTRY = resolve(__dirname, "../dist/index.js");
 const tempDirs: string[] = [];
 
 function makeServerEnv(): NodeJS.ProcessEnv {
-  const baseDir = mkdtempSync(resolve(tmpdir(), "codex-fleet-mcp-"));
+  const baseDir = mkdtempSync(resolve(tmpdir(), "shuvdex-mcp-"));
   tempDirs.push(baseDir);
   return {
     ...process.env,
@@ -121,7 +121,7 @@ describe("MCP stdio transport", () => {
       const initResponse = JSON.parse(lines[0] ?? "");
 
       expect(initResponse.id).toBe(1);
-      expect(initResponse.result.serverInfo.name).toBe("codex-fleet");
+      expect(initResponse.result.serverInfo.name).toBe("shuvdex");
       expect(initResponse.result.capabilities).toBeDefined();
     });
 

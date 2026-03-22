@@ -8,7 +8,7 @@ import { loadConfig } from "../src/config-loader.js";
 let tmpDir: string;
 
 beforeEach(() => {
-  tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "codex-fleet-test-"));
+  tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "shuvdex-test-"));
 });
 
 afterEach(() => {

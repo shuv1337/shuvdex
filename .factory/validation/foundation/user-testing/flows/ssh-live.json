@@ -8,7 +8,7 @@
     {
       "id": "VAL-INFRA-006",
       "status": "pass",
-      "reason": "`hostname` executed successfully on `shuvtest` via `@codex-fleet/ssh`, returning stdout `shuvtest`, exitCode 0, and an `ssh.executeCommand` span. Stderr only contained the known post-quantum SSH warning.",
+      "reason": "`hostname` executed successfully on `shuvtest` via `@shuvdex/ssh`, returning stdout `shuvtest`, exitCode 0, and an `ssh.executeCommand` span. Stderr only contained the known post-quantum SSH warning.",
       "evidence": [
         "foundation/ssh-live/ssh-live-validation.mjs",
         "foundation/ssh-live/VAL-INFRA-006.json",
@@ -18,7 +18,7 @@
     {
       "id": "VAL-INFRA-007",
       "status": "pass",
-      "reason": "`echo stdout-capture && nonexistent_command_codex_fleet_validator_007` produced a `CommandFailed` result with stdout `stdout-capture`, stderr containing the shell `command not found` message, and exitCode 127, confirming output and exit-code capture.",
+      "reason": "`echo stdout-capture && nonexistent_command_shuvdex_validator_007` produced a `CommandFailed` result with stdout `stdout-capture`, stderr containing the shell `command not found` message, and exitCode 127, confirming output and exit-code capture.",
       "evidence": [
         "foundation/ssh-live/ssh-live-validation.mjs",
         "foundation/ssh-live/VAL-INFRA-007.json",

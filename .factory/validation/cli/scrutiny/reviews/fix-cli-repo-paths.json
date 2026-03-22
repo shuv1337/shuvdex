@@ -29,6 +29,6 @@
       "evidence": "`.factory/skills/cli-worker/SKILL.md:62` says to add the parser using commander.js or yargs, while `.factory/library/architecture.md:62-64` says the current CLI uses the hand-rolled parser in `apps/cli/src/cli.ts`. This fix commit also modifies that hand-rolled parser directly in `apps/cli/src/cli.ts`."
     }
   ],
-  "addressesFailureFrom": "/home/shuv/repos/codex-fleet/.factory/validation/cli/scrutiny/reviews/cli-sync-command.json",
+  "addressesFailureFrom": "/home/shuv/repos/shuvdex/.factory/validation/cli/scrutiny/reviews/cli-sync-command.json",
   "summary": "Reviewed the prior failed `cli-sync-command` and `cli-activate-deactivate` reports, the fix feature transcript skeleton, handoff, skill guidance, and commit diff for `966199114dc11feeeffcad1761f49e274f157a84`. The activate idempotence bug is fixed, but the sync-path bug is not fully resolved because `fleet sync <skill> --repo <remote-path>` still uses the remote path for local validation unless the caller also supplies `--local-skill-path`. I wrote the review as a fail because one of the original blocking issues remains."
 }

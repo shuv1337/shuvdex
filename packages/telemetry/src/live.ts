@@ -25,7 +25,7 @@ export const TelemetryServiceLive = (
   collectorUrl: string = DEFAULT_COLLECTOR_URL,
 ): Layer.Layer<Telemetry> =>
   Layer.succeed(Telemetry, {
-    serviceName: "codex-fleet",
+    serviceName: "shuvdex",
     collectorUrl,
   });
 
@@ -41,7 +41,7 @@ export const OtlpTracingLive = (
   Otlp.layerJson({
     baseUrl: collectorUrl,
     resource: {
-      serviceName: "codex-fleet",
+      serviceName: "shuvdex",
       serviceVersion: "0.0.0",
       attributes: {
         "deployment.environment": "development",

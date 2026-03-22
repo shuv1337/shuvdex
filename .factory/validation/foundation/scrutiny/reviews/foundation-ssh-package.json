@@ -26,12 +26,12 @@
     {
       "area": "skills",
       "observation": "The backend-worker skill requires tests before implementation and a red test run, but this worker implemented the SSH source files first and only created tests afterward. The handoff still reported `skillFeedback.followedProcedure: true`, so that signal is currently unreliable.",
-      "evidence": "`/home/shuv/repos/codex-fleet/.factory/skills/backend-worker/SKILL.md` lines 28-30 and 49-51 require tests before implementation and a failing test run. In the transcript skeleton for worker session `2e4e3401-5fff-4747-b723-268b798ebf3a`, the worker says 'Now let me implement the full SSH package...' and creates `packages/ssh/src/errors.ts`, `types.ts`, `live.ts`, and `test.ts` before the later step 'Now write the tests (TDD - tests first, then verify they fail, then fix):'."
+      "evidence": "`/home/shuv/repos/shuvdex/.factory/skills/backend-worker/SKILL.md` lines 28-30 and 49-51 require tests before implementation and a failing test run. In the transcript skeleton for worker session `2e4e3401-5fff-4747-b723-268b798ebf3a`, the worker says 'Now let me implement the full SSH package...' and creates `packages/ssh/src/errors.ts`, `types.ts`, `live.ts`, and `test.ts` before the later step 'Now write the tests (TDD - tests first, then verify they fail, then fix):'."
     },
     {
       "area": "conventions",
       "observation": "The shared architecture notes are stale for current Effect conventions: they still prescribe `Data.TaggedEnum` and list `packages/core -> @effect/schema`, while the codebase now uses `Data.TaggedError` and `Schema` from `effect`. Future backend workers can be misled unless they cross-check the implementation.",
-      "evidence": "`/home/shuv/repos/codex-fleet/.factory/library/architecture.md` line 22 says to use `Data.TaggedEnum`, and line 47 lists `packages/core -> @effect/schema`. Current code uses `Data.TaggedError` in `/home/shuv/repos/codex-fleet/packages/core/src/errors.ts` line 9 and `Schema` from `effect` in `/home/shuv/repos/codex-fleet/packages/core/src/schema.ts` line 4."
+      "evidence": "`/home/shuv/repos/shuvdex/.factory/library/architecture.md` line 22 says to use `Data.TaggedEnum`, and line 47 lists `packages/core -> @effect/schema`. Current code uses `Data.TaggedError` in `/home/shuv/repos/shuvdex/packages/core/src/errors.ts` line 9 and `Schema` from `effect` in `/home/shuv/repos/shuvdex/packages/core/src/schema.ts` line 4."
     }
   ],
   "addressesFailureFrom": null,

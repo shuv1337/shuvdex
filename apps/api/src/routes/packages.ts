@@ -1,8 +1,8 @@
 import { Hono } from "hono";
 import { Effect, Runtime } from "effect";
-import { CapabilityRegistry } from "@codex-fleet/capability-registry";
-import { SkillImporter } from "@codex-fleet/skill-importer";
-import { SkillIndexer } from "@codex-fleet/skill-indexer";
+import { CapabilityRegistry } from "@shuvdex/capability-registry";
+import { SkillImporter } from "@shuvdex/skill-importer";
+import { SkillIndexer } from "@shuvdex/skill-indexer";
 import { handleError } from "../middleware/error-handler.js";
 import * as fs from "node:fs";
 import * as os from "node:os";
@@ -11,7 +11,7 @@ import * as path from "node:path";
 const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
 
 async function writeUploadToTemp(file: File): Promise<{ path: string; cleanup: () => void }> {
-  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "codex-fleet-upload-"));
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "shuvdex-upload-"));
   const tempPath = path.join(tempDir, file.name || "upload.bin");
   fs.writeFileSync(tempPath, Buffer.from(await file.arrayBuffer()));
   return {

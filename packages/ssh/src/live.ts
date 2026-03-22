@@ -6,8 +6,8 @@
  */
 import { Effect, Layer } from "effect";
 import { execFile } from "node:child_process";
-import type { HostConfig } from "@codex-fleet/core";
-import { withSpan } from "@codex-fleet/telemetry";
+import type { HostConfig } from "@shuvdex/core";
+import { withSpan } from "@shuvdex/telemetry";
 import { SshExecutor } from "./types.js";
 import type { CommandResult, ExecuteCommandOptions } from "./types.js";
 import { ConnectionFailed, ConnectionTimeout, CommandFailed, CommandTimeout } from "./errors.js";
@@ -178,7 +178,7 @@ function execSsh(
  * Live SSH executor layer.
  *
  * Uses the system's `ssh` command via node:child_process for execution.
- * All operations are traced with OTEL spans via @codex-fleet/telemetry.
+ * All operations are traced with OTEL spans via @shuvdex/telemetry.
  */
 export const SshExecutorLive: Layer.Layer<SshExecutor> = Layer.succeed(
   SshExecutor,

@@ -98,7 +98,7 @@ describe("MCP Server Protocol", () => {
     it("returns server info with name and version", () => {
       const info = client.getServerVersion();
       expect(info).toBeDefined();
-      expect(info?.name).toBe("codex-fleet");
+      expect(info?.name).toBe("shuvdex");
       expect(info?.version).toBe("0.0.0");
     });
 

@@ -294,7 +294,7 @@ describe("Telemetry", () => {
     it.effect("Telemetry service has correct service name", () =>
       Effect.gen(function* () {
         const telemetry = yield* Telemetry;
-        expect(telemetry.serviceName).toBe("codex-fleet");
+        expect(telemetry.serviceName).toBe("shuvdex");
       }),
     );
   });

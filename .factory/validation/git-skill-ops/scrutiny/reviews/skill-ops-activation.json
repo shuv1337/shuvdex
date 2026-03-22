@@ -20,7 +20,7 @@
     {
       "area": "skills",
       "observation": "The backend-worker skill explicitly requires TDD (write tests first and run the package tests red before implementation), but this worker implemented types/errors/live code before adding activation tests. The handoff still reports skillFeedback.followedProcedure=true, so the recorded skill-feedback signal is unreliable for this run.",
-      "evidence": "backend-worker/SKILL.md:28-56 requires tests-before-implementation and an initial failing `npm test -- --filter <package>` run. In the transcript skeleton for worker session 6e27ee19-c4f8-4ad2-85e5-8af1dac91320, edits to packages/skill-ops/src/types.ts, src/errors.ts, src/live.ts, and src/index.ts happen before the first edit to packages/skill-ops/test/skill-ops.test.ts and before the first `npm test -- --filter @codex-fleet/skill-ops` run; the handoff JSON nevertheless sets skillFeedback.followedProcedure=true."
+      "evidence": "backend-worker/SKILL.md:28-56 requires tests-before-implementation and an initial failing `npm test -- --filter <package>` run. In the transcript skeleton for worker session 6e27ee19-c4f8-4ad2-85e5-8af1dac91320, edits to packages/skill-ops/src/types.ts, src/errors.ts, src/live.ts, and src/index.ts happen before the first edit to packages/skill-ops/test/skill-ops.test.ts and before the first `npm test -- --filter @shuvdex/skill-ops` run; the handoff JSON nevertheless sets skillFeedback.followedProcedure=true."
     }
   ],
   "addressesFailureFrom": null,

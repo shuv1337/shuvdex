@@ -10,7 +10,7 @@
     },
     "repoPath": "~/repos/shuvbot-skills",
     "remoteAccess": "read-only existing remote repo only",
-    "localScratchDir": "/tmp/codex-fleet-user-testing-git-read"
+    "localScratchDir": "/tmp/shuvdex-user-testing-git-read"
   },
   "toolsUsed": [
     "node --input-type=module",
@@ -24,7 +24,7 @@
       "status": "pass",
       "steps": [
         {
-          "action": "Run the public `@codex-fleet/git-ops` API `getHead` against `~/repos/shuvbot-skills` on `shuvtest` via `node --input-type=module`.",
+          "action": "Run the public `@shuvdex/git-ops` API `getHead` against `~/repos/shuvbot-skills` on `shuvtest` via `node --input-type=module`.",
           "expected": "Returns a valid 40-character hexadecimal HEAD SHA.",
           "observed": "Returned `d51aa530b770d3ecdf04c095f9ce7ac5100be144` (40 hex characters)."
         },
@@ -53,7 +53,7 @@
       "status": "pass",
       "steps": [
         {
-          "action": "Run the public `@codex-fleet/git-ops` API `getBranch` against the assigned remote repository.",
+          "action": "Run the public `@shuvdex/git-ops` API `getBranch` against the assigned remote repository.",
           "expected": "Returns the current branch name or `HEAD` if detached.",
           "observed": "Returned branch `main`."
         },
@@ -81,7 +81,7 @@
       "status": "pass",
       "steps": [
         {
-          "action": "Run the public `@codex-fleet/git-ops` API `isDirty` against the assigned remote repository.",
+          "action": "Run the public `@shuvdex/git-ops` API `isDirty` against the assigned remote repository.",
           "expected": "Returns a boolean reflecting staged, unstaged, or untracked changes.",
           "observed": "Returned `False`."
         },
@@ -109,7 +109,7 @@
       "status": "pass",
       "steps": [
         {
-          "action": "Run the public `@codex-fleet/git-ops` API `listTags` against the assigned remote repository.",
+          "action": "Run the public `@shuvdex/git-ops` API `listTags` against the assigned remote repository.",
           "expected": "Returns every tag name, or an empty list when no tags exist.",
           "observed": "Returned `[]`."
         },

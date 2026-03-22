@@ -6,7 +6,7 @@
     {
       "id": "VAL-MCP-001",
       "status": "pass",
-      "summary": "Interactive initialize completed in 2153.8ms with serverInfo={'name': 'codex-fleet', 'version': '0.0.0'} and capabilities={'tools': {'listChanged': True}}.",
+      "summary": "Interactive initialize completed in 2153.8ms with serverInfo={'name': 'shuvdex', 'version': '0.0.0'} and capabilities={'tools': {'listChanged': True}}.",
       "evidence": [
         "/home/shuv/.factory/missions/53d67669-5ba8-4745-9fd5-71906b40773d/evidence/mcp-server/protocol-status/protocol-session.stdin.jsonl",
         "/home/shuv/.factory/missions/53d67669-5ba8-4745-9fd5-71906b40773d/evidence/mcp-server/protocol-status/protocol-session.stdout.jsonl",
@@ -61,7 +61,7 @@
       "status": "pass",
       "summary": "Launching via .codex/config.toml (`node apps/mcp-server/dist/index.js`) completed initialize -> initialized -> tools/list in 390.5ms and exposed ['fleet_status', 'fleet_sync', 'fleet_activate', 'fleet_deactivate', 'fleet_pull', 'fleet_drift', 'fleet_rollback'].",
       "evidence": [
-        "/home/shuv/repos/codex-fleet/.codex/config.toml",
+        "/home/shuv/repos/shuvdex/.codex/config.toml",
         "/home/shuv/.factory/missions/53d67669-5ba8-4745-9fd5-71906b40773d/evidence/mcp-server/protocol-status/codex-config.stdin.jsonl",
         "/home/shuv/.factory/missions/53d67669-5ba8-4745-9fd5-71906b40773d/evidence/mcp-server/protocol-status/codex-config.stdout.jsonl",
         "/home/shuv/.factory/missions/53d67669-5ba8-4745-9fd5-71906b40773d/evidence/mcp-server/protocol-status/codex-config.parsed.json",

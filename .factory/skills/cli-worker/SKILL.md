@@ -54,7 +54,7 @@ describe("fleet <command>", () => {
 
 Run tests to confirm they FAIL (red):
 ```bash
-npm test -- --filter @codex-fleet/cli
+npm test -- --filter @shuvdex/cli
 ```
 
 ### 3. Implement the Command
@@ -68,7 +68,7 @@ npm test -- --filter @codex-fleet/cli
 ### 4. Verify Tests Pass (green)
 
 ```bash
-npm test -- --filter @codex-fleet/cli
+npm test -- --filter @shuvdex/cli
 ```
 
 ### 5. Run Validators
@@ -103,7 +103,7 @@ Record exact commands, output, and exit codes in handoff.
   "whatWasLeftUndone": "",
   "verification": {
     "commandsRun": [
-      { "command": "npm test -- --filter @codex-fleet/cli", "exitCode": 0, "observation": "8 tests passed for status command" },
+      { "command": "npm test -- --filter @shuvdex/cli", "exitCode": 0, "observation": "8 tests passed for status command" },
       { "command": "npm run build", "exitCode": 0, "observation": "CLI built successfully" },
       { "command": "./apps/cli/bin/fleet status", "exitCode": 0, "observation": "Shows shuvtest [OK], shuvbot [OK]" },
       { "command": "./apps/cli/bin/fleet status --json", "exitCode": 0, "observation": "Valid JSON with hosts array" },

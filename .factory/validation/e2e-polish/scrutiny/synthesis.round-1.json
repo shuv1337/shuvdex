@@ -115,11 +115,11 @@
   "rejectedObservations": [
     {
       "observation": "Add another library note saying E2E write-path tests must not mutate `~/repos/shuvbot-skills` or `~/.codex/skills`.",
-      "reason": "already-documented in `/home/shuv/repos/codex-fleet/.factory/library/user-testing.md` and the mission `AGENTS.md`; the remaining gap is worker-skill alignment and enforcement, not missing factual library knowledge"
+      "reason": "already-documented in `/home/shuv/repos/shuvdex/.factory/library/user-testing.md` and the mission `AGENTS.md`; the remaining gap is worker-skill alignment and enforcement, not missing factual library knowledge"
     },
     {
       "observation": "Add another library note telling workers to validate the real CLI and MCP stdio surfaces for interface-facing E2E features.",
-      "reason": "already-documented in `/home/shuv/repos/codex-fleet/.factory/library/user-testing.md`; the systemic problem is that the assigned worker skill does not reinforce that procedure"
+      "reason": "already-documented in `/home/shuv/repos/shuvdex/.factory/library/user-testing.md`; the systemic problem is that the assigned worker skill does not reinforce that procedure"
     }
   ],
   "previousRound": null

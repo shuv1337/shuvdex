@@ -9,13 +9,13 @@
       "port": 22,
       "timeout": 10
     },
-    "allowedMutableSandbox": "/tmp/codex-fleet-user-testing-val-git-010-round3",
+    "allowedMutableSandbox": "/tmp/shuvdex-user-testing-val-git-010-round3",
     "allowedRemoteHost": "shuvtest",
     "paths": {
-      "root": "/tmp/codex-fleet-user-testing-val-git-010-round3",
-      "origin": "/tmp/codex-fleet-user-testing-val-git-010-round3/origin.git",
-      "repo": "/tmp/codex-fleet-user-testing-val-git-010-round3/repo-under-test",
-      "peer": "/tmp/codex-fleet-user-testing-val-git-010-round3/peer"
+      "root": "/tmp/shuvdex-user-testing-val-git-010-round3",
+      "origin": "/tmp/shuvdex-user-testing-val-git-010-round3/origin.git",
+      "repo": "/tmp/shuvdex-user-testing-val-git-010-round3/repo-under-test",
+      "peer": "/tmp/shuvdex-user-testing-val-git-010-round3/peer"
     }
   },
   "toolsUsed": [
@@ -30,7 +30,7 @@
       "status": "pass",
       "steps": [
         {
-          "action": "Build the public `@codex-fleet/git-ops` package surface, provision an isolated divergent origin/repo-under-test/peer sandbox under `/tmp/codex-fleet-user-testing-val-git-010-round3` on `shuvtest`, and set `git config pull.rebase false` in `repo-under-test`.",
+          "action": "Build the public `@shuvdex/git-ops` package surface, provision an isolated divergent origin/repo-under-test/peer sandbox under `/tmp/shuvdex-user-testing-val-git-010-round3` on `shuvtest`, and set `git config pull.rebase false` in `repo-under-test`.",
           "expected": "The repo-under-test is one local commit ahead of `origin/main` with no existing merge state so a subsequent pull will exercise a real content-conflict path.",
           "observed": "Setup completed successfully: `repo-under-test` local HEAD was `0bc6f11df855609ce5ed7adc3eeffb014c6b719d`, peer HEAD was `c184dbea6c461ff330dd05859bd14337719fec14`, tracking `origin/main` in `repo-under-test` remained `be51c3dcfbef086b4ff29a9928c61bb1387ecf93` before the API call, and `git status --short --branch` showed `## main...origin/main [ahead 1]`."
         },
@@ -63,12 +63,12 @@
           "name": "MergeConflict",
           "_tag": "MergeConflict",
           "message": "Merge conflict on shuvtest: conflict.txt",
-          "stack": "MergeConflict: Merge conflict on shuvtest: conflict.txt\n    at file:///home/shuv/repos/codex-fleet/packages/git-ops/dist/live.js:203:51\n    at Generator.next (<anonymous>)\n    at file:///home/shuv/repos/codex-fleet/node_modules/effect/dist/esm/internal/fiberRuntime.js:122:67\n    at effect_internal_function (file:///home/shuv/repos/codex-fleet/node_modules/effect/dist/esm/Utils.js:333:12)\n    at Object.Iterator (file:///home/shuv/repos/codex-fleet/node_modules/effect/dist/esm/internal/fiberRuntime.js:122:21)\n    at FiberRuntime.Success (file:///home/shuv/repos/codex-fleet/node_modules/effect/dist/esm/internal/fiberRuntime.js:968:37)\n    at file:///home/shuv/repos/codex-fleet/node_modules/effect/dist/esm/internal/fiberRuntime.js:1151:31\n    at Object.context (file:///home/shuv/repos/codex-fleet/packages/telemetry/dist/test.js:83:21)\n    at FiberRuntime.runLoop (file:///home/shuv/repos/codex-fleet/node_modules/effect/dist/esm/internal/fiberRuntime.js:1142:34)\n    at FiberRuntime.evaluateEffect (file:///home/shuv/repos/codex-fleet/node_modules/effect/dist/esm/internal/fiberRuntime.js:746:27)",
+          "stack": "MergeConflict: Merge conflict on shuvtest: conflict.txt\n    at file:///home/shuv/repos/shuvdex/packages/git-ops/dist/live.js:203:51\n    at Generator.next (<anonymous>)\n    at file:///home/shuv/repos/shuvdex/node_modules/effect/dist/esm/internal/fiberRuntime.js:122:67\n    at effect_internal_function (file:///home/shuv/repos/shuvdex/node_modules/effect/dist/esm/Utils.js:333:12)\n    at Object.Iterator (file:///home/shuv/repos/shuvdex/node_modules/effect/dist/esm/internal/fiberRuntime.js:122:21)\n    at FiberRuntime.Success (file:///home/shuv/repos/shuvdex/node_modules/effect/dist/esm/internal/fiberRuntime.js:968:37)\n    at file:///home/shuv/repos/shuvdex/node_modules/effect/dist/esm/internal/fiberRuntime.js:1151:31\n    at Object.context (file:///home/shuv/repos/shuvdex/packages/telemetry/dist/test.js:83:21)\n    at FiberRuntime.runLoop (file:///home/shuv/repos/shuvdex/node_modules/effect/dist/esm/internal/fiberRuntime.js:1142:34)\n    at FiberRuntime.evaluateEffect (file:///home/shuv/repos/shuvdex/node_modules/effect/dist/esm/internal/fiberRuntime.js:746:27)",
           "host": "shuvtest",
           "files": [
             "conflict.txt"
           ],
-          "stderr": "** WARNING: connection is not using a post-quantum key exchange algorithm.\r\n** This session may be vulnerable to \"store now, decrypt later\" attacks.\r\n** The server may need to be upgraded. See https://openssh.com/pq.html\r\nFrom /tmp/codex-fleet-user-testing-val-git-010-round3/origin\n   be51c3d..c184dbe  main       -> origin/main\n"
+          "stderr": "** WARNING: connection is not using a post-quantum key exchange algorithm.\r\n** This session may be vulnerable to \"store now, decrypt later\" attacks.\r\n** The server may need to be upgraded. See https://openssh.com/pq.html\r\nFrom /tmp/shuvdex-user-testing-val-git-010-round3/origin\n   be51c3d..c184dbe  main       -> origin/main\n"
         },
         "apiReportedFiles": [
           "conflict.txt"
@@ -76,7 +76,7 @@
         "directGitReportedFiles": [
           "conflict.txt"
         ],
-        "directGitVerification": "ROOT=/tmp/codex-fleet-user-testing-val-git-010-round3\nREPO=/tmp/codex-fleet-user-testing-val-git-010-round3/repo-under-test\nHEAD_BEFORE_ABORT=0bc6f11df855609ce5ed7adc3eeffb014c6b719d\nORIGIN_MAIN=c184dbea6c461ff330dd05859bd14337719fec14\nSTATUS_BEFORE_ABORT_BEGIN\n## main...origin/main [ahead 1, behind 1]\nUU conflict.txt\nSTATUS_BEFORE_ABORT_END\nCONFLICTS_BEGIN\nconflict.txt\nCONFLICTS_END\nMERGE_HEAD_PRESENT=yes\nMERGE_ABORT_EXIT=0\nHEAD_AFTER_ABORT=0bc6f11df855609ce5ed7adc3eeffb014c6b719d\nSTATUS_AFTER_ABORT_BEGIN\n## main...origin/main [ahead 1, behind 1]\nSTATUS_AFTER_ABORT_END\nMERGE_HEAD_AFTER_ABORT=no",
+        "directGitVerification": "ROOT=/tmp/shuvdex-user-testing-val-git-010-round3\nREPO=/tmp/shuvdex-user-testing-val-git-010-round3/repo-under-test\nHEAD_BEFORE_ABORT=0bc6f11df855609ce5ed7adc3eeffb014c6b719d\nORIGIN_MAIN=c184dbea6c461ff330dd05859bd14337719fec14\nSTATUS_BEFORE_ABORT_BEGIN\n## main...origin/main [ahead 1, behind 1]\nUU conflict.txt\nSTATUS_BEFORE_ABORT_END\nCONFLICTS_BEGIN\nconflict.txt\nCONFLICTS_END\nMERGE_HEAD_PRESENT=yes\nMERGE_ABORT_EXIT=0\nHEAD_AFTER_ABORT=0bc6f11df855609ce5ed7adc3eeffb014c6b719d\nSTATUS_AFTER_ABORT_BEGIN\n## main...origin/main [ahead 1, behind 1]\nSTATUS_AFTER_ABORT_END\nMERGE_HEAD_AFTER_ABORT=no",
         "recoverableState": true,
         "recoverabilityVerification": {
           "mergeAbortExit": 0,

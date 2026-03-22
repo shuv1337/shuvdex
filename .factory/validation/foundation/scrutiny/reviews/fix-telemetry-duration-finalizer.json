@@ -13,14 +13,14 @@
     {
       "area": "knowledge",
       "observation": "Mission guidance is still inconsistent about telemetry span attributes: the validation contract for VAL-INFRA-012 omits `durationMs`, while the architecture notes and both telemetry fix features treat `durationMs` as a required standard attribute.",
-      "evidence": "/home/shuv/.factory/missions/53d67669-5ba8-4745-9fd5-71906b40773d/validation-contract.md:61-63 says span attributes are host/operation/exit code only, while /home/shuv/repos/codex-fleet/.factory/library/architecture.md:40-43 lists host, operation, exitCode, durationMs and both telemetry feature entries require durationMs coverage."
+      "evidence": "/home/shuv/.factory/missions/53d67669-5ba8-4745-9fd5-71906b40773d/validation-contract.md:61-63 says span attributes are host/operation/exit code only, while /home/shuv/repos/shuvdex/.factory/library/architecture.md:40-43 lists host, operation, exitCode, durationMs and both telemetry feature entries require durationMs coverage."
     },
     {
       "area": "skills",
       "observation": "The backend-worker skill and handoff feedback are slightly out of sync on TDD expectations. The skill says to create tests before implementation and confirm they fail first, but this worker updated `packages/telemetry/src/span.ts` before adding the new defect/interruption tests while the handoff still reports `followedProcedure: true`.",
-      "evidence": "/home/shuv/repos/codex-fleet/.factory/skills/backend-worker/SKILL.md:28-30,49-51 requires tests-first/red-first; the transcript skeleton for worker session 96028243-4177-43ba-a9f6-150c7da9b1bc shows an edit to packages/telemetry/src/span.ts before the edits to packages/telemetry/test/telemetry.test.ts; /home/shuv/.factory/missions/53d67669-5ba8-4745-9fd5-71906b40773d/handoffs/2026-03-15T16-19-32-367Z__fix-telemetry-duration-finalizer__96028243-4177-43ba-a9f6-150c7da9b1bc.json:60-62 records `followedProcedure: true`."
+      "evidence": "/home/shuv/repos/shuvdex/.factory/skills/backend-worker/SKILL.md:28-30,49-51 requires tests-first/red-first; the transcript skeleton for worker session 96028243-4177-43ba-a9f6-150c7da9b1bc shows an edit to packages/telemetry/src/span.ts before the edits to packages/telemetry/test/telemetry.test.ts; /home/shuv/.factory/missions/53d67669-5ba8-4745-9fd5-71906b40773d/handoffs/2026-03-15T16-19-32-367Z__fix-telemetry-duration-finalizer__96028243-4177-43ba-a9f6-150c7da9b1bc.json:60-62 records `followedProcedure: true`."
     }
   ],
-  "addressesFailureFrom": "/home/shuv/repos/codex-fleet/.factory/validation/foundation/scrutiny/reviews/fix-telemetry-duration.json",
+  "addressesFailureFrom": "/home/shuv/repos/shuvdex/.factory/validation/foundation/scrutiny/reviews/fix-telemetry-duration.json",
   "summary": "Pass. Compared with the original `fix-telemetry-duration` diff, this fix closes the missing defect/interruption paths by moving duration annotation into an `Effect.ensuring` finalizer inside `withSpan`, and the added regression tests cover defect, interruption, and defect error reporting."
 }

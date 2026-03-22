@@ -3,7 +3,7 @@ import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
 import { Effect, Layer, Ref } from "effect";
-import type { CapabilityDefinition } from "@codex-fleet/capability-registry";
+import type { CapabilityDefinition } from "@shuvdex/capability-registry";
 import { InvalidTokenError, PolicyEngineIOError, PolicyNotFound } from "./errors.js";
 import { PolicyEngine } from "./types.js";
 import type {
@@ -22,7 +22,7 @@ interface PolicyEnginePaths {
   readonly auditPath: string;
 }
 
-const DEFAULT_ISSUER = "codex-fleet";
+const DEFAULT_ISSUER = "shuvdex";
 const DEFAULT_KEY_ID = "local-hs256";
 
 const base64UrlEncode = (value: string): string =>
@@ -83,14 +83,14 @@ export function makePolicyEngineLive(
 ): Layer.Layer<PolicyEngine> {
   const rootDir =
     options?.policyDir ??
-    fs.mkdtempSync(path.join(os.tmpdir(), "codex-fleet-policy-"));
+    fs.mkdtempSync(path.join(os.tmpdir(), "shuvdex-policy-"));
   const paths: PolicyEnginePaths = {
     rootDir,
     policiesPath: path.join(rootDir, "policies.json"),
     revocationsPath: path.join(rootDir, "revocations.json"),
     auditPath: path.join(rootDir, "audit.jsonl"),
   };
-  const secret = options?.secret ?? "codex-fleet-dev-secret";
+  const secret = options?.secret ?? "shuvdex-dev-secret";
   fs.mkdirSync(rootDir, { recursive: true });
   const policiesRef = Ref.unsafeMake<CapabilitySubjectPolicy[]>(
     readJsonFile(paths.policiesPath, []),

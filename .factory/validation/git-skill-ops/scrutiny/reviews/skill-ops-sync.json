@@ -32,7 +32,7 @@
     {
       "area": "skills",
       "observation": "The backend-worker skill requires test-first TDD, but this worker implemented the skill-ops source changes before adding or running the package tests. The handoff still records `skillFeedback.followedProcedure: true`, so the shared skill-feedback signal is inaccurate for this run.",
-      "evidence": "`.factory/skills/backend-worker/SKILL.md:28-30` says to create the package test file BEFORE implementation. In the transcript skeleton for session `2bf07cbe-fca7-40a0-86cc-63ff9f795c20`, the first edit is to `packages/skill-ops/src/errors.ts` (followed by edits to `src/types.ts` and `src/live.ts`) before the first `npm test -- --filter @codex-fleet/skill-ops` excerpt and before the later test-file work; the handoff JSON nevertheless sets `skillFeedback.followedProcedure` to true."
+      "evidence": "`.factory/skills/backend-worker/SKILL.md:28-30` says to create the package test file BEFORE implementation. In the transcript skeleton for session `2bf07cbe-fca7-40a0-86cc-63ff9f795c20`, the first edit is to `packages/skill-ops/src/errors.ts` (followed by edits to `src/types.ts` and `src/live.ts`) before the first `npm test -- --filter @shuvdex/skill-ops` excerpt and before the later test-file work; the handoff JSON nevertheless sets `skillFeedback.followedProcedure` to true."
     },
     {
       "area": "conventions",

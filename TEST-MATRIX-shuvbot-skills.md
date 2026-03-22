@@ -1,8 +1,8 @@
 # Shuvbot Skills MCP Test Matrix
 
-Purpose: prioritize `~/repos/shuvbot-skills` for migration into `codex-fleet` as capability packages, then eventually as true MCP tools/resources/prompts with execution bindings.
+Purpose: prioritize `~/repos/shuvbot-skills` for migration into `shuvdex` as capability packages, then eventually as true MCP tools/resources/prompts with execution bindings.
 
-This matrix is based on the current `codex-fleet` compiler behavior and a repo review on 2026-03-19.
+This matrix is based on the current `shuvdex` compiler behavior and a repo review on 2026-03-19.
 
 ## Important current-state note
 
@@ -242,5 +242,5 @@ Why these 8:
 
 1. Add a lightweight manifest format for true tool definitions to selected `tool-first` skills.
 2. Start with `brave-search` as the first executable MCP tool package.
-3. Add a fixture-driven test suite in `codex-fleet/tests` that imports a canonical subset of skills and asserts expected capability counts.
+3. Add a fixture-driven test suite in `shuvdex/tests` that imports a canonical subset of skills and asserts expected capability counts.
 4. Add tier labels to the roadmap so risky skills are gated behind policy and staging requirements.

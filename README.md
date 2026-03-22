@@ -1,16 +1,16 @@
-# codex-fleet
+# shuvdex
 
 Centralized capability gateway for Codex hosts.
 
-`codex-fleet` is now organized around one idea: capability discovery and policy live centrally, while truly local execution can be delegated to host-bound executors later. The old model of pulling repos, syncing skill directories, and activating symlinks across hosts has been removed from the main product surface.
+`shuvdex` is now organized around one idea: capability discovery and policy live centrally, while truly local execution can be delegated to host-bound executors later. The old model of pulling repos, syncing skill directories, and activating symlinks across hosts has been removed from the main product surface.
 
 ## Current State
 
 The repo currently exposes three primary surfaces:
 
-- `@codex-fleet/mcp-server`: the client-facing MCP gateway
-- `@codex-fleet/api`: admin/control-plane API for packages, policies, tokens, audit, runners, hosts, and compatibility tool management
-- `@codex-fleet/web`: React/Vite UI for capability management
+- `@shuvdex/mcp-server`: the client-facing MCP gateway
+- `@shuvdex/api`: admin/control-plane API for packages, policies, tokens, audit, runners, hosts, and compatibility tool management
+- `@shuvdex/web`: React/Vite UI for capability management
 
 The capability-gateway foundation is implemented:
 
@@ -39,7 +39,7 @@ The intended operating model is not:
 ## Monorepo Layout
 
 ```text
-codex-fleet/
+shuvdex/
 ├── apps/
 │   ├── api/           # HTTP admin/control-plane API
 │   ├── mcp-server/    # MCP capability gateway
@@ -62,8 +62,8 @@ codex-fleet/
 ## Install
 
 ```bash
-git clone <repo-url> codex-fleet
-cd codex-fleet
+git clone <repo-url> shuvdex
+cd shuvdex
 npm install
 npm run build
 ```
@@ -99,7 +99,7 @@ The MCP server is the main agent-facing surface. On startup it:
 Run it with:
 
 ```bash
-npm run build --workspace @codex-fleet/mcp-server
+npm run build --workspace @shuvdex/mcp-server
 node apps/mcp-server/dist/index.js
 ```
 
@@ -112,7 +112,7 @@ The API is the admin/control-plane surface.
 Start it with:
 
 ```bash
-npm run dev --workspace @codex-fleet/api
+npm run dev --workspace @shuvdex/api
 ```
 
 Key routes:
@@ -134,7 +134,7 @@ Key routes:
 The web UI lives in `apps/web`.
 
 ```bash
-npm run dev --workspace @codex-fleet/web
+npm run dev --workspace @shuvdex/web
 ```
 
 The current UI is focused on capability management through the API compatibility layer.
@@ -176,9 +176,9 @@ npm run clean
 Targeted examples:
 
 ```bash
-npm run test --workspace @codex-fleet/mcp-server
-npm run test --workspace @codex-fleet/skill-indexer
-npm run typecheck --workspace @codex-fleet/api
+npm run test --workspace @shuvdex/mcp-server
+npm run test --workspace @shuvdex/skill-indexer
+npm run typecheck --workspace @shuvdex/api
 ```
 
 ## Notes

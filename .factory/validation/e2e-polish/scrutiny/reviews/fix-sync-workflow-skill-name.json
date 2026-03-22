@@ -10,6 +10,6 @@
     "issues": []
   },
   "sharedStateObservations": [],
-  "addressesFailureFrom": "/home/shuv/repos/codex-fleet/.factory/validation/e2e-polish/scrutiny/reviews/e2e-full-sync-workflow.json",
+  "addressesFailureFrom": "/home/shuv/repos/shuvdex/.factory/validation/e2e-polish/scrutiny/reviews/e2e-full-sync-workflow.json",
   "summary": "Pass: the fix replaces the Linux-missing `test-skill` with cross-host `adapt`, and the current sync-workflow assertions now directly validate the activation, status, and idempotency behavior that previously failed."
 }

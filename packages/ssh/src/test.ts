@@ -7,7 +7,7 @@
 import { Context, Effect, Layer, Ref } from "effect";
 import { SshExecutor } from "./types.js";
 import type { CommandResult, ExecuteCommandOptions } from "./types.js";
-import type { HostConfig } from "@codex-fleet/core";
+import type { HostConfig } from "@shuvdex/core";
 import type { ConnectionFailed, ConnectionTimeout, CommandFailed, CommandTimeout } from "./errors.js";
 
 /**

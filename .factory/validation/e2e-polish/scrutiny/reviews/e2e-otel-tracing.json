@@ -12,7 +12,7 @@
         "file": "tests/e2e/otel-tracing.test.ts",
         "line": 646,
         "severity": "blocking",
-        "description": "The live export assertions never correlate Tinybird results to the spans emitted by this test run. The code creates a unique `testRunMarker` and annotates `e2e.otel-export-test` with it at lines 571 and 624-625, but every Tinybird query only filters `ServiceName = 'codex-fleet'` over the last five minutes (lines 646-689, 705-785, 802-845, 872-908). That means unrelated spans from previous or concurrent runs can satisfy the checks even if the current export failed, so the test does not provide reliable evidence that this feature's spans were exported and ingested."
+        "description": "The live export assertions never correlate Tinybird results to the spans emitted by this test run. The code creates a unique `testRunMarker` and annotates `e2e.otel-export-test` with it at lines 571 and 624-625, but every Tinybird query only filters `ServiceName = 'shuvdex'` over the last five minutes (lines 646-689, 705-785, 802-845, 872-908). That means unrelated spans from previous or concurrent runs can satisfy the checks even if the current export failed, so the test does not provide reliable evidence that this feature's spans were exported and ingested."
       },
       {
         "file": "tests/e2e/otel-tracing.test.ts",
@@ -35,5 +35,5 @@
     }
   ],
   "addressesFailureFrom": null,
-  "summary": "Fail: the live OTEL checks are not trustworthy because they query any recent `codex-fleet` spans instead of the spans emitted by this run, and multiple collector assertions downgrade missing evidence to warnings plus early returns. The in-memory span checks look solid, but the collector-facing portion does not yet prove the required end-to-end export behavior."
+  "summary": "Fail: the live OTEL checks are not trustworthy because they query any recent `shuvdex` spans instead of the spans emitted by this run, and multiple collector assertions downgrade missing evidence to warnings plus early returns. The in-memory span checks look solid, but the collector-facing portion does not yet prove the required end-to-end export behavior."
 }
