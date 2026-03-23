@@ -1,0 +1,21 @@
+[Unit]
+Description=shuvdex Remote MCP Server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/repos/shuvdex
+Environment="MCP_HOST=0.0.0.0"
+Environment="MCP_PORT=3848"
+Environment="LOCAL_REPO_PATH=%h/repos/shuvdex"
+Environment="CAPABILITIES_DIR=%h/repos/shuvdex/.capabilities/packages"
+Environment="POLICY_DIR=%h/repos/shuvdex/.capabilities/policy"
+Environment="PATH=%h/.local/share/mise/installs/node/25.2.1/bin:%h/.bun/bin:/usr/local/bin:/usr/bin:/bin"
+ExecStartPre=%h/.local/share/mise/installs/node/25.2.1/bin/npm run build --workspace @shuvdex/mcp-server
+ExecStart=%h/.local/share/mise/installs/node/25.2.1/bin/node %h/repos/shuvdex/apps/mcp-server/dist/http.js
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target

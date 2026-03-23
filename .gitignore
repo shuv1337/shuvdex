@@ -8,3 +8,5 @@ coverage/
 .pi/suggester/logs/
 .pi/suggester/sessions/
 .run/
+.capabilities/policy/
+.capabilities/packages/skill.module_runtime_template.yaml

@@ -96,14 +96,48 @@ The MCP server is the main agent-facing surface. On startup it:
 2. indexes local skills into capability packages
 3. serves MCP `tools`, `resources`, and `prompts`
 
-Run it with:
+Run stdio mode with:
 
 ```bash
 npm run build --workspace @shuvdex/mcp-server
 node apps/mcp-server/dist/index.js
 ```
 
+Run remote Streamable HTTP mode with:
+
+```bash
+npm run build --workspace @shuvdex/mcp-server
+MCP_HOST=0.0.0.0 \
+MCP_PORT=3848 \
+LOCAL_REPO_PATH=$PWD \
+CAPABILITIES_DIR=$PWD/.capabilities/packages \
+POLICY_DIR=$PWD/.capabilities/policy \
+node apps/mcp-server/dist/http.js
+```
+
+Health endpoint:
+
+```bash
+curl http://localhost:3848/health
+```
+
+MCP endpoint:
+
+```text
+http://<tailscale-hostname>:3848/mcp
+```
+
 An isolated fresh server advertises no built-in fleet catalog. Tools, resources, and prompts come from indexed skills and stored capability packages.
+
+For a repeatable clean-room OpenCode validation workflow against the remote MCP server, see:
+
+- `RUNBOOK-remote-mcp-e2e.md`
+- `scripts/run-remote-mcp-e2e.sh`
+
+For a persistent user-level systemd service on hosts like `shuvdev`, see:
+
+- `systemd/shuvdex-mcp.service`
+- `systemd/README.md`
 
 ## HTTP API
 
