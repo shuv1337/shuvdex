@@ -20,6 +20,9 @@
     "yaml": "^2.8.2",
     "@shuvdex/capability-registry": "*",
     "@shuvdex/core": "*",
+    "@shuvdex/credential-store": "*",
+    "@shuvdex/http-executor": "*",
+    "@shuvdex/openapi-source": "*",
     "@shuvdex/policy-engine": "*",
     "@shuvdex/skill-importer": "*",
     "@shuvdex/skill-indexer": "*"

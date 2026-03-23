@@ -1,551 +1,595 @@
-# PLAN: Real-world OpenCode clean-room test in tmux
+# PLAN: Real-world external client clean-room testing (OpenCode-first)
 
-> Goal: validate `shuvdex` from a **real OpenCode client** on this machine, inside a **tmux** session, using an **isolated OpenCode environment** with **no inherited MCP servers, no inherited skills, and no inherited project/global rules**.
+> Goal: validate `shuvdex` from a **real external client** in a **clean-room environment** against the **deployed remote MCP server** on `shuvdev`, with durable artifacts and minimal inherited local noise.
 >
-> This plan is for execution later. It does **not** run the test yet.
+> This plan keeps **OpenCode as the primary lane**, because that is the most developed scripted clean-room flow today, but it now explicitly allows **other providers and even other external clients** when they are more stable or operationally useful.
 
-## Why this test exists
+---
 
-The current codebase and unit/integration suite prove the internal pieces work, but the next confidence jump is an outside-in client test:
+## Why this plan exists
 
-- real `opencode` binary on this host
-- real tmux-managed terminal workflow
-- clean OpenCode config/state
-- local `shuvdex` MCP server
-- deterministic imported capability/tool
-- prompt-driven invocation from the client side
+The repo no longer needs a plan focused only on “can OpenCode connect at all?”
 
-This is the closest thing to a real operator workflow without involving another machine.
+That has already been proven for a deterministic fixture.
 
-## What we are validating
+What we now need is a plan for **real external testing**:
 
-### Primary objective
+- real remote MCP endpoint on `shuvdev`
+- real external client behavior
+- real imported skills and real generated OpenAPI capabilities
+- clean-room isolation
+- repeatable artifacts
+- explicit client/provider selection rules
 
-Confirm that a clean OpenCode instance can:
+This is the outside-in test layer that sits above unit, integration, and in-memory MCP tests.
 
-1. start with no inherited MCP or skills/rules noise
-2. connect to a local `shuvdex` MCP server
-3. discover tools/resources exposed by `shuvdex`
-4. invoke at least one deterministic tool successfully
-5. produce evidence we can inspect afterward
+---
 
-### Secondary objective
+## Current status
 
-Confirm the isolation approach is actually clean:
+### Already proven
 
-- no user/global OpenCode MCP servers leak in
-- no repo-local `opencode.jsonc` leaks in
-- no `AGENTS.md` / `CONTEXT.md` / Claude compatibility rules leak in
-- no user skill directories are visible to OpenCode
+- [x] Clean-room OpenCode environment can be isolated using temp XDG dirs
+- [x] OpenCode can connect to the remote MCP endpoint on `shuvdev`
+- [x] Deterministic module-runtime fixture can be discovered from the real client
+- [x] Deterministic module-runtime fixture can be invoked successfully from the real client
+- [x] tmux-supervised artifacts can be captured
+- [x] the repeatable remote MCP workflow exists in:
+  - `scripts/run-remote-mcp-e2e.sh`
+  - `RUNBOOK-remote-mcp-e2e.md`
 
-## Important constraints discovered
+### Also proven elsewhere in the repo
 
-### 1. Do **not** run from the repo root
+- [x] real imported skill execution works for `youtube-transcript`
+- [x] real compiled `http_api` execution works for Gitea `GET /version`
+- [x] remote MCP server on `shuvdev` can be rebuilt/restarted and passes `/health`
+- [x] `apps/mcp-server/test/http.test.ts` is stable again
 
-If OpenCode starts in `/home/shuv/repos/shuvdex`, it can pick up project-local context and config:
+### Not yet proven externally end-to-end
 
-- `opencode.jsonc` exists in the repo root
-- `CONTEXT.md` exists in the repo root
-- OpenCode rules precedence includes local files while traversing upward from the current directory
+- [ ] OpenCode clean-room E2E for `youtube-transcript`
+- [ ] OpenCode clean-room E2E for a real compiled OpenAPI capability
+- [ ] authenticated external-client test for a credentialed `http_api` capability
+- [ ] client/provider fallback workflow when OpenCode’s chosen provider is unstable
+- [ ] durable multi-capability artifact organization and ledger linkage
 
-So the clean-room test should run from a separate temp working directory.
+---
 
-**Evidence**
-- Repo config exists: `opencode.jsonc`
-- Repo context exists: `CONTEXT.md`
-- OpenCode rules precedence: `packages/web/src/content/docs/rules.mdx`
-- OpenCode config precedence: `packages/web/src/content/docs/config.mdx`
+## Problem statement
 
-### 2. Isolate OpenCode with XDG dirs
+The original clean-room plan successfully proved the transport and one deterministic echo tool, but it is too narrow for the next phase.
 
-OpenCode’s own tests isolate runtime state by setting:
+The real questions now are:
 
+1. Can a **real external client** discover and use **real capabilities** through remote `shuvdex`?
+2. Can we run those tests in a **clean-room**, with confidence that MCP servers, rules, skills, and project context are not leaking in?
+3. If one provider/client path is flaky, do we have a **documented fallback lane** instead of stalling?
+4. Can future agents/operators reproduce the test and compare results over time?
+
+---
+
+## Scope of this plan
+
+This plan now covers **external client testing**, not just OpenCode-specific smoke checks.
+
+### Primary lane
+- OpenCode clean-room against the deployed remote MCP server
+
+### Secondary lanes
+- OpenCode clean-room with a different provider/model combination if that is more stable
+- Codex CLI / Codex Desktop as an alternate external client if OpenCode itself becomes the bottleneck
+
+### Optional later lane
+- Claude Code or other MCP-capable client, only if needed for cross-client confidence
+
+This file keeps its old path for continuity, but operationally it is now **OpenCode-first, not OpenCode-only**.
+
+---
+
+## Current known-good baseline
+
+### Remote server under test
+
+- Host: `shuvdev`
+- MCP URL: `http://shuvdev:3848/mcp`
+- Health URL: `http://shuvdev:3848/health`
+- Local health validation after restart also works via:
+  - `http://127.0.0.1:3848/health`
+
+### Deterministic external-client proof already completed
+
+- fixture source:
+  - `examples/module-runtime-skill-template/`
+- seeder:
+  - `scripts/seed-module-runtime-template.mjs`
+- surfaced tool name observed in OpenCode:
+  - `shuvdex_skill_module_runtime_template_echo`
+- one-command workflow:
+  - `scripts/run-remote-mcp-e2e.sh`
+- operator instructions:
+  - `RUNBOOK-remote-mcp-e2e.md`
+
+### Relevant repo files
+
+#### Remote MCP server
+- `apps/mcp-server/src/http.ts`
+- `apps/mcp-server/src/runtime.ts`
+- `apps/mcp-server/src/server.ts`
+- `apps/mcp-server/test/http.test.ts`
+- `apps/mcp-server/test/imported-module-runtime.e2e.test.ts`
+- `apps/mcp-server/test/protocol.test.ts`
+- `apps/mcp-server/test/shuvdex-integration.test.ts`
+
+#### External-client harness and docs
+- `scripts/run-remote-mcp-e2e.sh`
+- `RUNBOOK-remote-mcp-e2e.md`
+- `AGENTS.md`
+
+#### Real capability targets already available
+- `apps/mcp-server/test/imported-module-runtime.e2e.test.ts`
+- `scripts/gitea-openapi-trial.mjs`
+- `packages/openapi-source/src/live.ts`
+- `packages/http-executor/src/live.ts`
+
+---
+
+## Client and provider strategy
+
+## Default strategy
+
+Use **OpenCode** as the first external client because:
+
+- the clean-room isolation is already understood
+- the tmux + artifact flow already exists
+- the remote MCP script already works
+- it is the fastest path to repeatable external proofs
+
+### Current known-good default inside OpenCode
+
+- `model: opencode/gpt-5-nano`
+- `small_model: opencode/gpt-5-nano`
+- `enabled_providers: ["opencode"]`
+
+This remains the default until a better option proves itself in this environment.
+
+## Allowable alternatives
+
+If the default OpenCode/provider path is the unstable part, this plan explicitly allows switching.
+
+### Preferred fallback order
+
+1. **OpenCode with another explicitly pinned provider/model**
+   - only if already authenticated and known-good in this environment
+   - must be recorded in artifacts
+2. **Codex CLI / Codex Desktop** as the external client
+   - especially attractive because the repo already contains Codex integration coverage
+3. **Claude Code or another MCP-capable client**
+   - only if needed for cross-client confidence or if both OpenCode and Codex are blocked
+
+## Decision rule
+
+A provider/client path should be switched when the instability is clearly in the client/provider layer rather than `shuvdex` itself.
+
+Examples:
+- model/provider bootstrap fails before MCP use
+- provider auth flow is broken in isolation
+- MCP works but the client runtime crashes before or after tool selection
+
+When switching lanes, the result should be documented as:
+- client used
+- provider/model used
+- why the default lane was bypassed
+
+---
+
+## Clean-room requirements
+
+These remain mandatory regardless of client/provider.
+
+### 1. Do not run from the repo root
+
+Running from `/home/shuv/repos/shuvdex` risks pulling in:
+- `opencode.jsonc`
+- `CONTEXT.md`
+- any upward-traversed local rules/context files
+
+So the external client should run from a temp workspace outside the repo.
+
+### 2. Isolate runtime state via temp XDG dirs
+
+For OpenCode, continue using temp values for:
 - `XDG_CONFIG_HOME`
 - `XDG_DATA_HOME`
 - `XDG_CACHE_HOME`
 - `XDG_STATE_HOME`
 - `OPENCODE_TEST_HOME`
 
-We should copy that strategy for this test.
+Equivalent isolation should be used for other clients where possible.
 
-**Evidence**
-- `packages/opencode/test/preload.ts` in the OpenCode fork sets those env vars before loading app code.
+### 3. Disable Claude compatibility when using OpenCode
 
-### 3. Disable Claude compatibility explicitly
-
-OpenCode supports Claude compatibility fallbacks, including:
-
-- `~/.claude/CLAUDE.md`
-- `~/.claude/skills/`
-
-For a truly clean run, disable those with environment variables.
-
-**Recommended env**
+Keep using:
 - `OPENCODE_DISABLE_CLAUDE_CODE=1`
-- optionally also:
-  - `OPENCODE_DISABLE_CLAUDE_CODE_PROMPT=1`
-  - `OPENCODE_DISABLE_CLAUDE_CODE_SKILLS=1`
+- `OPENCODE_DISABLE_CLAUDE_CODE_PROMPT=1`
+- `OPENCODE_DISABLE_CLAUDE_CODE_SKILLS=1`
 
-**Evidence**
-- `packages/web/src/content/docs/rules.mdx`
+### 4. Test the deployed remote MCP server, not a client-spawned local one
 
-## Test design
+The authoritative external flow now targets the remote Streamable HTTP MCP server on `shuvdev`.
 
-## Phase 1 — Clean-room environment setup
+### 5. Capture artifacts for every run
 
-- [x] Create a dedicated temp test root, for example:
-  - `/tmp/shuvdex-opencode-clean/`
-- [x] Inside it, create:
-  - `config/`
-  - `data/`
-  - `cache/`
-  - `state/`
-  - `workspace/`
-  - `artifacts/`
-- [x] Ensure `workspace/` is **outside** the repo and contains no `AGENTS.md`, `CLAUDE.md`, `CONTEXT.md`, `.opencode/`, or `opencode.json*`
-- [x] Create a minimal global OpenCode config at:
-  - `$XDG_CONFIG_HOME/opencode/opencode.json`
-- [x] The config should contain **only** what is needed for the test:
-  - `"$schema"`
-  - one `mcp` entry for `shuvdex`
-  - optional explicit `model` if needed
-- [x] Do **not** copy the user’s current `~/.config/opencode/opencode.jsonc`
-- [x] Do **not** load plugins, custom agents, or custom instructions unless required for model auth
+Minimum artifacts:
+- client config snapshot or provider summary
+- `mcp list` output if available
+- discovery output
+- invocation output
+- tmux transcript if tmux is used
+- remote health snapshot
+- explicit pass/fail summary
 
-### Proposed clean config
+---
 
-```json
-{
-  "$schema": "https://opencode.ai/config.json",
-  "mcp": {
-    "shuvdex": {
-      "type": "local",
-      "command": ["node", "/home/shuv/repos/shuvdex/apps/mcp-server/dist/index.js"],
-      "enabled": true
-    }
-  }
-}
-```
+## Test objectives
 
-### Required environment for tmux session
+## Primary objective
 
-```bash
-export XDG_CONFIG_HOME=/tmp/shuvdex-opencode-clean/config
-export XDG_DATA_HOME=/tmp/shuvdex-opencode-clean/data
-export XDG_CACHE_HOME=/tmp/shuvdex-opencode-clean/cache
-export XDG_STATE_HOME=/tmp/shuvdex-opencode-clean/state
-export OPENCODE_TEST_HOME=/tmp/shuvdex-opencode-clean/home
-export OPENCODE_DISABLE_CLAUDE_CODE=1
-export OPENCODE_DISABLE_CLAUDE_CODE_PROMPT=1
-export OPENCODE_DISABLE_CLAUDE_CODE_SKILLS=1
-```
+Confirm that a clean external client can:
 
-### Validation for Phase 1
+1. start with no inherited MCP or rule noise
+2. connect to the deployed `shuvdex` MCP endpoint
+3. discover the intended tools/resources/prompts
+4. invoke at least one real capability successfully
+5. produce evidence we can inspect afterward
 
-- [x] `opencode mcp list` shows only `shuvdex`
-- [x] No additional MCP servers appear from user/global config
-- [x] No `.claude` rules or skills are loaded
-- [x] No project-local config is active because cwd is the temp workspace
+## Secondary objective
 
-### Phase 1 execution notes
+Confirm the isolation approach is actually clean:
 
-Executed on 2026-03-22:
+- no user/global MCP server leakage
+- no repo-local config leakage
+- no hidden skill/rule compatibility fallback leakage
+- no provider ambiguity in the artifacts
 
-- Created isolated OpenCode root at `/tmp/shuvdex-opencode-clean`
-- Wrote isolated config to `/tmp/shuvdex-opencode-clean/config/opencode/opencode.json`
-- Wrote reusable shell env script to `/tmp/shuvdex-opencode-clean/env.sh`
-- Verified clean cwd: `/tmp/shuvdex-opencode-clean/workspace`
-- Verified `opencode mcp list` surfaced only one configured server: `shuvdex`
+## Tertiary objective
 
-Observed issue in the original local-stdio attempt:
+Confirm we have a practical fallback if the default OpenCode/provider lane is unstable.
 
-- `shuvdex` failed during MCP tool fetch in the clean-room run.
-- Root cause was local stdio startup behavior, not Phase 1 contamination:
-  - `apps/mcp-server/src/index.ts` indexed `process.cwd()` directly.
-  - In the clean-room workspace, `process.cwd()` was `/tmp/shuvdex-opencode-clean/workspace`, not the repo.
+---
 
-Follow-up correction after user clarification:
+## Capability targets for real external testing
 
-- The intended architecture is **remote MCP over Tailscale**, not local stdio spawn.
-- Implemented a remote Streamable HTTP MCP endpoint on `shuvdev`:
-  - new HTTP entrypoint: `apps/mcp-server/src/http.ts`
-  - shared runtime/bootstrap: `apps/mcp-server/src/runtime.ts`
-  - current remote URL: `http://shuvdev:3848/mcp`
-  - health endpoint: `http://shuvdev:3848/health`
-- Updated the clean-room OpenCode config to use remote MCP instead of local stdio:
-  - `/tmp/shuvdex-opencode-clean/config/opencode/opencode.json`
-- Verified from the isolated environment:
-  - `opencode mcp list` shows `shuvdex` as `connected`
+## Phase A — deterministic fixture (already done)
 
-Current implication:
-
-- Phase 1 isolation is working as intended.
-- The clean-room client is now pointed at a real centralized remote MCP endpoint on `shuvdev`.
-- Next phases can proceed against the Tailscale-served endpoint instead of a client-spawned local process.
-
-## Phase 2 — Shuvdex server under test
-
-We need a deterministic server state. The cleanest way is to give `shuvdex` an isolated package/policy/imports store too.
-
-- [ ] Create a dedicated temp shuvdex runtime root, for example:
-  - `/tmp/shuvdex-mcp-runtime/`
-- [ ] Create:
-  - `packages/`
-  - `policy/`
-  - `imports/`
-- [ ] Point the MCP server at those locations with env vars:
-  - `CAPABILITIES_DIR=/tmp/shuvdex-mcp-runtime/packages`
-  - `POLICY_DIR=/tmp/shuvdex-mcp-runtime/policy`
-- [x] Decide whether to let the MCP server index the repo automatically from `/home/shuv/repos/shuvdex`, or seed it with a deterministic imported package first
-
-### Recommendation
-
-Use a **deterministic imported module-runtime fixture** rather than relying only on ambient repo indexing.
-
-Reason:
-- It gives us one tool with known behavior
-- It tests the package/import path and the execution path together
-- It avoids ambiguity about which tools should appear
-
-## Phase 3 — Seed one deterministic tool
-
-Use the simplest real executable example in this repo:
-
-- `examples/module-runtime-skill-template/`
-- tool entrypoint: `echo.mcp.mjs`
-- manifest-backed tool id: `skill.module_runtime_template.echo`
-
-### Suggested seeding approach
-
-- [ ] Zip `examples/module-runtime-skill-template/` into a temp archive
-- [x] Import that archive into `shuvdex` via the package import flow before launching the real OpenCode client session
-- [ ] Confirm the imported package lands in the isolated temp capability store, not the repo’s normal `.capabilities/`
-
-### Why this fixture
-
-It is deterministic and local-only:
-- reads JSON from stdin
-- echoes a provided string
-- no network dependency
-- no external API dependency
-- already aligned with the `module_runtime` contract in this repo
-
-**Relevant files**
-- `examples/module-runtime-skill-template/SKILL.md`
-- `examples/module-runtime-skill-template/capability.yaml`
-- `examples/module-runtime-skill-template/echo.mcp.mjs`
-
-## Phase 4 — tmux orchestration
-
-Use tmux so the test behaves like a real long-lived terminal workflow and leaves inspectable output.
-
-### Session design
-
-Create one dedicated tmux session:
-- session name: `shuvdex-opencode-e2e`
-
-Recommended windows:
-
-1. `client`
-   - OpenCode interactive session or `opencode run`
-2. `evidence`
-   - shell for `tmux capture-pane`, logs, and artifact inspection
-3. optional `server`
-   - only if we decide to run `shuvdex` manually outside OpenCode for debugging
-
-### Logging / evidence capture
-
-- [ ] Pipe the `client` pane to a log file in `/tmp/shuvdex-opencode-clean/artifacts/`
-- [ ] Capture the full pane contents at the end of each test case
-- [ ] Save:
-  - tmux pane transcript
-  - OpenCode stdout/stderr if available
-  - any `~/.local/share/opencode` equivalent files under isolated XDG dirs
-  - `shuvdex` capability package YAML files from temp runtime dirs
-
-### Validation for Phase 4
-
-- [ ] We can re-open the tmux session after the run
-- [ ] We have a durable text transcript of the client interaction
-
-## Phase 5 — Client-side test cases
-
-These should be run in order.
-
-### Test case A — Isolation sanity check
-
-Prompt or inspect until we can confirm:
-- [ ] only the `shuvdex` MCP server is configured
-- [ ] no unrelated MCP tools are present
-- [ ] the environment is not using any repo-local rule files from `shuvdex`
-
-**Evidence**
-- `opencode mcp list`
-- OpenCode startup transcript
-
-### Test case B — Server discovery
-
-- [ ] Start OpenCode from the clean temp workspace
-- [ ] Confirm the `shuvdex` MCP server connects successfully
-- [ ] Confirm tools are fetched without MCP auth prompts or config errors
-
-**Pass condition**
-- `shuvdex` appears connected/ready in OpenCode
-- no startup errors related to malformed config, missing binaries, or inherited remote MCPs
-
-### Test case C — Tool discovery through prompting
-
-Because actual OpenCode MCP tool naming may prefix server/tool names, discovery should be explicit.
-
-Suggested first prompt:
-
-```txt
-List the available tools coming from the shuvdex MCP server only. Do not use any non-shuvdex tools.
-```
-
-- [x] Confirm the echo tool (or its actual OpenCode-exposed name) is visible
-- [x] Record the exact surfaced name
-
-Observed surfaced name in OpenCode:
+### Target
 - `shuvdex_skill_module_runtime_template_echo`
 
-**Pass condition**
-- At least one deterministic tool from the imported fixture is visible
+### Status
+- [x] discovery proven
+- [x] invocation proven
+- [x] tmux artifact capture proven
 
-### Test case D — Deterministic tool invocation
+### Purpose
+- validate the clean-room harness itself
 
-Suggested prompt:
+## Phase B — first real imported skill
 
-```txt
-Use the shuvdex echo tool to echo the exact string CLEAN_TEST_123 and show me the exact structured result.
-```
+### Target
+- `youtube-transcript`
 
-- [x] Confirm OpenCode invokes the tool successfully
-- [x] Confirm the returned payload contains `echoed: CLEAN_TEST_123`
-- [x] Confirm there is no fallback hallucination if the tool fails
+### External test goals
+- [ ] remote server exposes the imported tool in a way the external client can discover
+- [ ] client can call the tool with deterministic arguments
+- [ ] returned structure is clearly real, not hallucinated
+- [ ] artifacts show exact surfaced tool name
 
-**Pass condition**
-- Exact echoed value returned from the real tool path
+### Suggested prompt shape
+- discovery: ask for tools from `shuvdex` only
+- invocation: request transcript for a known public video with transcript available
 
-### Test case E — Resource/prompt discovery (optional but recommended)
+## Phase C — first real compiled OpenAPI capability
 
-If the imported package surfaces resources or prompts in the client:
-- [ ] ask OpenCode to inspect or describe them
-- [ ] confirm they come from `shuvdex`, not local project context
+### Target
+- Gitea public `GET /version`
 
-Suggested prompt:
+### External test goals
+- [ ] the compiled capability package is present in the remote server runtime
+- [ ] client discovers the compiled tool
+- [ ] client invokes it successfully
+- [ ] result includes real Gitea version data
 
-```txt
-Describe any resources or prompts exposed by the shuvdex MCP server for this imported package.
-```
+### Why this target
+- already proven internally
+- no credentials required for the first read call
+- deterministic enough for external-client validation
 
-### Test case F — Negative control
+## Phase D — first authenticated OpenAPI capability
 
-Run one deliberately failing tool invocation, for example missing required args.
+### Target
+- authenticated read endpoint on a suitable spec-backed service (TBD)
 
-Suggested prompt:
+### External test goals
+- [ ] remote package compiled and loaded
+- [ ] credentials are stored in `shuvdex` credential store
+- [ ] `test-auth` passes
+- [ ] external client invocation succeeds
+- [ ] negative-path auth failure is also understandable
 
-```txt
-Call the shuvdex echo tool without a message and report the exact error payload.
-```
+## Phase E — artifact-producing capability
 
-- [ ] Confirm failure is surfaced as a real tool error
-- [ ] Confirm the client does not silently fabricate success
+### Target
+- likely `upload` after conversion
 
-**Pass condition**
-- structured error path is visible end to end
+### External test goals
+- [ ] client triggers a real side effect
+- [ ] returned artifact URL/path is validated
+- [ ] artifact summary is captured in the run ledger
 
-### Phase 2 / remote fixture execution notes
+---
 
-Executed on 2026-03-22/23:
+## Client-mode matrix
 
-- Added a real remote MCP endpoint on `shuvdev` at:
-  - `http://shuvdev:3848/mcp`
-- Seeded a deterministic package into the live package registry:
-  - source skill: `examples/module-runtime-skill-template/`
-  - persisted package file: `/home/shuv/repos/shuvdex/.capabilities/packages/skill.module_runtime_template.yaml`
-- Restarted the remote MCP server so the new package was loaded.
-- Verified the remote server now advertises the deterministic echo tool:
-  - `skill.module_runtime_template.echo`
-- Verified the isolated OpenCode environment still connects cleanly to the remote MCP endpoint:
-  - `opencode mcp list` → `shuvdex connected`
+## Mode 1 — non-interactive scripted run
 
-Current limitation discovered (and resolved):
+Purpose:
+- deterministic smoke/evidence
+- easy artifact capture
+- easiest to repeat
 
-- `opencode run` initially failed before model execution in the isolated environment with:
-  - `sdk.languageModel is not a function`
-- Root cause was provider/model selection in the clean-room config:
-  - with no explicit model override, OpenCode selected `cloudflare-ai-gateway/*`
-  - the current OpenCode build on this machine does not handle that provider path correctly here
-- Resolution:
-  - pin the clean-room config to `opencode/gpt-5-nano`
-  - set `small_model` to `opencode/gpt-5-nano`
-  - restrict `enabled_providers` to `["opencode"]`
-- After that change, `opencode run` succeeded in the isolated environment and completed real remote MCP discovery + tool invocation against `http://shuvdev:3848/mcp`.
+Use for:
+- first proof of each capability
+- regression checks
 
-## Phase 6 — Evidence review and exit criteria
+Status:
+- [x] already working for deterministic fixture via OpenCode
+- [ ] parameterize for real targets
 
-## Minimum success criteria
+## Mode 2 — interactive tmux session
 
-The test is a success if all of these are true:
+Purpose:
+- closest operator workflow
+- useful for confirming discovery UX and tool naming
 
-- [x] OpenCode ran inside tmux
-- [x] The OpenCode environment was isolated via temp XDG dirs
-- [x] No inherited MCP servers, skills, or rules polluted the run
-- [x] `shuvdex` MCP connected successfully
-- [x] A deterministic imported tool was discovered
-- [x] The tool executed successfully through the real client
-- [x] We captured transcript evidence
+Use for:
+- final external-client certification step after non-interactive proof
 
-## Stretch success criteria
+Status:
+- [x] already working for deterministic fixture
+- [ ] still needs extension to real targets
 
-- [ ] Negative-path error handling is correct
-- [ ] Resource/prompt discovery also works
-- [x] We can repeat the run from scratch with the same result
+## Mode 3 — alternate client fallback
 
-## Risks / likely failure modes
+Purpose:
+- de-risk OpenCode-specific failures
+- prove `shuvdex` is client-agnostic enough for real use
 
-### Model auth is not available in the isolated environment
+Candidates:
+- Codex CLI / Codex Desktop first
+- Claude Code later if needed
 
-If OpenCode relies on auth material stored under its normal XDG data/config dirs, a fully isolated run may lose model access.
+Status:
+- [ ] planned only
 
-### Mitigation
-- Prefer environment-based provider auth if already available in shell env
-- If not, do a one-time auth step inside the isolated environment
-- This is acceptable because the requirement is “no MCP or skills,” not “no model auth”
+---
 
-### Running from the repo root contaminates the test
+## Test cases
 
-If the client starts in `/home/shuv/repos/shuvdex`, project config and local rule files may get loaded.
+## Test case 1 — isolation sanity check
 
-### Mitigation
+- [x] For OpenCode, `opencode mcp list` shows only `shuvdex`
+- [ ] Equivalent client-config sanity check is documented for fallback clients
+- [ ] record current working directory in transcript
+- [ ] record provider/model/client in summary artifact
+
+## Test case 2 — server discovery
+
+- [x] OpenCode can connect to the remote MCP endpoint
+- [ ] codify fallback-client discovery steps if OpenCode is bypassed
+- [ ] assert no inherited MCP config noise is present
+
+## Test case 3 — tool discovery through prompting
+
+- [x] deterministic echo tool is visible
+- [ ] `youtube-transcript` tool discovery
+- [ ] Gitea compiled tool discovery
+- [ ] record exact surfaced tool names for each client
+
+## Test case 4 — deterministic success invocation
+
+- [x] deterministic echo invocation proven
+- [ ] `youtube-transcript` invocation via external client
+- [ ] Gitea `/version` invocation via external client
+
+## Test case 5 — negative control
+
+- [ ] deterministic fixture missing-arg failure via external client
+- [ ] one negative-path test for a real capability
+- [ ] authenticated failure-path test for credentialed `http_api`
+
+## Test case 6 — resource/prompt discovery where applicable
+
+- [ ] check whether imported/generated packages surface resources/prompts
+- [ ] ensure they are coming from `shuvdex`, not local project context
+
+---
+
+## Implementation order
+
+## Phase 1 — preserve the working deterministic harness
+
+- [x] clean-room OpenCode script exists
+- [x] deterministic seeding exists
+- [x] tmux evidence capture exists
+- [ ] document provider/client fallback rules in artifacts and summary output
+
+## Phase 2 — parameterize the harness for named real targets
+
+- [ ] extend `scripts/run-remote-mcp-e2e.sh` to accept named test target(s)
+- [ ] allow selecting discovery prompt and invocation prompt per target
+- [ ] record client/provider/model in `summary.json`
+- [ ] keep deterministic echo as the baseline smoke test
+
+## Phase 3 — add first real imported-skill external run
+
+- [ ] load/import `youtube-transcript` into the remote runtime
+- [ ] add a target-specific invocation prompt
+- [ ] save target-specific artifacts
+- [ ] define pass/fail assertions
+
+## Phase 4 — add first real OpenAPI external run
+
+- [ ] load compiled Gitea package into remote runtime
+- [ ] expose the compiled read tool to the external client
+- [ ] add deterministic prompt for version lookup
+- [ ] save artifacts and summarize result
+
+## Phase 5 — add authenticated external run
+
+- [ ] choose authenticated OpenAPI target
+- [ ] register credentials in `shuvdex`
+- [ ] validate `test-auth`
+- [ ] run client-side read call
+- [ ] add negative auth-path validation
+
+## Phase 6 — add fallback lane
+
+- [ ] document Codex-based external-client procedure
+- [ ] decide minimum fallback artifact set
+- [ ] run one capability through the fallback lane
+
+---
+
+## Provider/client selection policy
+
+For every real external test run, record:
+
+- client name
+- provider name
+- model name
+- why this combination was selected
+- whether it is the default or a fallback
+
+### Current policy
+
+#### Preferred default
+- client: OpenCode
+- provider: `opencode`
+- model: `opencode/gpt-5-nano`
+
+#### Use a different provider within OpenCode when:
+- OpenCode itself is working
+- the provider/model is already authenticated
+- the alternate provider is more reliable than `opencode` in that environment
+- the exact choice is recorded in artifacts
+
+#### Use Codex as the client when:
+- OpenCode client behavior is the source of instability
+- we still want a real external-client test against remote `shuvdex`
+- we want a second-client proof after OpenCode succeeds
+
+---
+
+## Artifacts
+
+## Current artifact root
+- `/tmp/shuvdex-opencode-clean/artifacts/`
+
+## Required artifact types for future real-target runs
+- `health.json`
+- client MCP/server listing output
+- discovery transcript/output
+- invocation transcript/output
+- tmux transcript if tmux is used
+- summary metadata with:
+  - target capability
+  - client
+  - provider
+  - model
+  - remote MCP URL
+  - pass/fail result
+
+## Future improvement
+
+- [ ] move from one flat artifact directory to target-specific subdirectories, e.g.:
+  - `artifacts/echo/`
+  - `artifacts/youtube-transcript/`
+  - `artifacts/gitea-version/`
+
+---
+
+## Risks and failure modes
+
+### 1. Provider auth not available in clean-room env
+
+Mitigation:
+- prefer env-based auth where available
+- allow provider-specific auth if it does not contaminate MCP/rules isolation
+- record exactly how auth was obtained
+
+### 2. OpenCode provider path is unstable again
+
+Mitigation:
+- explicitly pin provider/model
+- if still unstable, switch to alternate provider or Codex client
+- do not waste time debugging unrelated client internals before confirming `shuvdex` behavior with another client
+
+### 3. Tool naming mismatch in the client
+
+Mitigation:
+- always make discovery its own explicit test step before invocation
+- record exact surfaced names per client
+
+### 4. Real target not loaded in remote runtime
+
+Mitigation:
+- seed/import/compile the target before the external run
+- verify via MCP list or equivalent before prompting the client
+
+### 5. Repo-local context leakage
+
+Mitigation:
 - enforce temp workspace cwd
-- record `pwd` in transcript at session start
+- record `pwd` at run start
+- keep clean-room XDG dirs
 
-### Tool name mismatch inside OpenCode
+---
 
-OpenCode may prefix MCP tools by server name or remap names.
+## Concrete updates needed before the next external push
 
-### Mitigation
-- make tool discovery its own explicit test case before invocation
+- [ ] update `scripts/run-remote-mcp-e2e.sh` to support named targets beyond echo
+- [ ] update `RUNBOOK-remote-mcp-e2e.md` to mention provider/client fallback lanes
+- [ ] create a target definition for `youtube-transcript`
+- [ ] create a target definition for Gitea `/version`
+- [ ] decide the first authenticated OpenAPI target
+- [ ] decide whether fallback-client execution belongs in this same script or a second script
 
-### Imported fixture not present in MCP runtime
-
-If the server starts clean but we never seed a deterministic package, the test may pass connection but fail usefulness.
-
-### Mitigation
-- seed the module-runtime fixture before starting the OpenCode client session
-
-## Proposed implementation order
-
-- [ ] Prepare clean temp dirs for OpenCode
-- [ ] Prepare clean temp dirs for `shuvdex` runtime
-- [ ] Create minimal isolated OpenCode config with only `shuvdex` MCP
-- [ ] Seed deterministic module-runtime fixture into isolated `shuvdex` package store
-- [ ] Launch tmux session and capture logs
-- [ ] Run isolation sanity checks
-- [ ] Run discovery prompt
-- [ ] Run deterministic success prompt
-- [ ] Run deterministic failure prompt
-- [ ] Save artifacts and summarize results
-
-## Concrete commands to use later
-
-### 1. Prepare clean dirs
-
-```bash
-TEST_ROOT=/tmp/shuvdex-opencode-clean
-SHUVDEX_RUNTIME=/tmp/shuvdex-mcp-runtime
-rm -rf "$TEST_ROOT" "$SHUVDEX_RUNTIME"
-mkdir -p "$TEST_ROOT"/{config,data,cache,state,workspace,artifacts,home}
-mkdir -p "$SHUVDEX_RUNTIME"/{packages,policy,imports}
-```
-
-### 2. Write isolated OpenCode config
-
-```bash
-mkdir -p "$TEST_ROOT/config/opencode"
-cat > "$TEST_ROOT/config/opencode/opencode.json" <<'JSON'
-{
-  "$schema": "https://opencode.ai/config.json",
-  "mcp": {
-    "shuvdex": {
-      "type": "local",
-      "command": ["node", "/home/shuv/repos/shuvdex/apps/mcp-server/dist/index.js"],
-      "enabled": true,
-      "environment": {
-        "CAPABILITIES_DIR": "/tmp/shuvdex-mcp-runtime/packages",
-        "POLICY_DIR": "/tmp/shuvdex-mcp-runtime/policy",
-        "LOCAL_REPO_PATH": "/home/shuv/repos/shuvdex"
-      }
-    }
-  }
-}
-JSON
-```
-
-### 3. Start tmux session
-
-```bash
-tmux new-session -d -s shuvdex-opencode-e2e -n client
-```
-
-### 4. Export clean-room env into tmux pane
-
-```bash
-tmux send-keys -t shuvdex-opencode-e2e:client "export XDG_CONFIG_HOME=/tmp/shuvdex-opencode-clean/config" C-m
-tmux send-keys -t shuvdex-opencode-e2e:client "export XDG_DATA_HOME=/tmp/shuvdex-opencode-clean/data" C-m
-tmux send-keys -t shuvdex-opencode-e2e:client "export XDG_CACHE_HOME=/tmp/shuvdex-opencode-clean/cache" C-m
-tmux send-keys -t shuvdex-opencode-e2e:client "export XDG_STATE_HOME=/tmp/shuvdex-opencode-clean/state" C-m
-tmux send-keys -t shuvdex-opencode-e2e:client "export OPENCODE_TEST_HOME=/tmp/shuvdex-opencode-clean/home" C-m
-tmux send-keys -t shuvdex-opencode-e2e:client "export OPENCODE_DISABLE_CLAUDE_CODE=1" C-m
-tmux send-keys -t shuvdex-opencode-e2e:client "export OPENCODE_DISABLE_CLAUDE_CODE_PROMPT=1" C-m
-tmux send-keys -t shuvdex-opencode-e2e:client "export OPENCODE_DISABLE_CLAUDE_CODE_SKILLS=1" C-m
-tmux send-keys -t shuvdex-opencode-e2e:client "cd /tmp/shuvdex-opencode-clean/workspace" C-m
-```
-
-### 5. Sanity-check config before launch
-
-```bash
-tmux send-keys -t shuvdex-opencode-e2e:client "opencode mcp list" C-m
-```
-
-### 6. Launch OpenCode
-
-```bash
-tmux send-keys -t shuvdex-opencode-e2e:client "opencode" C-m
-```
-
-## Files relevant to this plan
-
-### In this repo
-- `README.md`
-- `opencode.jsonc`
-- `CONTEXT.md`
-- `examples/module-runtime-skill-template/SKILL.md`
-- `examples/module-runtime-skill-template/capability.yaml`
-- `examples/module-runtime-skill-template/echo.mcp.mjs`
-- `apps/mcp-server/src/index.ts`
-- `packages/skill-importer/src/live.ts`
-- `packages/skill-indexer/src/compiler.ts`
-
-### In the OpenCode fork/docs
-- `/home/shuv/repos/forks/opencode/packages/opencode/test/preload.ts`
-- `/home/shuv/repos/forks/opencode/packages/web/src/content/docs/config.mdx`
-- `/home/shuv/repos/forks/opencode/packages/web/src/content/docs/mcp-servers.mdx`
-- `/home/shuv/repos/forks/opencode/packages/web/src/content/docs/rules.mdx`
-
-## Open questions before execution
-
-- [ ] Do we want a **fully isolated provider auth** path too, or is clean MCP/skills/rules isolation sufficient?
-- [ ] Should we seed the server by **importing an archive through the API**, or by **pre-writing capability files** into the temp package dir?
-- [ ] Do we want the first real-world test to be **interactive TUI**, **`opencode run` non-interactive**, or both?
+---
 
 ## Recommendation
 
-For the first pass, run **both**:
+For the next real external-testing wave, use this order:
 
-1. **non-interactive smoke test** with `opencode run` for determinism and scripting
-2. **interactive tmux TUI test** for the true operator experience
+1. **Keep OpenCode + `opencode/gpt-5-nano` as the default smoke lane**
+   - fastest path, already proven
+2. **Extend the current harness to real targets**
+   - first `youtube-transcript`
+   - then Gitea `/version`
+3. **If OpenCode/provider instability returns, do not block on it**
+   - switch to another explicit provider inside OpenCode if that is enough
+   - otherwise use Codex as the alternate external client
+4. **Only after those succeed, move to authenticated `http_api` and artifact-producing tools**
 
-That gives us one repeatable CI-like proof and one real-world proof.
+This keeps the working baseline intact while making room for more practical external testing instead of overcommitting to OpenCode-only assumptions.
+
+---
+
+## Success criteria for the next execution phase
+
+This plan will be considered successfully acted on when all of these are true:
+
+- [ ] deterministic echo remains repeatable
+- [ ] one real imported skill passes external-client testing
+- [ ] one real generated OpenAPI capability passes external-client testing
+- [ ] artifacts clearly record client/provider/model used
+- [ ] a fallback path exists if OpenCode/provider behavior blocks progress
+- [ ] the results can be linked into the broader capability certification ledger

@@ -8,6 +8,8 @@ import { Effect, Layer, ManagedRuntime } from "effect";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { CapabilityRegistry, makeCapabilityRegistryLive } from "@shuvdex/capability-registry";
+import { makeCredentialStoreLive } from "@shuvdex/credential-store";
+import { makeHttpExecutorLive } from "@shuvdex/http-executor";
 import { makeSkillImporterLive } from "@shuvdex/skill-importer";
 import { SkillIndexerLive } from "@shuvdex/skill-indexer";
 import { packagesRouter } from "../../../apps/api/src/routes/packages.js";
@@ -58,8 +60,10 @@ describe("imported module_runtime tools", () => {
       execFileSync("npm", ["install", "--omit=dev"], { cwd: managedRoot, stdio: "ignore" });
 
       const registryLayer = makeCapabilityRegistryLive(packagesDir);
-      const providersLayer = makeExecutionProvidersLive();
-      executionRuntime = ManagedRuntime.make(Layer.mergeAll(registryLayer, providersLayer));
+      const credentialLayer = makeCredentialStoreLive({ rootDir: path.join(packagesDir, "..", "credentials"), keyPath: path.join(packagesDir, "..", ".credential-key") });
+      const httpLayer = Layer.provide(makeHttpExecutorLive(), credentialLayer);
+      const providersLayer = Layer.provide(makeExecutionProvidersLive(), httpLayer);
+      executionRuntime = ManagedRuntime.make(Layer.mergeAll(registryLayer, credentialLayer, httpLayer, providersLayer));
       const runtime = await executionRuntime.runtime();
       const executors = await Effect.runPromise(
         Effect.gen(function* () {

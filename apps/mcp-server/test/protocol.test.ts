@@ -7,11 +7,14 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
+import { createServer as createHttpServer } from "node:http";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { createServer } from "../src/server.js";
 import { makeExecutionProvidersLive, ExecutionProviders } from "../../../packages/execution-providers/src/index.js";
-import { Effect, ManagedRuntime } from "effect";
+import { makeHttpExecutorLive } from "../../../packages/http-executor/src/index.js";
+import { makeCredentialStoreLive } from "../../../packages/credential-store/src/index.js";
+import { Effect, Layer, ManagedRuntime } from "effect";
 
 const samplePackage = {
   id: "sample.echo",
@@ -55,14 +58,24 @@ const samplePackage = {
 };
 
 async function makeExecutors() {
-  const managedRuntime = ManagedRuntime.make(makeExecutionProvidersLive());
+  const credsDir = fs.mkdtempSync(path.join(os.tmpdir(), "mcp-creds-"));
+  const credentialLayer = makeCredentialStoreLive({ rootDir: credsDir, keyPath: path.join(credsDir, ".key") });
+  const httpLayer = Layer.provide(makeHttpExecutorLive(), credentialLayer);
+  const providersLayer = Layer.provide(makeExecutionProvidersLive(), httpLayer);
+  const managedRuntime = ManagedRuntime.make(
+    Layer.mergeAll(
+      credentialLayer,
+      httpLayer,
+      providersLayer,
+    ),
+  );
   const runtime = await managedRuntime.runtime();
   const executors = await Effect.runPromise(
     Effect.gen(function* () {
       return yield* ExecutionProviders;
     }).pipe(Effect.provide(runtime)),
   );
-  return { executors, managedRuntime };
+  return { executors, managedRuntime, credsDir };
 }
 
 describe("MCP Server Protocol", () => {
@@ -206,6 +219,82 @@ describe("MCP Server Protocol", () => {
       expect(result.isError).not.toBe(true);
       expect(result.content[0]?.type).toBe("text");
       expect((result.content[0] as { text?: string }).text).toContain("hi");
+    });
+
+    it("executes http_api-backed tools", async () => {
+      await cleanup();
+
+      const seen: string[] = [];
+      const httpServer = createHttpServer((req, res) => {
+        seen.push(req.url ?? "");
+        res.setHeader("content-type", "application/json");
+        res.end(JSON.stringify({ ok: true, path: req.url }));
+      });
+      await new Promise<void>((resolve) => httpServer.listen(0, resolve));
+      const httpPort = (httpServer.address() as import("node:net").AddressInfo).port;
+
+      const { executors, managedRuntime } = await makeExecutors();
+      const httpPackage = {
+        id: "sample.http",
+        version: "1.0.0",
+        title: "Sample HTTP",
+        description: "Sample HTTP capability package.",
+        builtIn: false,
+        enabled: true,
+        tags: ["gateway"],
+        source: { type: "openapi" as const },
+        capabilities: [
+          {
+            id: "sample.http.getThing",
+            packageId: "sample.http",
+            version: "1.0.0",
+            kind: "tool" as const,
+            title: "Get Thing",
+            description: "Fetch thing.",
+            enabled: true,
+            visibility: "public" as const,
+            subjectScopes: ["sample.http.read"],
+            riskLevel: "low" as const,
+            executorRef: {
+              executorType: "http_api" as const,
+              timeoutMs: 2_000,
+              httpBinding: {
+                method: "get",
+                baseUrl: `http://127.0.0.1:${httpPort}`,
+                pathTemplate: "/things/{id}",
+              },
+            },
+            tool: {
+              inputSchema: {
+                type: "object",
+                properties: {
+                  path: { type: "object", properties: { id: { type: "string" } }, required: ["id"] },
+                  query: { type: "object", properties: { page: { type: "number" } } },
+                },
+              },
+              outputSchema: { type: "object" },
+              sideEffectLevel: "read" as const,
+            },
+          },
+        ],
+      };
+
+      const server = createServer({ capabilities: [httpPackage], executors });
+      const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+      await server.connect(serverTransport);
+      client = new Client({ name: "http-client", version: "0.0.1" });
+      await client.connect(clientTransport);
+
+      cleanup = async () => {
+        await client.close();
+        await server.close();
+        await managedRuntime.dispose();
+        await new Promise<void>((resolve, reject) => httpServer.close((err) => err ? reject(err) : resolve()));
+      };
+
+      const result = await client.callTool({ name: "sample.http.getThing", arguments: { path: { id: "abc" }, query: { page: 3 } } });
+      expect(result.isError).not.toBe(true);
+      expect(seen[0]).toContain("/things/abc?page=3");
     });
   });
 

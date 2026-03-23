@@ -1,5 +1,5 @@
 {
-  "name": "@shuvdex/execution-providers",
+  "name": "@shuvdex/openapi-source",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -19,10 +19,11 @@
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "dependencies": {
+    "effect": "^3.21.0",
+    "yaml": "^2.8.2",
     "@shuvdex/capability-registry": "*",
-    "@shuvdex/http-executor": "*",
-    "@shuvdex/telemetry": "*",
-    "effect": "^3.21.0"
+    "@shuvdex/credential-store": "*",
+    "@shuvdex/http-executor": "*"
   },
   "devDependencies": {
     "@types/node": "^25.5.0",

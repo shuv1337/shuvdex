@@ -7,6 +7,8 @@ import {
   ExecutionProviders,
   makeExecutionProvidersLive,
 } from "@shuvdex/execution-providers";
+import { makeCredentialStoreLive } from "@shuvdex/credential-store";
+import { makeHttpExecutorLive } from "@shuvdex/http-executor";
 import { makePolicyEngineLive, PolicyEngine } from "@shuvdex/policy-engine";
 import { SkillIndexer, SkillIndexerLive } from "@shuvdex/skill-indexer";
 import type { ServerConfig } from "./server.js";
@@ -62,11 +64,19 @@ export async function loadServerRuntime(
   const startedAt = Date.now();
   const paths = resolveServerPaths(cwd);
 
+  const capabilityRegistryLayer = makeCapabilityRegistryLive(paths.capabilitiesDir);
+  const credentialStoreLayer = makeCredentialStoreLive({
+    rootDir: path.resolve(cwd, ".capabilities", "credentials"),
+  });
+  const httpExecutorLayer = Layer.provide(makeHttpExecutorLive(), credentialStoreLayer);
+  const executionProvidersLayer = Layer.provide(makeExecutionProvidersLive(), httpExecutorLayer);
   const liveLayer = Layer.mergeAll(
-    makeCapabilityRegistryLive(paths.capabilitiesDir),
+    capabilityRegistryLayer,
+    credentialStoreLayer,
+    httpExecutorLayer,
     makePolicyEngineLive({ policyDir: paths.policyDir }),
     SkillIndexerLive,
-    makeExecutionProvidersLive(),
+    executionProvidersLayer,
   );
 
   const managedRuntime = ManagedRuntime.make(liveLayer);

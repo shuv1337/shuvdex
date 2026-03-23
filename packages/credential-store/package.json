@@ -1,5 +1,5 @@
 {
-  "name": "@shuvdex/execution-providers",
+  "name": "@shuvdex/credential-store",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -19,9 +19,6 @@
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "dependencies": {
-    "@shuvdex/capability-registry": "*",
-    "@shuvdex/http-executor": "*",
-    "@shuvdex/telemetry": "*",
     "effect": "^3.21.0"
   },
   "devDependencies": {

@@ -16,6 +16,9 @@ import {
 import { makePolicyEngineLive } from "@shuvdex/policy-engine";
 import { makeSkillImporterLive } from "@shuvdex/skill-importer";
 import { SkillIndexer, SkillIndexerLive } from "@shuvdex/skill-indexer";
+import { makeCredentialStoreLive } from "@shuvdex/credential-store";
+import { makeHttpExecutorLive } from "@shuvdex/http-executor";
+import { makeOpenApiSourceLive } from "@shuvdex/openapi-source";
 import { auditRouter } from "./routes/audit.js";
 import { toolsRouter } from "./routes/tools.js";
 import { packagesRouter } from "./routes/packages.js";
@@ -24,6 +27,8 @@ import { hostsRouter } from "./routes/hosts.js";
 import { runnersRouter } from "./routes/runners.js";
 import { skillsRouter } from "./routes/skills.js";
 import { tokensRouter } from "./routes/tokens.js";
+import { credentialsRouter } from "./routes/credentials.js";
+import { openapiSourcesRouter } from "./routes/openapi-sources.js";
 import * as path from "node:path";
 
 const PORT = Number(process.env["PORT"] ?? 3847);
@@ -44,11 +49,23 @@ async function main(): Promise<void> {
   const configPath = path.resolve(process.cwd(), "fleet.yaml");
 
   const capabilityRegistryLayer = makeCapabilityRegistryLive(capabilitiesDir);
+  const credentialStoreLayer = makeCredentialStoreLive({
+    rootDir: path.resolve(process.cwd(), ".capabilities", "credentials"),
+    keyPath: path.resolve(process.cwd(), ".capabilities", ".credential-key"),
+  });
+  const httpExecutorLayer = Layer.provide(makeHttpExecutorLive(), credentialStoreLayer);
+  const openApiSourceLayer = Layer.provide(
+    makeOpenApiSourceLive({ rootDir: path.resolve(process.cwd(), ".capabilities") }),
+    Layer.mergeAll(capabilityRegistryLayer, credentialStoreLayer, httpExecutorLayer),
+  );
   const liveLayer = Layer.mergeAll(
     capabilityRegistryLayer,
+    credentialStoreLayer,
+    httpExecutorLayer,
     makePolicyEngineLive({ policyDir }),
     Layer.provide(makeSkillImporterLive({ importsDir }), capabilityRegistryLayer),
     SkillIndexerLive,
+    openApiSourceLayer,
   );
   const managedRuntime = ManagedRuntime.make(liveLayer);
   const runtime = await managedRuntime.runtime();
@@ -96,6 +113,10 @@ async function main(): Promise<void> {
   app.route("/api/tokens", tokensRouter(runtime as any));
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   app.route("/api/audit", auditRouter(runtime as any));
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  app.route("/api/credentials", credentialsRouter(runtime as any));
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  app.route("/api/sources/openapi", openapiSourcesRouter(runtime as any));
   app.route("/api/runners", runnersRouter());
 
   app.get("/health", (c) =>

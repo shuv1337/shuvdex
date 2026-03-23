@@ -43,12 +43,49 @@ export const AnnotationMap = Schema.Record({
 });
 export type AnnotationMap = typeof AnnotationMap.Type;
 
+export const HttpParameterBinding = Schema.Struct({
+  name: Schema.String,
+  in: Schema.Literal("path", "query", "header", "cookie"),
+  required: Schema.optional(Schema.Boolean),
+  style: Schema.optional(Schema.String),
+  explode: Schema.optional(Schema.Boolean),
+  allowReserved: Schema.optional(Schema.Boolean),
+  schema: Schema.optional(JsonSchema),
+});
+export type HttpParameterBinding = typeof HttpParameterBinding.Type;
+
+export const HttpRequestBodyBinding = Schema.Struct({
+  required: Schema.optional(Schema.Boolean),
+  contentType: Schema.String,
+  schema: Schema.optional(JsonSchema),
+});
+export type HttpRequestBodyBinding = typeof HttpRequestBodyBinding.Type;
+
+export const HttpSecurityRequirement = Schema.Struct({
+  schemeId: Schema.String,
+  scopes: Schema.optional(Schema.Array(Schema.String)),
+});
+export type HttpSecurityRequirement = typeof HttpSecurityRequirement.Type;
+
+export const HttpBinding = Schema.Struct({
+  method: Schema.Literal("get", "post", "put", "patch", "delete", "head", "options"),
+  baseUrl: Schema.String,
+  pathTemplate: Schema.String,
+  parameters: Schema.optional(Schema.Array(HttpParameterBinding)),
+  requestBody: Schema.optional(HttpRequestBodyBinding),
+  responseSchema: Schema.optional(JsonSchema),
+  securityRequirements: Schema.optional(Schema.Array(HttpSecurityRequirement)),
+});
+export type HttpBinding = typeof HttpBinding.Type;
+
 export const ExecutionBinding = Schema.Struct({
   executorType: ExecutorType,
   target: Schema.optional(Schema.String),
   timeoutMs: Schema.optional(Schema.Number),
   retryCount: Schema.optional(Schema.Number),
   streaming: Schema.optional(Schema.Boolean),
+  credentialId: Schema.optional(Schema.String),
+  httpBinding: Schema.optional(HttpBinding),
 });
 export type ExecutionBinding = typeof ExecutionBinding.Type;
 
@@ -116,6 +153,22 @@ export const ConnectorCapabilityConfig = Schema.Struct({
 });
 export type ConnectorCapabilityConfig = typeof ConnectorCapabilityConfig.Type;
 
+export const Provenance = Schema.Struct({
+  sourceFile: Schema.optional(Schema.String),
+  sourceSection: Schema.optional(Schema.String),
+  generatedFrom: Schema.optional(Schema.String),
+  derivedBy: Schema.optional(Schema.Literal("compiler", "openapi", "import", "manual")),
+});
+export type Provenance = typeof Provenance.Type;
+
+export const CertificationStatus = Schema.Struct({
+  status: Schema.Literal("untested", "passing", "failing", "stale"),
+  lastTestedAt: Schema.optional(Schema.String),
+  testedHosts: Schema.optional(Schema.Array(Schema.String)),
+  notes: Schema.optional(Schema.String),
+});
+export type CertificationStatus = typeof CertificationStatus.Type;
+
 export const CapabilityDefinition = Schema.Struct({
   id: Schema.NonEmptyString,
   packageId: Schema.NonEmptyString,
@@ -132,6 +185,8 @@ export const CapabilityDefinition = Schema.Struct({
   sourceRef: Schema.optional(Schema.String),
   dependsOn: Schema.optional(Schema.Array(CapabilityDependency)),
   annotations: Schema.optional(AnnotationMap),
+  provenance: Schema.optional(Provenance),
+  certification: Schema.optional(CertificationStatus),
   enabled: Schema.Boolean,
   visibility: CapabilityVisibility,
   tool: Schema.optional(ToolCapabilityConfig),
@@ -150,6 +205,7 @@ export const PackageSource = Schema.Struct({
     "connector",
     "generated",
     "imported_archive",
+    "openapi",
   ),
   path: Schema.optional(Schema.String),
   skillName: Schema.optional(Schema.String),
@@ -157,8 +213,23 @@ export const PackageSource = Schema.Struct({
   importedAt: Schema.optional(Schema.String),
   checksum: Schema.optional(Schema.String),
   importMode: Schema.optional(Schema.String),
+  sourceId: Schema.optional(Schema.String),
+  specUrl: Schema.optional(Schema.String),
+  selectedServerUrl: Schema.optional(Schema.String),
+  specChecksum: Schema.optional(Schema.String),
+  credentialId: Schema.optional(Schema.String),
+  lastSyncedAt: Schema.optional(Schema.String),
+  operationCount: Schema.optional(Schema.Number),
 });
 export type PackageSource = typeof PackageSource.Type;
+
+export const PackageLink = Schema.Struct({
+  packageId: Schema.NonEmptyString,
+  relation: Schema.Literal("composes_with", "depends_on", "documents", "augments"),
+  reason: Schema.optional(Schema.String),
+  capabilityIds: Schema.optional(Schema.Array(Schema.String)),
+});
+export type PackageLink = typeof PackageLink.Type;
 
 export const CapabilityPackage = Schema.Struct({
   id: Schema.NonEmptyString,
@@ -171,6 +242,7 @@ export const CapabilityPackage = Schema.Struct({
   source: Schema.optional(PackageSource),
   sourceRef: Schema.optional(Schema.String),
   annotations: Schema.optional(AnnotationMap),
+  linkedPackages: Schema.optional(Schema.Array(PackageLink)),
   capabilities: Schema.Array(CapabilityDefinition),
   assets: Schema.optional(Schema.Array(Schema.String)),
   dependencies: Schema.optional(Schema.Array(Schema.String)),

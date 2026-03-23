@@ -9,6 +9,9 @@
   "references": [
     { "path": "../../packages/capability-registry" },
     { "path": "../../packages/core" },
+    { "path": "../../packages/credential-store" },
+    { "path": "../../packages/http-executor" },
+    { "path": "../../packages/openapi-source" },
     { "path": "../../packages/policy-engine" },
     { "path": "../../packages/skill-importer" },
     { "path": "../../packages/skill-indexer" }

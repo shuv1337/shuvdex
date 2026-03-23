@@ -1,11 +1,20 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
-import { spawn } from "node:child_process";
-import { createServer as createNetServer } from "node:net";
+import { join } from "node:path";
+import { Hono } from "hono";
+import { cors } from "hono/cors";
+import { randomUUID } from "node:crypto";
+import { Effect, Layer, ManagedRuntime } from "effect";
+import { makeCapabilityRegistryLive, CapabilityRegistry } from "@shuvdex/capability-registry";
+import { makeCredentialStoreLive } from "@shuvdex/credential-store";
+import { makeHttpExecutorLive } from "@shuvdex/http-executor";
+import { makeExecutionProvidersLive, ExecutionProviders } from "@shuvdex/execution-providers";
+import { makePolicyEngineLive, PolicyEngine } from "@shuvdex/policy-engine";
+import { SkillIndexer, SkillIndexerLive } from "@shuvdex/skill-indexer";
+import { createServer } from "../src/server.js";
+import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 
-const SERVER_ENTRY = resolve(process.cwd(), "apps/mcp-server/dist/http.js");
 const tempDirs: string[] = [];
 
 function makeTempDir(prefix: string): string {
@@ -14,54 +23,7 @@ function makeTempDir(prefix: string): string {
   return dir;
 }
 
-function waitForHealth(url: string, timeoutMs = 10_000): Promise<void> {
-  const start = Date.now();
-  return new Promise((resolvePromise, reject) => {
-    const attempt = async () => {
-      try {
-        const response = await fetch(url);
-        if (response.ok) {
-          resolvePromise();
-          return;
-        }
-      } catch {
-        // retry until timeout
-      }
-
-      if (Date.now() - start > timeoutMs) {
-        reject(new Error(`Timed out waiting for health at ${url}`));
-        return;
-      }
-      setTimeout(attempt, 150);
-    };
-    void attempt();
-  });
-}
-
-function getFreePort(): Promise<number> {
-  return new Promise((resolvePromise, reject) => {
-    const server = createNetServer();
-    server.listen(0, "127.0.0.1", () => {
-      const address = server.address();
-      if (!address || typeof address === "string") {
-        server.close();
-        reject(new Error("Unable to allocate port"));
-        return;
-      }
-      const port = address.port;
-      server.close((error) => {
-        if (error) {
-          reject(error);
-          return;
-        }
-        resolvePromise(port);
-      });
-    });
-    server.on("error", reject);
-  });
-}
-
-async function startServer() {
+async function buildRuntime() {
   const root = makeTempDir("shuvdex-http-");
   const repoRoot = makeTempDir("shuvdex-http-repo-");
   const skillDir = join(repoRoot, "demo-skill");
@@ -119,58 +81,109 @@ async function startServer() {
     "utf-8",
   );
 
-  const port = await getFreePort();
-  const child = spawn("node", [SERVER_ENTRY], {
-    env: {
-      ...process.env,
-      MCP_HOST: "127.0.0.1",
-      MCP_PORT: String(port),
-      CAPABILITIES_DIR: join(root, "packages"),
-      POLICY_DIR: join(root, "policy"),
-      LOCAL_REPO_PATH: repoRoot,
-    },
-    stdio: ["ignore", "pipe", "pipe"],
-  });
+  const capabilitiesDir = join(root, "packages");
+  const policyDir = join(root, "policy");
+  const credentialDir = join(root, "credentials");
 
-  let stdout = "";
-  let stderr = "";
-  child.stdout.on("data", (chunk: Buffer) => {
-    stdout += chunk.toString();
-  });
-  child.stderr.on("data", (chunk: Buffer) => {
-    stderr += chunk.toString();
-  });
+  const registryLayer = makeCapabilityRegistryLive(capabilitiesDir);
+  const credentialLayer = makeCredentialStoreLive({ rootDir: credentialDir, keyPath: join(root, ".credential-key") });
+  const httpLayer = Layer.provide(makeHttpExecutorLive(), credentialLayer);
+  const executionLayer = Layer.provide(makeExecutionProvidersLive(), httpLayer);
+  const liveLayer = Layer.mergeAll(
+    registryLayer,
+    credentialLayer,
+    httpLayer,
+    executionLayer,
+    makePolicyEngineLive({ policyDir }),
+    SkillIndexerLive,
+  );
 
-  let closed = false;
-  child.on("close", (code) => {
-    closed = true;
-    stderr += `\n[process closed with code ${code}]`;
-  });
+  const managedRuntime = ManagedRuntime.make(liveLayer);
+  const runtime = await managedRuntime.runtime();
 
-  try {
-    await waitForHealth(`http://127.0.0.1:${port}/health`);
-  } catch (error) {
-    child.kill("SIGTERM");
-    await new Promise<void>((resolvePromise) => {
-      child.on("close", () => resolvePromise());
-    });
-    throw new Error(
-      `Failed to start HTTP MCP server on port ${port}: ${error instanceof Error ? error.message : String(error)}\nSTDERR:\n${stderr}\nSTDOUT:\n${stdout}`,
-    );
-  }
+  const packages = await Effect.runPromise(
+    Effect.gen(function* () {
+      const registry = yield* CapabilityRegistry;
+      const indexer = yield* SkillIndexer;
+      const indexed = yield* indexer.indexRepository(repoRoot);
+      for (const artifact of indexed.artifacts) {
+        yield* registry.upsertPackage(artifact.package);
+      }
+      return yield* registry.listPackages();
+    }).pipe(Effect.provide(runtime)),
+  );
+
+  const executors = await Effect.runPromise(Effect.gen(function* () {
+    return yield* ExecutionProviders;
+  }).pipe(Effect.provide(runtime)));
+
+  const policy = await Effect.runPromise(Effect.gen(function* () {
+    return yield* PolicyEngine;
+  }).pipe(Effect.provide(runtime)));
 
   return {
-    port,
-    stdout: () => stdout,
-    stderr: () => stderr,
-    stop: async () => {
-      if (closed) return;
-      child.kill("SIGTERM");
-      await new Promise<void>((resolvePromise) => {
-        child.on("close", () => resolvePromise());
-      });
+    managedRuntime,
+    serverConfig: {
+      capabilities: packages,
+      claims: policy.defaultClaims(),
+      policy,
+      executors,
     },
   };
+}
+
+function makeApp(serverConfig: Parameters<typeof createServer>[0]) {
+  const app = new Hono();
+  app.use(
+    "*",
+    cors({
+      origin: "*",
+      allowMethods: ["GET", "POST", "DELETE", "OPTIONS"],
+      allowHeaders: ["Content-Type", "mcp-session-id", "Last-Event-ID", "mcp-protocol-version"],
+      exposeHeaders: ["mcp-session-id", "mcp-protocol-version"],
+      maxAge: 600,
+    }),
+  );
+
+  app.get("/health", (c) =>
+    c.json({
+      status: "ok",
+      service: "shuvdex-mcp-server",
+      transport: "streamable-http",
+      version: "0.0.0",
+      packageCount: serverConfig?.capabilities?.length ?? 0,
+    }),
+  );
+
+  app.all("/mcp", async (c) => {
+    const transport = new WebStandardStreamableHTTPServerTransport({
+      sessionIdGenerator: undefined,
+      enableJsonResponse: true,
+    });
+    const server = createServer(serverConfig);
+    try {
+      await server.connect(transport);
+      return await transport.handleRequest(c.req.raw);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      return c.json(
+        {
+          jsonrpc: "2.0",
+          error: {
+            code: -32603,
+            message: "Internal server error",
+            data: { requestId: randomUUID(), error: message },
+          },
+          id: null,
+        },
+        500,
+      );
+    } finally {
+      await Promise.allSettled([transport.close(), server.close()]);
+    }
+  });
+
+  return app;
 }
 
 afterEach(() => {
@@ -181,18 +194,19 @@ afterEach(() => {
 });
 
 describe("HTTP MCP server", () => {
-  it("serves health and handles initialize + tools/list over /mcp", { timeout: 15000 }, async () => {
-    const server = await startServer();
+  it("serves health and handles initialize + tools/list over /mcp", async () => {
+    const runtime = await buildRuntime();
+    const app = makeApp(runtime.serverConfig as never);
 
     try {
-      const health = await fetch(`http://127.0.0.1:${server.port}/health`);
+      const health = await app.request("http://localhost/health");
       expect(health.ok).toBe(true);
       const healthJson = (await health.json()) as Record<string, unknown>;
       expect(healthJson.status).toBe("ok");
       expect(healthJson.transport).toBe("streamable-http");
       expect(healthJson.packageCount).toBe(1);
 
-      const init = await fetch(`http://127.0.0.1:${server.port}/mcp`, {
+      const init = await app.request("http://localhost/mcp", {
         method: "POST",
         headers: {
           "content-type": "application/json",
@@ -212,12 +226,9 @@ describe("HTTP MCP server", () => {
 
       expect(init.ok).toBe(true);
       const initJson = (await init.json()) as Record<string, unknown>;
-      expect(initJson).toMatchObject({
-        jsonrpc: "2.0",
-        id: 1,
-      });
+      expect(initJson).toMatchObject({ jsonrpc: "2.0", id: 1 });
 
-      const tools = await fetch(`http://127.0.0.1:${server.port}/mcp`, {
+      const tools = await app.request("http://localhost/mcp", {
         method: "POST",
         headers: {
           "content-type": "application/json",
@@ -237,7 +248,7 @@ describe("HTTP MCP server", () => {
       };
       expect(toolsJson.result?.tools?.some((tool) => tool.name === "skill.demo_http.echo")).toBe(true);
     } finally {
-      await server.stop();
+      await runtime.managedRuntime.dispose();
     }
   });
 });
