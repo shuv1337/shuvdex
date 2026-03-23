@@ -1,15 +1,19 @@
-# Runbook: shuvdex remote MCP E2E on shuvdev/shuvbot
+# Runbook: shuvdex remote MCP external E2E on shuvdev/shuvbot
 
-Purpose: run a repeatable clean-room OpenCode test against the centralized shuvdex remote MCP server over Tailscale.
+Purpose: run a repeatable clean-room external-client test against the centralized shuvdex remote MCP server over Tailscale.
+
+This runbook is now **OpenCode-first, not OpenCode-only**:
+- default lane: OpenCode
+- preferred fallback: Codex client when OpenCode/provider behavior is the bottleneck
 
 This runbook reflects the current working setup validated on `shuvdev`.
 
 ## What this proves
 
 - one centralized shuvdex MCP endpoint is reachable over Tailscale
-- clean-room OpenCode can connect without inheriting project/global MCP config
-- OpenCode can discover tools from the remote MCP server
-- OpenCode can invoke a deterministic module-runtime tool through the real client
+- clean-room client config can connect without inheriting project/global MCP config
+- the client can discover tools from the remote MCP server
+- the client can invoke a deterministic or real target capability through the real client path
 - tmux-supervised evidence is captured for later inspection
 
 ## Current default topology
@@ -20,7 +24,14 @@ This runbook reflects the current working setup validated on `shuvdev`.
 - Deterministic test tool source: `examples/module-runtime-skill-template/`
 - Deterministic surfaced tool name in OpenCode: `shuvdex_skill_module_runtime_template_echo`
 
-Later, the same workflow can be pointed at `shuvbot` by changing env vars.
+## Current supported targets in the script
+
+- `echo`
+  - deterministic module-runtime fixture
+- `youtube-transcript`
+  - real imported module-runtime skill
+- `gitea-version`
+  - real compiled OpenAPI capability for `GET /version`
 
 ## Preconditions
 
@@ -30,50 +41,117 @@ On the target host:
 - `npm install` has been run
 - `node`, `npm`, `tmux`, `curl`, and `opencode` are installed
 - Tailscale is up
-- OpenCode can use the `opencode` provider
+- OpenCode can use the selected provider
 
-## Important model note
+## Important provider/model note
 
 The clean-room config must pin OpenCode to a working provider/model combination.
 
-Current safe default:
+### Current safe default
 
-- `model: opencode/gpt-5-nano`
-- `small_model: opencode/gpt-5-nano`
-- `enabled_providers: ["opencode"]`
+- `CLIENT=opencode`
+- `PROVIDER=opencode`
+- `MODEL=opencode/gpt-5-nano`
+- `SMALL_MODEL=opencode/gpt-5-nano`
 
 Reason:
-- leaving model/provider selection implicit caused OpenCode to choose `cloudflare-ai-gateway/*`
+- leaving model/provider selection implicit previously caused OpenCode to choose `cloudflare-ai-gateway/*`
 - that path failed in this environment with `sdk.languageModel is not a function`
+
+## Client/provider policy
+
+### Default lane
+Use OpenCode with the pinned `opencode` provider/model above.
+
+### Use another provider inside OpenCode when
+- OpenCode itself is fine
+- a different provider is already authenticated and more stable
+- the exact provider/model is recorded in artifacts
+
+### Use another client when
+- OpenCode/provider behavior is the unstable part
+- you still need a real external-client proof against remote `shuvdex`
+- you want a second-client validation after OpenCode succeeds
+
+Current preferred fallback client:
+- Codex
+
+This script currently automates the OpenCode lane only. If you need Codex fallback, keep the same target/capability set and record client/provider/model manually until a dedicated fallback script exists.
 
 ## One-command workflow
 
 From the repo root:
 
+### Deterministic echo smoke test
+
 ```bash
 ./scripts/run-remote-mcp-e2e.sh
+```
+
+### Explicit target examples
+
+```bash
+TARGET=echo ./scripts/run-remote-mcp-e2e.sh
+TARGET=youtube-transcript ./scripts/run-remote-mcp-e2e.sh
+TARGET=gitea-version ./scripts/run-remote-mcp-e2e.sh
 ```
 
 This will:
 
 1. create a clean-room OpenCode environment under `/tmp/shuvdex-opencode-clean`
-2. seed the deterministic module-runtime template package into `.capabilities/packages`
+2. seed the requested target into the remote runtime package store
 3. build and start the remote MCP server on port `3848`
 4. validate `/health`
 5. run a clean-room OpenCode discovery prompt
 6. run a clean-room OpenCode tool invocation prompt
-7. run a tmux-supervised proof
-8. write a summary artifact
+7. optionally run a tmux-supervised proof
+8. write a target-specific summary artifact
+
+## Useful environment overrides
+
+### Change the target
+
+```bash
+TARGET=youtube-transcript ./scripts/run-remote-mcp-e2e.sh
+```
+
+### Change model/provider inside OpenCode
+
+```bash
+PROVIDER=opencode \
+MODEL=opencode/gpt-5-nano \
+SMALL_MODEL=opencode/gpt-5-nano \
+./scripts/run-remote-mcp-e2e.sh
+```
+
+### Skip server restart if using the already-running deployed service
+
+```bash
+SKIP_SERVER_START=1 ./scripts/run-remote-mcp-e2e.sh
+```
+
+### Skip tmux proof
+
+```bash
+ENABLE_TMUX=0 ./scripts/run-remote-mcp-e2e.sh
+```
 
 ## Artifacts
 
 The script writes artifacts under:
 
-- `/tmp/shuvdex-opencode-clean/artifacts/`
+- `/tmp/shuvdex-opencode-clean/artifacts/<target>/`
+
+Example directories:
+- `/tmp/shuvdex-opencode-clean/artifacts/echo/`
+- `/tmp/shuvdex-opencode-clean/artifacts/youtube-transcript/`
+- `/tmp/shuvdex-opencode-clean/artifacts/gitea-version/`
 
 Important files:
 
+- `seed.json`
 - `health.json`
+- `pwd.txt`
 - `mcp-list.txt`
 - `tool-discovery.jsonl`
 - `tool-call.jsonl`
@@ -92,34 +170,48 @@ Remote server PID:
 
 - `/tmp/shuvdex-mcp-remote.pid`
 
-## Expected success signals
+## Expected success signals by target
 
-### Health
-
-`health.json` should show:
-
-- `status: "ok"`
-- `transport: "streamable-http"`
-
-### MCP connection
-
-`mcp-list.txt` should show:
-
-- `shuvdex connected`
+## `echo`
 
 ### Discovery
-
-`tool-discovery.jsonl` should identify:
-
+Should identify:
 - `shuvdex_skill_module_runtime_template_echo`
 
-### Tool invocation
-
-`tool-call.jsonl` should contain:
+### Invocation
+Should contain:
 
 ```json
 {
   "echoed": "CLEAN_TEST_123"
+}
+```
+
+## `youtube-transcript`
+
+### Discovery
+Should identify a tool equivalent to:
+- `skill.youtube_transcript.fetch_transcript`
+
+### Invocation
+Should include structured transcript output such as:
+- `videoId`
+- `entryCount`
+- `entries`
+- `text`
+
+## `gitea-version`
+
+### Discovery
+Should identify a tool equivalent to:
+- `shuvdex_openapi_gitea_api_getVersion`
+
+### Invocation
+Should include structured output with a version field, for example:
+
+```json
+{
+  "version": "1.26.0+dev-..."
 }
 ```
 
@@ -149,6 +241,18 @@ POLICY_DIR=/path/to/shuvdex/.capabilities/policy \
 
 ```bash
 node scripts/seed-module-runtime-template.mjs
+```
+
+### Stage real imported skill only
+
+```bash
+node scripts/stage-module-runtime-skill.mjs "$PWD" /home/shuv/repos/shuvbot-skills/youtube-transcript "$PWD/.capabilities/imports" "$PWD/.capabilities/packages"
+```
+
+### Seed Gitea OpenAPI package only
+
+```bash
+node scripts/seed-gitea-openapi.mjs "$PWD" "$PWD/.capabilities"
 ```
 
 ### Start remote MCP server manually
@@ -200,7 +304,7 @@ Key files:
 - `config/opencode/opencode.json`
 - `env.sh`
 - `workspace/`
-- `artifacts/`
+- `artifacts/<target>/`
 
 The clean-room env explicitly sets:
 
@@ -221,15 +325,33 @@ Interactive OpenCode output inside tmux can be awkward to scrape visually.
 
 For that reason, the script captures a **non-interactive JSON run inside tmux** and saves the JSONL artifact, instead of relying only on pane rendering.
 
-### HTTP server test file
+### Client/provider instability vs shuvdex instability
 
-There is a repo test file at:
+If the provider/model path fails before meaningful MCP usage, do not assume `shuvdex` is broken.
 
+Record:
+- client
+- provider
+- model
+- exact failure point
+
+Then either:
+- switch provider inside OpenCode, or
+- switch to the fallback client lane
+
+### Remote target availability
+
+For real targets like `youtube-transcript` and `gitea-version`, the package must be seeded into the remote runtime package store before discovery will succeed.
+
+### HTTP server test status
+
+The repo test file at:
 - `apps/mcp-server/test/http.test.ts`
 
-Manual probing proves the remote HTTP MCP path works, but that test currently has shutdown/timing behavior that still needs cleanup.
-
-Do not treat that one test as the source of truth for runtime health; use the actual `/health`, `/mcp`, and OpenCode-run artifacts.
+is now stable again, but real runtime health should still be judged from:
+- `/health`
+- `/mcp`
+- client-run artifacts
 
 ## systemd user service
 
@@ -271,7 +393,7 @@ If you change server code or the unit file, rebuild/restart before trusting resu
 ```bash
 npm run build --workspace @shuvdex/mcp-server
 systemctl --user restart shuvdex-mcp.service
-curl http://shuvdev:3848/health
+curl http://127.0.0.1:3848/health
 ```
 
 More details:
@@ -279,9 +401,9 @@ More details:
 - `systemd/README.md`
 - `AGENTS.md`
 
-## Recommended future improvements
+## Recommended next improvements
 
-- add a negative-path OpenCode test to the script
-- add a resource/prompt discovery step
-- make the deterministic fixture import go through the API importer instead of direct seeding
-- make `shuvbot` the alternate production-style target once shuvdev workflow is stable
+- add explicit negative-path automation to the script output
+- add a fallback-client script or runbook section for Codex
+- add target definitions for more certified capabilities as they come online
+- link these artifacts into `CAPABILITY-CERTIFICATION.md` once the ledger is created
