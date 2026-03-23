@@ -5,84 +5,24 @@
  * loads capability packages from local storage, indexes local skills into
  * packages, and serves tools/resources/prompts from the resulting catalog.
  */
-import { Effect, Layer, ManagedRuntime } from "effect";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import {
-  CapabilityRegistry,
-  makeCapabilityRegistryLive,
-} from "@shuvdex/capability-registry";
-import {
-  ExecutionProviders,
-  makeExecutionProvidersLive,
-} from "@shuvdex/execution-providers";
-import { makePolicyEngineLive, PolicyEngine } from "@shuvdex/policy-engine";
-import { SkillIndexer, SkillIndexerLive } from "@shuvdex/skill-indexer";
 import { createServer } from "./server.js";
-import type { ServerConfig } from "./server.js";
-import * as path from "node:path";
+import { loadServerRuntime } from "./runtime.js";
 
 async function main(): Promise<void> {
-  const capabilitiesDir = process.env["CAPABILITIES_DIR"]
-    ? path.resolve(process.env["CAPABILITIES_DIR"])
-    : path.resolve(process.cwd(), ".capabilities", "packages");
-  const policyDir = process.env["POLICY_DIR"]
-    ? path.resolve(process.env["POLICY_DIR"])
-    : path.resolve(process.cwd(), ".capabilities", "policy");
-
-  const liveLayer = Layer.mergeAll(
-    makeCapabilityRegistryLive(capabilitiesDir),
-    makePolicyEngineLive({ policyDir }),
-    SkillIndexerLive,
-    makeExecutionProvidersLive(),
-  );
-
-  const managedRuntime = ManagedRuntime.make(liveLayer);
-
-  const packages = await Effect.runPromise(
-    Effect.gen(function* () {
-      const capabilityRegistry = yield* CapabilityRegistry;
-      const indexer = yield* SkillIndexer;
-      const indexed = yield* indexer.indexRepository(process.cwd());
-      for (const artifact of indexed.artifacts) {
-        const existing = yield* Effect.either(capabilityRegistry.getPackage(artifact.package.id));
-        if (existing._tag === "Right" && existing.right.source?.type === "imported_archive") {
-          continue;
-        }
-        yield* capabilityRegistry.upsertPackage(artifact.package);
-      }
-      return yield* capabilityRegistry.listPackages();
-    }).pipe(Effect.provide(liveLayer)),
-  );
-  const policy = await Effect.runPromise(
-    Effect.gen(function* () {
-      return yield* PolicyEngine;
-    }).pipe(Effect.provide(liveLayer)),
-  );
-  const executors = await Effect.runPromise(
-    Effect.gen(function* () {
-      return yield* ExecutionProviders;
-    }).pipe(Effect.provide(liveLayer)),
-  );
-
-  const serverConfig: ServerConfig = {
-    capabilities: packages,
-    claims: policy.defaultClaims(),
-    policy,
-    executors,
-  };
-
-  const server = createServer(serverConfig);
+  const runtime = await loadServerRuntime();
+  const server = createServer(runtime.serverConfig);
   const transport = new StdioServerTransport();
 
   process.on("SIGINT", async () => {
     await server.close();
-    await managedRuntime.dispose();
+    await runtime.dispose();
     process.exit(0);
   });
 
   process.on("SIGTERM", async () => {
     await server.close();
-    await managedRuntime.dispose();
+    await runtime.dispose();
     process.exit(0);
   });
 
@@ -90,7 +30,7 @@ async function main(): Promise<void> {
 
   process.stdin.on("end", async () => {
     await server.close();
-    await managedRuntime.dispose();
+    await runtime.dispose();
     process.exit(0);
   });
 

@@ -7,12 +7,16 @@
   "types": "./dist/index.d.ts",
   "scripts": {
     "build": "tsc -b",
+    "dev": "tsx --watch src/http.ts",
+    "start": "node dist/http.js",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src/",
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "dependencies": {
+    "@hono/node-server": "^1.14.0",
+    "hono": "^4.7.0",
     "@shuvdex/capability-registry": "*",
     "@shuvdex/execution-providers": "*",
     "@shuvdex/policy-engine": "*",
@@ -24,6 +28,7 @@
   },
   "devDependencies": {
     "@effect/vitest": "^0.27.0",
+    "tsx": "^4.0.0",
     "typescript": "^5.8.2",
     "vitest": "^3.2.0"
   }
