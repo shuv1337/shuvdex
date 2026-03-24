@@ -20,7 +20,7 @@ Status model used here:
 | YouTube transcript | `skill.youtube_transcript` | `shuvdex_skill_youtube_transcript_fetch_transcript` | `module_runtime` | ready-now | ✅ | ✅ | ✅ | ✅ | `shuvdev` | 2026-03-23 | External OpenCode run fetched real transcript for `dQw4w9WgXcQ`. Internal automated execution already passing. |
 | Gitea version | `openapi.gitea.api` | `shuvdex_openapi_gitea_api_getVersion` | `http_api` | ready-now | ✅ compile | ✅ | ✅ | ✅ | `shuvdev` | 2026-03-23 | External OpenCode run returned real version from `https://gitea.com/api/v1/version`. |
 | Crawl | `skill.crawl` | TBD | `module_runtime` | ready-now | ☐ | ☐ | ☐ | ☐ | — | — | Likely next module-runtime real-world certification target. Will require Cloudflare credentials and safe crawl target. |
-| Authenticated OpenAPI target | TBD | TBD | `http_api` | planned | ☐ | ☐ | ☐ | ☐ | — | — | Should validate credential store, `test-auth`, auth failure behavior, and credential rotation. |
+| DNSFilter current user | `openapi.dnsfilter.api` | `shuvdex_openapi_dnsfilter_api_currentUser` | `http_api` | ready-now | ✅ compile | ✅ | ✅ | ✅ | `shuvdev` | 2026-03-23 | External OpenCode run returned real authenticated DNSFilter current-user data from `GET /v1/current_user` using `Authorization: <DNSFILTER_API_KEY>`. |
 | Upload | TBD | TBD | TBD | needs-conversion | ☐ | ☐ | ☐ | ☐ | — | — | High-value artifact-producing target; currently script-oriented rather than fully manifest-backed. |
 | Model usage | TBD | TBD | TBD | needs-conversion | ☐ | ☐ | ☐ | ☐ | — | — | Likely requires manifest/runtime wrapper around current script flow. |
 | ccusage | TBD | TBD | TBD | needs-conversion | ☐ | ☐ | ☐ | ☐ | — | — | Multi-host and artifact-heavy; likely certify summary mode first. |
@@ -31,6 +31,7 @@ OpenCode clean-room artifacts:
 - `/tmp/shuvdex-opencode-clean/artifacts/echo/`
 - `/tmp/shuvdex-opencode-clean/artifacts/youtube-transcript/`
 - `/tmp/shuvdex-opencode-clean/artifacts/gitea-version/`
+- `/tmp/shuvdex-opencode-clean/artifacts/dnsfilter-current-user/`
 
 Important files per target:
 - `summary.json`
@@ -51,9 +52,10 @@ Important files per target:
   - `echo`
   - `youtube-transcript`
   - `gitea-version`
+  - `dnsfilter-current-user`
 
 ## Next certification priorities
 
 1. `crawl`
-2. first authenticated OpenAPI target
+2. DNSFilter current user authenticated certification
 3. one artifact-producing capability (`upload` likely first)

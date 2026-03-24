@@ -49,7 +49,7 @@ This is the outside-in test layer that sits above unit, integration, and in-memo
 
 - [ ] OpenCode clean-room E2E for `youtube-transcript`
 - [ ] OpenCode clean-room E2E for a real compiled OpenAPI capability
-- [ ] authenticated external-client test for a credentialed `http_api` capability
+- [x] authenticated external-client test for a credentialed `http_api` capability (`dnsfilter-current-user`)
 - [ ] client/provider fallback workflow when OpenCode’s chosen provider is unstable
 - [ ] durable multi-capability artifact organization and ledger linkage
 
@@ -560,7 +560,7 @@ Mitigation:
 - [ ] update `RUNBOOK-remote-mcp-e2e.md` to mention provider/client fallback lanes
 - [ ] create a target definition for `youtube-transcript`
 - [ ] create a target definition for Gitea `/version`
-- [ ] decide the first authenticated OpenAPI target
+- [x] decide the first authenticated OpenAPI target (`dnsfilter-current-user`)
 - [ ] decide whether fallback-client execution belongs in this same script or a second script
 
 ---
@@ -578,6 +578,7 @@ For the next real external-testing wave, use this order:
    - switch to another explicit provider inside OpenCode if that is enough
    - otherwise use Codex as the alternate external client
 4. **Only after those succeed, move to authenticated `http_api` and artifact-producing tools**
+   - first authenticated `http_api` target: `dnsfilter-current-user`
 
 This keeps the working baseline intact while making room for more practical external testing instead of overcommitting to OpenCode-only assumptions.
 

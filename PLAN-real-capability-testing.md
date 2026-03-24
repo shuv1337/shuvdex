@@ -22,7 +22,7 @@ This plan is no longer speculative only. Some of the foundation work has now lan
 - [ ] Clean-room OpenCode E2E for real capabilities beyond the synthetic echo fixture
 - [ ] A durable certification ledger file that operators can update incrementally
 - [ ] A repeatable multi-capability certification harness
-- [ ] Real authenticated OpenAPI certification against a credentialed target
+- [x] Real authenticated OpenAPI certification against a credentialed target (`dnsfilter-current-user` on `shuvdev`)
 - [ ] Artifact-producing capability certification (`upload`, dashboard/report generation, etc.)
 - [ ] Host-matrix certification across both `shuvdev` and `shuvbot`
 
@@ -748,7 +748,7 @@ Create a file like `CAPABILITY-CERTIFICATION.md` with a table such as:
 | youtube-transcript | skill.youtube_transcript | module_runtime | ready-now | ✅ | ✅ local | ✅ | ☐ | shuvdev | remote clean-room still pending |
 | crawl | skill.crawl | module_runtime | ready-now | ☐ | ☐ | ☐ | ☐ | — | likely needs Cloudflare creds |
 | gitea-version | openapi.gitea.api | http_api | ready-now | ✅ compile | ☐ remote | ✅ | ☐ | shuvdev | public unauthenticated read proven |
-| authenticated-openapi-target | TBD | http_api | planned | ☐ | ☐ | ☐ | ☐ | — | should validate credential rotation |
+| dnsfilter-current-user | openapi.dnsfilter.api | http_api | ready-now | ✅ compile | ✅ | ✅ | ✅ | shuvdev | first authenticated OpenAPI target now certified on `shuvdev`; next follow-ons are auth failure behavior and credential rotation |
 | upload | TBD | module_runtime? | needs-conversion | ☐ | ☐ | ☐ | ☐ | — | shell skill today |
 | model-usage | TBD | module_runtime? | needs-conversion | ☐ | ☐ | ☐ | ☐ | — | depends on codexbar |
 | ccusage | TBD | module_runtime? | needs-conversion | ☐ | ☐ | ☐ | ☐ | — | multi-host complexity |
@@ -778,7 +778,7 @@ The broader testing initiative will be considered successful when all of the fol
 - [ ] OpenCode clean-room E2E works for more than the synthetic echo fixture
 - [ ] a durable certification ledger exists and can be updated incrementally
 - [ ] future agents/operators can repeat the certification flow using documented scripts/runbooks
-- [ ] at least one authenticated OpenAPI capability is certified with real credentials
+- [x] at least one authenticated OpenAPI capability is certified with real credentials (`dnsfilter-current-user`)
 
 ---
 

@@ -731,6 +731,7 @@ So the linkage schema ships now; richer runtime behavior can follow incrementall
 - [x] **5.1** Register Gitea’s OpenAPI spec against a real Gitea instance
 - [x] **5.2** Verify generated tools appear in MCP `tools/list`
 - [x] **5.3** Execute a read call and verify URL/serialization/auth/response
+- [x] **5.3a** Certify the first authenticated read target (`dnsfilter-current-user` via `GET /v1/current_user`)
 - [ ] **5.4** Execute a write call and verify policy + scope gating
 - [x] **5.5** Refresh after a spec change and verify stable IDs + preserved overrides
 - [ ] **5.6** Validate credential rotation behavior

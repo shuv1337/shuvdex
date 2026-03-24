@@ -32,6 +32,8 @@ This runbook reflects the current working setup validated on `shuvdev`.
   - real imported module-runtime skill
 - `gitea-version`
   - real compiled OpenAPI capability for `GET /version`
+- `dnsfilter-current-user`
+  - authenticated compiled OpenAPI capability for `GET /v1/current_user`
 
 ## Preconditions
 
@@ -94,6 +96,7 @@ From the repo root:
 TARGET=echo ./scripts/run-remote-mcp-e2e.sh
 TARGET=youtube-transcript ./scripts/run-remote-mcp-e2e.sh
 TARGET=gitea-version ./scripts/run-remote-mcp-e2e.sh
+TARGET=dnsfilter-current-user ./scripts/run-remote-mcp-e2e.sh
 ```
 
 This will:
@@ -146,6 +149,7 @@ Example directories:
 - `/tmp/shuvdex-opencode-clean/artifacts/echo/`
 - `/tmp/shuvdex-opencode-clean/artifacts/youtube-transcript/`
 - `/tmp/shuvdex-opencode-clean/artifacts/gitea-version/`
+- `/tmp/shuvdex-opencode-clean/artifacts/dnsfilter-current-user/`
 
 Important files:
 
@@ -215,6 +219,20 @@ Should include structured output with a version field, for example:
 }
 ```
 
+## `dnsfilter-current-user`
+
+### Discovery
+Should identify a tool equivalent to:
+- `shuvdex_openapi_dnsfilter_api_currentUser`
+
+### Invocation
+Should include structured output for the authenticated current user, ideally including one or more of:
+- `id`
+- `email`
+- `organization_id`
+
+The exact payload is controlled by DNSFilter, but it should clearly be an authenticated user object rather than an auth error.
+
 ## Switching from shuvdev to shuvbot later
 
 Override env vars when invoking the script:
@@ -253,6 +271,12 @@ node scripts/stage-module-runtime-skill.mjs "$PWD" /home/shuv/repos/shuvbot-skil
 
 ```bash
 node scripts/seed-gitea-openapi.mjs "$PWD" "$PWD/.capabilities"
+```
+
+### Seed DNSFilter authenticated OpenAPI package only
+
+```bash
+node scripts/seed-dnsfilter-openapi.mjs "$PWD" "$PWD/.capabilities"
 ```
 
 ### Start remote MCP server manually
@@ -341,7 +365,7 @@ Then either:
 
 ### Remote target availability
 
-For real targets like `youtube-transcript` and `gitea-version`, the package must be seeded into the remote runtime package store before discovery will succeed.
+For real targets like `youtube-transcript`, `gitea-version`, and `dnsfilter-current-user`, the package must be seeded into the remote runtime package store before discovery will succeed.
 
 ### HTTP server test status
 
