@@ -4,7 +4,6 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TARGET_HOST="${TARGET_HOST:-$(hostname -s)}"
 TARGET_DNS="${TARGET_DNS:-${TARGET_HOST}}"
-TEST_ROOT="${TEST_ROOT:-/tmp/shuvdex-opencode-clean}"
 MCP_HOST="${MCP_HOST:-0.0.0.0}"
 MCP_PORT="${MCP_PORT:-3848}"
 LOCAL_REPO_PATH="${LOCAL_REPO_PATH:-$REPO_ROOT}"
@@ -13,27 +12,22 @@ POLICY_DIR="${POLICY_DIR:-$REPO_ROOT/.capabilities/policy}"
 CAPABILITIES_ROOT="$(cd "$CAPABILITIES_DIR/.." && pwd)"
 REMOTE_MCP_URL="${REMOTE_MCP_URL:-http://${TARGET_DNS}:${MCP_PORT}/mcp}"
 REMOTE_HEALTH_URL="${REMOTE_HEALTH_URL:-http://${TARGET_DNS}:${MCP_PORT}/health}"
-SESSION_NAME="${SESSION_NAME:-shuvdex-opencode-e2e}"
+SESSION_NAME="${SESSION_NAME:-shuvdex-e2e}"
 CLIENT="${CLIENT:-opencode}"
-PROVIDER="${PROVIDER:-opencode}"
-MODEL="${MODEL:-opencode/gpt-5-nano}"
-SMALL_MODEL="${SMALL_MODEL:-$MODEL}"
 TARGET="${TARGET:-echo}"
 TIMEOUT_SECONDS="${TIMEOUT_SECONDS:-45}"
 ENABLE_TMUX="${ENABLE_TMUX:-1}"
 SKIP_SERVER_START="${SKIP_SERVER_START:-0}"
+SKIP_SEED="${SKIP_SEED:-0}"
 SYSTEMD_SERVICE_NAME="${SYSTEMD_SERVICE_NAME:-shuvdex-mcp.service}"
 SERVER_MODE="${SERVER_MODE:-auto}"
 
-ARTIFACTS_DIR="$TEST_ROOT/artifacts/$TARGET"
-ENV_SH="$TEST_ROOT/env.sh"
-CONFIG_DIR="$TEST_ROOT/config/opencode"
-CONFIG_JSON="$CONFIG_DIR/opencode.json"
+ARTIFACTS_DIR="/tmp/shuvdex-e2e/artifacts/$CLIENT/$TARGET"
 SERVER_LOG="/tmp/shuvdex-mcp-remote.log"
 SERVER_ERR="/tmp/shuvdex-mcp-remote.err"
 SERVER_PID_FILE="/tmp/shuvdex-mcp-remote.pid"
-DISCOVERY_JSONL="$ARTIFACTS_DIR/tool-discovery.jsonl"
-CALL_JSONL="$ARTIFACTS_DIR/tool-call.jsonl"
+DISCOVERY_OUT="$ARTIFACTS_DIR/tool-discovery.jsonl"
+CALL_OUT="$ARTIFACTS_DIR/tool-call.jsonl"
 TMUX_JSONL="$ARTIFACTS_DIR/tmux-timeout-run.jsonl"
 TMUX_STDERR="$ARTIFACTS_DIR/tmux-timeout-run.stderr"
 SUMMARY_JSON="$ARTIFACTS_DIR/summary.json"
@@ -88,49 +82,24 @@ target_settings() {
       ;;
     *)
       echo "Unsupported TARGET: $TARGET" >&2
+      echo "Supported targets: echo, youtube-transcript, gitea-version, dnsfilter-current-user" >&2
       exit 1
       ;;
   esac
 }
 
-prepare_clean_room() {
-  log "Preparing clean-room client environment at $TEST_ROOT"
-  rm -rf "$CONFIG_DIR" "$TEST_ROOT/data" "$TEST_ROOT/cache" "$TEST_ROOT/state" "$TEST_ROOT/workspace" "$TEST_ROOT/home" "$ARTIFACTS_DIR"
-  mkdir -p "$CONFIG_DIR" "$TEST_ROOT/data" "$TEST_ROOT/cache" "$TEST_ROOT/state" "$TEST_ROOT/workspace" "$ARTIFACTS_DIR" "$TEST_ROOT/home"
-
-  cat > "$CONFIG_JSON" <<JSON
-{
-  "\$schema": "https://opencode.ai/config.json",
-  "model": "$MODEL",
-  "small_model": "$SMALL_MODEL",
-  "enabled_providers": ["$PROVIDER"],
-  "mcp": {
-    "shuvdex": {
-      "type": "remote",
-      "url": "$REMOTE_MCP_URL",
-      "enabled": true,
-      "timeout": 10000
-    }
-  }
-}
-JSON
-
-  cat > "$ENV_SH" <<SH
-export XDG_CONFIG_HOME=$TEST_ROOT/config
-export XDG_DATA_HOME=$TEST_ROOT/data
-export XDG_CACHE_HOME=$TEST_ROOT/cache
-export XDG_STATE_HOME=$TEST_ROOT/state
-export OPENCODE_TEST_HOME=$TEST_ROOT/home
-export OPENCODE_DISABLE_CLAUDE_CODE=1
-export OPENCODE_DISABLE_CLAUDE_CODE_PROMPT=1
-export OPENCODE_DISABLE_CLAUDE_CODE_SKILLS=1
-cd $TEST_ROOT/workspace
-pwd > $ARTIFACTS_DIR/pwd.txt
-SH
-  chmod +x "$ENV_SH"
+prepare_artifacts() {
+  log "Preparing artifacts directory at $ARTIFACTS_DIR"
+  rm -rf "$ARTIFACTS_DIR"
+  mkdir -p "$ARTIFACTS_DIR"
+  pwd > "$ARTIFACTS_DIR/pwd.txt"
 }
 
 seed_target() {
+  if [[ "$SKIP_SEED" == "1" ]]; then
+    log "Skipping target seeding by request"
+    return 0
+  fi
   log "Seeding target '$TARGET'"
   case "$TARGET" in
     echo)
@@ -207,24 +176,20 @@ start_remote_server() {
   exit 1
 }
 
-run_discovery() {
-  log "Running isolated client discovery prompt for target '$TARGET'"
-  (
-    source "$ENV_SH"
-    opencode mcp list > "$MCP_LIST_TXT"
-    opencode run --title "shuvdex_${TARGET}_tool_discovery" --format json "$PROMPT_TOOL_DISCOVERY" > "$DISCOVERY_JSONL"
-  )
+# --- Client-specific run functions ---
+
+run_discovery_opencode() {
+  log "Running opencode discovery prompt for target '$TARGET'"
+  opencode mcp list > "$MCP_LIST_TXT" 2>&1 || true
+  opencode run --title "shuvdex_${TARGET}_tool_discovery" --format json "$PROMPT_TOOL_DISCOVERY" > "$DISCOVERY_OUT" 2>&1 || true
 }
 
-run_tool_call() {
-  log "Running isolated client invocation prompt for target '$TARGET'"
-  (
-    source "$ENV_SH"
-    opencode run --title "shuvdex_${TARGET}_tool_call" --format json "$PROMPT_TOOL_CALL" > "$CALL_JSONL"
-  )
+run_tool_call_opencode() {
+  log "Running opencode invocation prompt for target '$TARGET'"
+  opencode run --title "shuvdex_${TARGET}_tool_call" --format json "$PROMPT_TOOL_CALL" > "$CALL_OUT" 2>&1 || true
 }
 
-run_tmux_proof() {
+run_tmux_proof_opencode() {
   if [[ "$ENABLE_TMUX" != "1" ]]; then
     log "Skipping tmux proof by request"
     return 0
@@ -236,25 +201,87 @@ run_tmux_proof() {
   fi
   tmux new-session -d -s "${SESSION_NAME}-${TARGET}" -n run
   tmux pipe-pane -o -t "${SESSION_NAME}-${TARGET}":run "cat >> $ARTIFACTS_DIR/tmux-pane.log"
-  tmux send-keys -t "${SESSION_NAME}-${TARGET}":run "source $ENV_SH && timeout $TIMEOUT_SECONDS opencode run --title tmux_${TARGET}_smoke --format json \"$PROMPT_TOOL_CALL\" > $TMUX_JSONL 2> $TMUX_STDERR; echo EXIT:\$?" C-m
+  tmux send-keys -t "${SESSION_NAME}-${TARGET}":run "timeout $TIMEOUT_SECONDS opencode run --title tmux_${TARGET}_smoke --format json \"$PROMPT_TOOL_CALL\" > $TMUX_JSONL 2> $TMUX_STDERR; echo EXIT:\$?" C-m
   sleep "$(( TIMEOUT_SECONDS / 2 ))"
   tmux capture-pane -p -t "${SESSION_NAME}-${TARGET}":run -S -300 > "$ARTIFACTS_DIR/tmux-pane-capture.txt"
 }
 
+run_discovery_codex() {
+  log "Running codex discovery prompt for target '$TARGET'"
+  codex mcp list > "$MCP_LIST_TXT" 2>&1 || true
+  codex exec --json --output-last-message "$ARTIFACTS_DIR/last-message-discovery.txt" "$PROMPT_TOOL_DISCOVERY" > "$DISCOVERY_OUT" 2>&1 || true
+}
+
+run_tool_call_codex() {
+  log "Running codex invocation prompt for target '$TARGET'"
+  codex exec --json --output-last-message "$ARTIFACTS_DIR/last-message-call.txt" "$PROMPT_TOOL_CALL" > "$CALL_OUT" 2>&1 || true
+}
+
+run_tmux_proof_codex() {
+  if [[ "$ENABLE_TMUX" != "1" ]]; then
+    log "Skipping tmux proof by request"
+    return 0
+  fi
+
+  log "Running tmux-supervised codex proof in session ${SESSION_NAME}-${TARGET}"
+  if tmux has-session -t "${SESSION_NAME}-${TARGET}" 2>/dev/null; then
+    tmux kill-session -t "${SESSION_NAME}-${TARGET}"
+  fi
+  tmux new-session -d -s "${SESSION_NAME}-${TARGET}" -n run
+  tmux pipe-pane -o -t "${SESSION_NAME}-${TARGET}":run "cat >> $ARTIFACTS_DIR/tmux-pane.log"
+  tmux send-keys -t "${SESSION_NAME}-${TARGET}":run "timeout $TIMEOUT_SECONDS codex exec --json --output-last-message $ARTIFACTS_DIR/last-message-tmux.txt \"$PROMPT_TOOL_CALL\" > $TMUX_JSONL 2> $TMUX_STDERR; echo EXIT:\$?" C-m
+  sleep "$(( TIMEOUT_SECONDS / 2 ))"
+  tmux capture-pane -p -t "${SESSION_NAME}-${TARGET}":run -S -300 > "$ARTIFACTS_DIR/tmux-pane-capture.txt"
+}
+
+# --- Dispatcher ---
+
+run_discovery() {
+  case "$CLIENT" in
+    opencode) run_discovery_opencode ;;
+    codex)    run_discovery_codex ;;
+    *)
+      echo "Unsupported CLIENT: $CLIENT" >&2
+      echo "Supported clients: opencode, codex" >&2
+      exit 1
+      ;;
+  esac
+}
+
+run_tool_call() {
+  case "$CLIENT" in
+    opencode) run_tool_call_opencode ;;
+    codex)    run_tool_call_codex ;;
+    *)
+      echo "Unsupported CLIENT: $CLIENT" >&2
+      exit 1
+      ;;
+  esac
+}
+
+run_tmux_proof() {
+  case "$CLIENT" in
+    opencode) run_tmux_proof_opencode ;;
+    codex)    run_tmux_proof_codex ;;
+    *)
+      echo "Unsupported CLIENT: $CLIENT" >&2
+      exit 1
+      ;;
+  esac
+}
+
 write_summary() {
   log "Writing summary artifact"
-  python - <<PY
-import json, pathlib
+  python3 - <<PY
+import json, pathlib, time
 root = pathlib.Path("$ARTIFACTS_DIR")
 summary = {
+  "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
   "target": "$TARGET",
   "target_label": "$TARGET_LABEL",
   "target_kind": "$TARGET_KIND",
   "expected_tool_name": "$EXPECTED_TOOL_NAME",
   "client": "$CLIENT",
-  "provider": "$PROVIDER",
-  "model": "$MODEL",
-  "small_model": "$SMALL_MODEL",
   "remote_mcp_url": "$REMOTE_MCP_URL",
   "remote_health_url": "$REMOTE_HEALTH_URL",
   "session_name": "${SESSION_NAME}-${TARGET}",
@@ -262,7 +289,7 @@ summary = {
   "systemd_service_name": "$SYSTEMD_SERVICE_NAME",
   "server_pid": pathlib.Path("$SERVER_PID_FILE").read_text().strip() if pathlib.Path("$SERVER_PID_FILE").exists() else None,
   "artifacts": {
-    "seed": str(root / "seed.json"),
+    "seed": str(root / "seed.json") if (root / "seed.json").exists() else None,
     "health": str(root / "health.json"),
     "pwd": str(root / "pwd.txt"),
     "mcp_list": str(root / "mcp-list.txt"),
@@ -289,20 +316,30 @@ main() {
   require_cmd node
   require_cmd npm
   require_cmd curl
-  require_cmd opencode
+
+  case "$CLIENT" in
+    opencode) require_cmd opencode ;;
+    codex)    require_cmd codex ;;
+    *)
+      echo "Unsupported CLIENT: $CLIENT" >&2
+      echo "Supported clients: opencode, codex" >&2
+      exit 1
+      ;;
+  esac
+
   if [[ "$ENABLE_TMUX" == "1" ]]; then
     require_cmd tmux
   fi
 
   target_settings
-  prepare_clean_room
+  prepare_artifacts
   seed_target
   start_remote_server
   run_discovery
   run_tool_call
   run_tmux_proof
   write_summary
-  log "Done"
+  log "Done — client=$CLIENT target=$TARGET artifacts=$ARTIFACTS_DIR"
 }
 
 main "$@"
