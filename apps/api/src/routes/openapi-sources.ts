@@ -25,11 +25,20 @@ export function openapiSourcesRouter(runtime: Runtime.Runtime<OpenApiSource>): H
       const result = await run(Effect.gen(function* () {
         const service = yield* OpenApiSource;
         return yield* service.inspect({
+          sourceId: typeof body["sourceId"] === "string" ? body["sourceId"] : undefined,
           specUrl: String(body["specUrl"]),
           title: String(body["title"]),
           description: typeof body["description"] === "string" ? body["description"] : undefined,
+          tags: Array.isArray(body["tags"]) ? body["tags"].filter((tag): tag is string => typeof tag === "string") : undefined,
+          packageIdOverride: typeof body["packageIdOverride"] === "string" ? body["packageIdOverride"] : undefined,
           selectedServerUrl: String(body["selectedServerUrl"] ?? ""),
           credentialId: typeof body["credentialId"] === "string" ? body["credentialId"] : undefined,
+          operationFilter: typeof body["operationFilter"] === "object" && body["operationFilter"] !== null ? body["operationFilter"] as never : undefined,
+          defaultTimeoutMs: typeof body["defaultTimeoutMs"] === "number" ? body["defaultTimeoutMs"] : undefined,
+          defaultRiskLevel: body["defaultRiskLevel"] === "low" || body["defaultRiskLevel"] === "medium" || body["defaultRiskLevel"] === "high"
+            ? body["defaultRiskLevel"]
+            : undefined,
+          companionPackageId: typeof body["companionPackageId"] === "string" ? body["companionPackageId"] : undefined,
         });
       }));
       return c.json(result);
@@ -44,11 +53,20 @@ export function openapiSourcesRouter(runtime: Runtime.Runtime<OpenApiSource>): H
       const result = await run(Effect.gen(function* () {
         const service = yield* OpenApiSource;
         return yield* service.compile({
+          sourceId: typeof body["sourceId"] === "string" ? body["sourceId"] : undefined,
           specUrl: String(body["specUrl"]),
           title: String(body["title"]),
           description: typeof body["description"] === "string" ? body["description"] : undefined,
+          tags: Array.isArray(body["tags"]) ? body["tags"].filter((tag): tag is string => typeof tag === "string") : undefined,
+          packageIdOverride: typeof body["packageIdOverride"] === "string" ? body["packageIdOverride"] : undefined,
           selectedServerUrl: String(body["selectedServerUrl"] ?? ""),
           credentialId: typeof body["credentialId"] === "string" ? body["credentialId"] : undefined,
+          operationFilter: typeof body["operationFilter"] === "object" && body["operationFilter"] !== null ? body["operationFilter"] as never : undefined,
+          defaultTimeoutMs: typeof body["defaultTimeoutMs"] === "number" ? body["defaultTimeoutMs"] : undefined,
+          defaultRiskLevel: body["defaultRiskLevel"] === "low" || body["defaultRiskLevel"] === "medium" || body["defaultRiskLevel"] === "high"
+            ? body["defaultRiskLevel"]
+            : undefined,
+          companionPackageId: typeof body["companionPackageId"] === "string" ? body["companionPackageId"] : undefined,
         });
       }));
       return c.json(result, 201);

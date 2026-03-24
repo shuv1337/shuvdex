@@ -78,6 +78,14 @@ target_settings() {
       PROMPT_TOOL_CALL="${PROMPT_TOOL_CALL:-Use the shuvdex_openapi_gitea_api_getVersion tool and show me the exact structured result, including the returned version field. Use shuvdex only.}"
       PROMPT_TOOL_NEGATIVE="${PROMPT_TOOL_NEGATIVE:-Call a clearly non-existent shuvdex tool name and report the exact failure behavior. Do not fabricate success.}"
       ;;
+    dnsfilter-current-user)
+      TARGET_KIND="http_api"
+      TARGET_LABEL="dnsfilter-current-user"
+      EXPECTED_TOOL_NAME="shuvdex_openapi_dnsfilter_api_currentUser"
+      PROMPT_TOOL_DISCOVERY="${PROMPT_TOOL_DISCOVERY:-List the available tools coming from the shuvdex MCP server only. Tell me the exact tool name for the DNSFilter current-user endpoint if present. Use shuvdex only.}"
+      PROMPT_TOOL_CALL="${PROMPT_TOOL_CALL:-Use the shuvdex_openapi_dnsfilter_api_currentUser tool and show me the exact structured result, including the authenticated user email or id if present. Use shuvdex only.}"
+      PROMPT_TOOL_NEGATIVE="${PROMPT_TOOL_NEGATIVE:-Call a clearly non-existent shuvdex tool name and report the exact failure behavior. Do not fabricate success.}"
+      ;;
     *)
       echo "Unsupported TARGET: $TARGET" >&2
       exit 1
@@ -133,6 +141,9 @@ seed_target() {
       ;;
     gitea-version)
       node "$REPO_ROOT/scripts/seed-gitea-openapi.mjs" "$REPO_ROOT" "$CAPABILITIES_ROOT" | tee "$SEED_JSON"
+      ;;
+    dnsfilter-current-user)
+      node "$REPO_ROOT/scripts/seed-dnsfilter-openapi.mjs" "$REPO_ROOT" "$CAPABILITIES_ROOT" | tee "$SEED_JSON"
       ;;
   esac
 }
