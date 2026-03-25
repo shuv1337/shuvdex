@@ -2,8 +2,8 @@
  * @shuvdex/api
  *
  * HTTP API server (Hono + @hono/node-server) that exposes capability
- * management, policy/auth administration, host management, and compatibility
- * tool endpoints for the existing web UI.
+ * management, policy/auth administration, source/credential management, and
+ * compatibility tool endpoints for the existing web UI.
  */
 import { Hono } from "hono";
 import { cors } from "hono/cors";
@@ -23,8 +23,6 @@ import { auditRouter } from "./routes/audit.js";
 import { toolsRouter } from "./routes/tools.js";
 import { packagesRouter } from "./routes/packages.js";
 import { policiesRouter } from "./routes/policies.js";
-import { hostsRouter } from "./routes/hosts.js";
-import { runnersRouter } from "./routes/runners.js";
 import { skillsRouter } from "./routes/skills.js";
 import { tokensRouter } from "./routes/tokens.js";
 import { credentialsRouter } from "./routes/credentials.js";
@@ -46,7 +44,6 @@ async function main(): Promise<void> {
   const localRepoPath = process.env["LOCAL_REPO_PATH"]
     ? path.resolve(process.env["LOCAL_REPO_PATH"])
     : process.cwd();
-  const configPath = path.resolve(process.cwd(), "fleet.yaml");
 
   const capabilityRegistryLayer = makeCapabilityRegistryLive(capabilitiesDir);
   const credentialStoreLayer = makeCredentialStoreLive({
@@ -102,7 +99,6 @@ async function main(): Promise<void> {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   app.route("/api/tools", toolsRouter(runtime as any));
-  app.route("/api/hosts", hostsRouter(configPath));
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   app.route("/api/skills", skillsRouter(runtime as any, localRepoPath));
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -117,7 +113,6 @@ async function main(): Promise<void> {
   app.route("/api/credentials", credentialsRouter(runtime as any));
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   app.route("/api/sources/openapi", openapiSourcesRouter(runtime as any));
-  app.route("/api/runners", runnersRouter());
 
   app.get("/health", (c) =>
     c.json({
@@ -127,7 +122,6 @@ async function main(): Promise<void> {
       importsDir,
       policyDir,
       localRepoPath,
-      configPath,
     }),
   );
 

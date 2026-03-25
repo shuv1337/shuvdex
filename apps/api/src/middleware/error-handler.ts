@@ -19,8 +19,6 @@ const TAG_TO_STATUS: Record<string, HttpStatus> = {
   ToolNotFound: 404,
   CapabilityNotFound: 404,
   CapabilityPackageNotFound: 404,
-  HostNotFound: 404,
-  ConfigNotFound: 404,
   SkillNotFound: 404,
   PolicyNotFound: 404,
 
@@ -37,19 +35,8 @@ const TAG_TO_STATUS: Record<string, HttpStatus> = {
   // 400 — bad input / validation
   ToolValidationError: 400,
   CapabilityRegistryValidationError: 400,
-  ConfigValidationError: 400,
-  ConfigParseError: 400,
   InvalidTokenError: 400,
   ArchiveValidationError: 400,
-
-  // 502 — upstream SSH failure
-  ConnectionFailed: 502,
-  ConnectionTimeout: 502,
-  CommandFailed: 502,
-  CommandTimeout: 502,
-
-  // 503 — fleet config unavailable at request time
-  FleetConfigUnavailable: 503,
 };
 
 function extractTag(e: unknown): string | undefined {

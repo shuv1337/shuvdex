@@ -9,7 +9,7 @@ export default {
         mono: ['"IBM Plex Mono"', "ui-monospace", "SFMono-Regular", "monospace"],
       },
       colors: {
-        fleet: {
+        gateway: {
           bg: "#0a0f1a",
           surface: "#0f172a",
         },

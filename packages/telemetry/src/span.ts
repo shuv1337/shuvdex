@@ -1,5 +1,5 @@
 /**
- * Span creation helpers for fleet operations.
+ * Span creation helpers for gateway and executor operations.
  *
  * Provides `withSpan` wrapper for Effect operations and `recordError` for
  * manually recording errors in the current span.

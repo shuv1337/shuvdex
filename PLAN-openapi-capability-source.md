@@ -35,7 +35,7 @@ The code-mode pattern copies a sandbox runner, broker, policy layer, output enve
 | Component | File | Current Behavior |
 |---|---|---|
 | Package source types | `packages/capability-registry/src/schema.ts` | `PackageSource.type`: `"builtin" \| "skill" \| "manifest" \| "connector" \| "generated" \| "imported_archive"`. No `"openapi"` variant. |
-| Executor types | `packages/capability-registry/src/schema.ts` | `ExecutorType`: `"builtin" \| "host_runner" \| "mcp_proxy" \| "http_api" \| "module_runtime"`. `http_api` exists but is unimplemented. |
+| Executor types | `packages/capability-registry/src/schema.ts` | `ExecutorType`: `"builtin" \| "mcp_proxy" \| "http_api" \| "module_runtime"`. `http_api` is implemented; `mcp_proxy` remains future-facing. |
 | Execution routing | `packages/execution-providers/src/live.ts` | Only `module_runtime` executes. All other executor types return an error stub. |
 | Execution binding | `packages/capability-registry/src/schema.ts` | `ExecutionBinding` has no HTTP binding metadata. |
 | Policy engine | `packages/policy-engine/src/live.ts` | Authorization uses package allow/deny, capability allow/deny, scopes, host tags, client tags, visibility, and risk level. It does **not** gate on `tool.sideEffectLevel`. |

@@ -17,7 +17,6 @@ export type CapabilityRiskLevel = typeof CapabilityRiskLevel.Type;
 
 export const ExecutorType = Schema.Literal(
   "builtin",
-  "host_runner",
   "mcp_proxy",
   "http_api",
   "module_runtime",

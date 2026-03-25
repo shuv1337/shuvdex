@@ -318,5 +318,5 @@ Do these **first** because they affect runtime behavior and security:
 
 - `.codex/config.toml` - MCP server registration (gitignored but check if present)
 - `.factory/validation/` - 65 files needing bulk update
-- `fleet.yaml` - Host configuration (not involved in rename)
+- `fleet.yaml` - legacy host configuration from the removed fleet-management model (should no longer exist in active runtime paths)
 - `.pi/suggester/seed.json` - Generated; reseed after rename for full cleanliness

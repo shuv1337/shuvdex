@@ -1,12 +1,12 @@
 /**
  * @shuvdex/telemetry
  *
- * OTEL instrumentation for the fleet skills management system.
+ * OTEL instrumentation for the shuvdex capability gateway.
  *
  * Provides:
  * - `TelemetryLive` - Production layer exporting spans via OTLP/HTTP to localhost:4318
  * - `TelemetryTest` - Test layer capturing spans in memory for assertions
- * - `withSpan` - Wrapper for Effect operations that creates OTEL spans with fleet attributes
+ * - `withSpan` - Wrapper for Effect operations that creates OTEL spans with execution attributes
  * - `recordError` - Records error details in the current span
  * - `Telemetry` - Service tag for accessing telemetry configuration
  */

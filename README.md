@@ -1,25 +1,29 @@
 # shuvdex
 
-Centralized capability gateway for Codex hosts.
+Centralized capability gateway for MCP clients.
 
-`shuvdex` is now organized around one idea: capability discovery and policy live centrally, while truly local execution can be delegated to host-bound executors later. The old model of pulling repos, syncing skill directories, and activating symlinks across hosts has been removed from the main product surface.
+`shuvdex` is organized around one idea: capability discovery, policy, credentials, and execution routing live centrally. The old fleet-management model of per-host repo sync, host inventories, and CLI-driven fleet operations has been removed from the product surface.
 
 ## Current State
 
-The repo currently exposes three primary surfaces:
+The repo currently exposes two primary runtime surfaces:
 
 - `@shuvdex/mcp-server`: the client-facing MCP gateway
-- `@shuvdex/api`: admin/control-plane API for packages, policies, tokens, audit, runners, hosts, and compatibility tool management
-- `@shuvdex/web`: React/Vite UI for capability management
+- `@shuvdex/api`: admin/control-plane API for packages, policies, tokens, audit, credentials, OpenAPI sources, and compatibility tool management
+
+There is also an early `@shuvdex/web` React/Vite UI for capability management, but the MCP server and admin API are the active core surfaces.
 
 The capability-gateway foundation is implemented:
 
 - capability registry with package-scoped `tool`, `resource`, `prompt`, `module`, and `connector` definitions
 - skill indexer that compiles `SKILL.md` and optional `capability.yaml` into capability packages
+- skill importer for standalone archives and imported skills
 - policy engine with signed tokens, ACL checks, revocation, and audit logging
+- credential store for authenticated capability execution
+- OpenAPI source ingestion that compiles specs into tool packages
 - dynamic MCP registration with progressive disclosure for tools, resources, and prompts
 
-Execution provider types are wired. `module_runtime` is implemented for local JS/Python-style tool entrypoints over stdin/stdout JSON, while `host_runner`, `mcp_proxy`, and `http_api` still return structured not-yet-implemented responses.
+Execution provider types are wired around the centralized gateway model. `module_runtime` and `http_api` are implemented. `builtin` and `mcp_proxy` remain schema-level executor types for future work.
 
 ## Target Model
 
@@ -28,13 +32,14 @@ The intended operating model is:
 - one client-configured MCP endpoint
 - centrally served capability packages
 - server-side discovery, ACLs, and progressive disclosure
-- optional per-host runners only for local shell, filesystem, browser, or device work
+- direct execution through supported providers such as `module_runtime` and `http_api`
 
 The intended operating model is not:
 
 - cloning the same skill repo on every host
-- keeping host-local skill trees in sync
-- shipping capabilities through `pull`, `sync`, activation, or other git/file replication flows
+- maintaining host inventories in repo config
+- shipping capabilities through `pull`, `sync`, activation, or other fleet replication workflows
+- keeping a separate fleet CLI as a first-class product surface
 
 ## Monorepo Layout
 
@@ -45,19 +50,23 @@ shuvdex/
 │   ├── mcp-server/    # MCP capability gateway
 │   └── web/           # React/Vite frontend
 ├── packages/
-│   ├── capability-registry/   # capability/package model + storage
-│   ├── core/                  # host config types + loading helpers
-│   ├── execution-providers/   # executor abstraction and provider stubs
+│   ├── capability-registry/   # capability/package model + YAML storage
+│   ├── credential-store/      # encrypted credential storage
+│   ├── execution-providers/   # executor abstraction and live routing
+│   ├── http-executor/         # direct HTTP/OpenAPI-backed tool execution
+│   ├── openapi-source/        # OpenAPI spec ingestion and compilation
 │   ├── policy-engine/         # token issuance, ACLs, audit log
+│   ├── skill-importer/        # archive/import pipeline for skills
 │   ├── skill-indexer/         # compile skills into capability packages
-│   ├── ssh/                   # SSH execution layer retained for future host work
 │   └── telemetry/             # tracing/logging helpers
+└── scripts/
+    ├── run-remote-mcp-e2e.sh  # external client E2E harness
+    └── seed-*.mjs             # capability seeding helpers
 ```
 
 ## Requirements
 
 - Node.js with npm workspaces support (`packageManager` is pinned to `npm@11.7.0`)
-- optional `fleet.yaml` only if you use the host-management API surface
 
 ## Install
 
@@ -77,22 +86,13 @@ Persistent gateway state defaults to local directories:
 | `CAPABILITIES_DIR` | `./.capabilities/packages` | persisted capability package storage |
 | `POLICY_DIR` | `./.capabilities/policy` | persisted policies, revocations, and audit state |
 | `LOCAL_REPO_PATH` | current working directory | skill indexing source root |
-
-If you want to use the host-management API, provide a `fleet.yaml` in the repo root or current working directory:
-
-```yaml
-laptop:
-  hostname: 192.168.1.100
-  connectionType: ssh
-  port: 22
-  user: myuser
-```
+| `IMPORTS_DIR` | `./.capabilities/imports` | imported skill/archive asset storage |
 
 ## MCP Server
 
 The MCP server is the main agent-facing surface. On startup it:
 
-1. loads the capability registry and policy engine
+1. loads the capability registry, credential store, HTTP executor, and policy engine
 2. indexes local skills into capability packages
 3. serves MCP `tools`, `resources`, and `prompts`
 
@@ -127,9 +127,9 @@ MCP endpoint:
 http://<tailscale-hostname>:3848/mcp
 ```
 
-An isolated fresh server advertises no built-in fleet catalog. Tools, resources, and prompts come from indexed skills and stored capability packages.
+A fresh server advertises no built-in fleet catalog. Tools, resources, and prompts come from indexed skills and stored capability packages.
 
-For a repeatable clean-room OpenCode validation workflow against the remote MCP server, see:
+For repeatable external validation against the remote MCP server, see:
 
 - `RUNBOOK-remote-mcp-e2e.md`
 - `scripts/run-remote-mcp-e2e.sh`
@@ -156,10 +156,10 @@ Key routes:
 - `GET /api/skills`
 - `GET /api/packages`
 - `GET /api/policies`
+- `GET /api/tokens`
 - `GET /api/audit`
-- `GET /api/runners`
-- `GET /api/hosts`
-- `POST /api/tokens`
+- `GET /api/credentials`
+- `GET /api/sources/openapi`
 
 `/api/tools` is a compatibility view over capability packages for the current UI. It no longer reflects a separate fleet-tool seed system.
 
@@ -218,8 +218,8 @@ npm run typecheck --workspace @shuvdex/api
 ## Notes
 
 - running the API or MCP server creates local state under `.capabilities/` unless overridden by env vars
-- host management still exists as an admin surface, but capability delivery is no longer modeled as per-host repo synchronization
 - the gateway catalog is intentionally empty until you index skills or create capability packages
+- old fleet CLI and host-management flows are deprecated and removed from the active codebase
 
 ## License
 

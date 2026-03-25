@@ -1,9 +1,7 @@
 {
   "files": [],
   "references": [
-    { "path": "packages/core" },
     { "path": "packages/telemetry" },
-    { "path": "packages/ssh" },
     { "path": "packages/capability-registry" },
     { "path": "packages/credential-store" },
     { "path": "packages/http-executor" },

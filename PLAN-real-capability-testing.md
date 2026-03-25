@@ -175,7 +175,7 @@ The output should be a durable **capability certification ledger**, not just ad-
 
 Current executor types in schema:
 - `builtin`
-- `host_runner`
+- `builtin`
 - `mcp_proxy`
 - `http_api`
 - `module_runtime`

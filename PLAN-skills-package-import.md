@@ -376,7 +376,7 @@ class SkillImporter extends Context.Tag("SkillImporter")<
 ```
 .capabilities/
 ├── packages/                           # Package YAML definitions (existing)
-│   ├── builtin.fleet.yaml
+│   ├── builtin.capability-package.yaml
 │   └── skill.visual_explainer.yaml     # ← imported package YAML goes here too
 └── imports/                            # Extracted archive assets (new)
     └── skill.visual_explainer/
