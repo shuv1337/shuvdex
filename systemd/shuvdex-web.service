@@ -1,0 +1,17 @@
+[Unit]
+Description=shuvdex Web UI
+After=network-online.target shuvdex-api.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/repos/shuvdex/apps/web
+Environment="PATH=%h/.local/share/mise/installs/node/25.2.1/bin:%h/.bun/bin:/usr/local/bin:/usr/bin:/bin"
+Environment="VITE_API_URL=http://shuvdev:3847"
+ExecStartPre=%h/.local/share/mise/installs/node/25.2.1/bin/npm run build --workspace @shuvdex/web
+ExecStart=%h/.local/share/mise/installs/node/25.2.1/bin/npm run preview --workspace @shuvdex/web -- --host 0.0.0.0 --port 5173 --strictPort
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target

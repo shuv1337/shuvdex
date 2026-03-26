@@ -29,9 +29,28 @@ import { credentialsRouter } from "./routes/credentials.js";
 import { openapiSourcesRouter } from "./routes/openapi-sources.js";
 import * as path from "node:path";
 
+const HOST = process.env["HOST"] ?? "0.0.0.0";
 const PORT = Number(process.env["PORT"] ?? 3847);
 
+function resolveCorsAllowedOrigins(): Set<string> {
+  const configured = process.env["CORS_ALLOWED_ORIGINS"]
+    ?.split(",")
+    .map((value) => value.trim())
+    .filter(Boolean);
+
+  return new Set(
+    configured && configured.length > 0
+      ? configured
+      : [
+          "http://localhost:5173",
+          "http://127.0.0.1:5173",
+          "http://shuvdev:5173",
+        ],
+  );
+}
+
 async function main(): Promise<void> {
+  const allowedOrigins = resolveCorsAllowedOrigins();
   const capabilitiesDir = process.env["CAPABILITIES_DIR"]
     ? path.resolve(process.env["CAPABILITIES_DIR"])
     : path.resolve(process.cwd(), ".capabilities", "packages");
@@ -88,8 +107,8 @@ async function main(): Promise<void> {
     "*",
     cors({
       origin: (origin) => {
-        if (!origin || origin === "http://localhost:5173") return origin ?? "";
-        return origin;
+        if (!origin) return "";
+        return allowedOrigins.has(origin) ? origin : "";
       },
       allowHeaders: ["Content-Type", "Authorization"],
       allowMethods: ["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
@@ -127,9 +146,9 @@ async function main(): Promise<void> {
 
   app.notFound((c) => c.json({ error: "Not found" }, 404));
 
-  serve({ fetch: app.fetch, port: PORT }, (info) => {
+  serve({ fetch: app.fetch, hostname: HOST, port: PORT }, (info) => {
     process.stderr.write(
-      `[shuvdex/api] listening on http://localhost:${info.port}\n`,
+      `[shuvdex/api] listening on http://${HOST}:${info.port}\n`,
     );
     process.stderr.write(`[shuvdex/api] capabilities dir: ${capabilitiesDir}\n`);
     process.stderr.write(`[shuvdex/api] local repo: ${localRepoPath}\n`);

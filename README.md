@@ -60,7 +60,7 @@ shuvdex/
 │   ├── skill-indexer/         # compile skills into capability packages
 │   └── telemetry/             # tracing/logging helpers
 └── scripts/
-    ├── run-remote-mcp-e2e.sh  # external client E2E harness
+    ├── run-mcp-certification.sh  # lightweight direct-MCP certification harness
     └── seed-*.mjs             # capability seeding helpers
 ```
 
@@ -131,8 +131,8 @@ A fresh server advertises no built-in fleet catalog. Tools, resources, and promp
 
 For repeatable external validation against the remote MCP server, see:
 
-- `RUNBOOK-remote-mcp-e2e.md`
-- `scripts/run-remote-mcp-e2e.sh`
+- `RUNBOOK-mcp-certification.md`
+- `scripts/run-mcp-certification.sh`
 
 For a persistent user-level systemd service on hosts like `shuvdev`, see:
 
@@ -220,6 +220,7 @@ npm run typecheck --workspace @shuvdex/api
 - running the API or MCP server creates local state under `.capabilities/` unless overridden by env vars
 - the gateway catalog is intentionally empty until you index skills or create capability packages
 - old fleet CLI and host-management flows are deprecated and removed from the active codebase
+- the preferred certification path is now the lightweight direct-MCP harness, not heavyweight external AI clients
 
 ## License
 

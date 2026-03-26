@@ -60,8 +60,8 @@ This plan defines that certification program and updates it to reflect the curre
   - repo copy: `systemd/shuvdex-mcp.service`
   - installed unit: `~/.config/systemd/user/shuvdex-mcp.service`
 - Clean-room OpenCode test exists for deterministic fixture
-  - script: `scripts/run-remote-mcp-e2e.sh`
-  - runbook: `RUNBOOK-remote-mcp-e2e.md`
+  - script: `scripts/run-mcp-certification.sh`
+  - runbook: `RUNBOOK-mcp-certification.md`
 - Deterministic seeded fixture exists
   - source: `examples/module-runtime-skill-template/`
   - seeder: `scripts/seed-module-runtime-template.mjs`
@@ -118,7 +118,7 @@ This plan defines that certification program and updates it to reflect the curre
 #### Operational notes
 - `AGENTS.md`
 - `README.md`
-- `RUNBOOK-remote-mcp-e2e.md`
+- `RUNBOOK-mcp-certification.md`
 - `PLAN-openapi-capability-source.md`
 
 ---
@@ -223,7 +223,7 @@ Rules that still remain mandatory:
 
 Relevant files:
 - `PLAN-opencode-clean-real-world-test.md`
-- `scripts/run-remote-mcp-e2e.sh`
+- `scripts/run-mcp-certification.sh`
 - `AGENTS.md`
 
 ### 4. Telemetry and artifacts are part of done
@@ -663,7 +663,7 @@ Relevant files:
 
 ## Phase 5 — extend the clean-room E2E harness from one fixture to many capabilities
 
-- [ ] Refactor `scripts/run-remote-mcp-e2e.sh` so it can run named target capabilities, not just the echo fixture
+- [ ] Refactor `scripts/run-mcp-certification.sh` so it can run named target capabilities, not just the echo fixture
 - [ ] Parameterize:
   - package/skill/spec target under test
   - discovery prompt
@@ -673,8 +673,8 @@ Relevant files:
 - [ ] Make summary output explicit about pass/fail
 
 Relevant files:
-- `scripts/run-remote-mcp-e2e.sh`
-- `RUNBOOK-remote-mcp-e2e.md`
+- `scripts/run-mcp-certification.sh`
+- `RUNBOOK-mcp-certification.md`
 - `AGENTS.md`
 
 ## Phase 6 — finish Wave 1A on `shuvdev`

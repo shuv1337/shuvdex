@@ -10,3 +10,11 @@ coverage/
 .run/
 .capabilities/policy/
 .capabilities/packages/skill.module_runtime_template.yaml
+.capabilities/packages/skill.youtube_transcript.yaml
+.capabilities/packages/skill.crawl.yaml
+.capabilities/packages/openapi.gitea.api.yaml
+.capabilities/packages/openapi.dnsfilter.api.yaml
+.capabilities/imports/
+.capabilities/credentials/
+.capabilities/sources/
+.capabilities/.credential-key

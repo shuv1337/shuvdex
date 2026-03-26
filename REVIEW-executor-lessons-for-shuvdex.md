@@ -35,7 +35,7 @@ Shuvdex context referenced during comparison:
 - `packages/skill-importer/src/live.ts`
 - `packages/execution-providers/src/module-runtime.ts`
 - `PLAN-real-capability-testing.md`
-- `RUNBOOK-remote-mcp-e2e.md`
+- `RUNBOOK-mcp-certification.md`
 
 ---
 

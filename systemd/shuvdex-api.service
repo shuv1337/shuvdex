@@ -1,0 +1,23 @@
+[Unit]
+Description=shuvdex Admin API
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/repos/shuvdex
+Environment="HOST=0.0.0.0"
+Environment="PORT=3847"
+Environment="LOCAL_REPO_PATH=%h/repos/shuvdex"
+Environment="CAPABILITIES_DIR=%h/repos/shuvdex/.capabilities/packages"
+Environment="POLICY_DIR=%h/repos/shuvdex/.capabilities/policy"
+Environment="IMPORTS_DIR=%h/repos/shuvdex/.capabilities/imports"
+Environment="CORS_ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173,http://shuvdev:5173"
+Environment="PATH=%h/.local/share/mise/installs/node/25.2.1/bin:%h/.bun/bin:/usr/local/bin:/usr/bin:/bin"
+ExecStartPre=%h/.local/share/mise/installs/node/25.2.1/bin/npm run build --workspace @shuvdex/api
+ExecStart=%h/.local/share/mise/installs/node/25.2.1/bin/node %h/repos/shuvdex/apps/api/dist/index.js
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target

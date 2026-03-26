@@ -4,7 +4,7 @@
 
 const API_BASE =
   (import.meta.env["VITE_API_URL"] as string | undefined) ??
-  "http://localhost:3847";
+  `${window.location.protocol}//${window.location.hostname}:3847`;
 
 export class ApiError extends Error {
   constructor(

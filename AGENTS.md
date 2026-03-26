@@ -57,14 +57,16 @@ curl http://shuvdev:3848/health
 
 Minimum validation after relevant changes:
 
-1. service is active
-2. `/health` returns 200
-3. if MCP behavior changed, verify `/mcp` or run the clean-room E2E script
+1. affected service is active
+2. MCP `/health` returns 200 when MCP changed
+3. API `/health` returns 200 when API changed
+4. web root returns 200 when web changed
+5. if MCP behavior changed, verify `/mcp` with direct MCP requests or run the lightweight certification harness
 
 Useful command:
 
 ```bash
-./scripts/run-remote-mcp-e2e.sh
+./scripts/run-mcp-certification.sh
 ```
 
 ## Deterministic test fixture
@@ -75,19 +77,31 @@ The repeatable remote MCP test currently uses:
   - `examples/module-runtime-skill-template/`
 - seeder:
   - `scripts/seed-module-runtime-template.mjs`
-- surfaced OpenCode tool name:
-  - `shuvdex_skill_module_runtime_template_echo`
+- surfaced tool name:
+  - `skill.module_runtime_template.echo`
 
-## OpenCode clean-room note
+## Lightweight certification note
 
-For the repeatable E2E flow, the clean-room OpenCode config is pinned to:
+The primary repeatable certification flow no longer depends on OpenCode or Codex.
 
-- `model: opencode/gpt-5-nano`
-- `small_model: opencode/gpt-5-nano`
-- `enabled_providers: ["opencode"]`
+Use the lightweight direct-MCP harness instead:
+- protocol transport: HTTP MCP via `curl`
+- parser/assertion tool: `jq`
+- script: `scripts/run-mcp-certification.sh`
+- runbook: `RUNBOOK-mcp-certification.md`
 
-Reason:
-- leaving provider selection implicit previously caused a broken `cloudflare-ai-gateway` path in this environment.
+Why:
+- lower dependency weight
+- fewer environment-specific client failures
+- deterministic artifacts
+- validates the actual MCP server contract directly
+
+Supported current targets:
+- `echo`
+- `youtube-transcript`
+- `gitea-version`
+- `dnsfilter-current-user`
+- `crawl`
 
 ## Keep this file updated
 
@@ -95,8 +109,8 @@ When you learn something operationally useful, update this file.
 
 Especially keep these current:
 
-- actual MCP endpoint/port/host
-- systemd service name and install path
+- actual MCP/API/web endpoints and ports
+- systemd service names and install paths
 - required restart/reload commands
 - known-good validation commands
 - known caveats that can waste time for future agents
