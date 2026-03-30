@@ -4,7 +4,10 @@ dist/
 .turbo/
 coverage/
 
-.codex/environments/
+.codex/
+.factory/
+.rodney/
+PLAN*.md
 .pi/suggester/logs/
 .pi/suggester/sessions/
 .run/
