@@ -8,6 +8,7 @@ coverage/
 .factory/
 .rodney/
 PLAN*.md
+!PLAN-MSP-MCP.md
 .pi/suggester/logs/
 .pi/suggester/sessions/
 .run/
