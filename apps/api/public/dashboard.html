@@ -1,0 +1,2017 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Shuvdex · Governance Dashboard</title>
+  <style>
+    /* ── Design Tokens ─────────────────────────────────────────────────── */
+    :root {
+      --bg:           #0d1117;
+      --surface:      #161b22;
+      --surface-2:    #21262d;
+      --surface-3:    #2d333b;
+      --border:       #30363d;
+      --border-sub:   #21262d;
+      --primary:      #58a6ff;
+      --primary-dim:  #1f4068;
+      --success:      #3fb950;
+      --success-dim:  #0d2e17;
+      --warning:      #d29922;
+      --warning-dim:  #2f1f00;
+      --danger:       #f85149;
+      --danger-dim:   #3d0f0f;
+      --info:         #79c0ff;
+      --purple:       #bc8cff;
+      --purple-dim:   #2a1a4a;
+      --text:         #e6edf3;
+      --text-sec:     #8b949e;
+      --text-muted:   #484f58;
+      --radius:       6px;
+      --radius-lg:    10px;
+      --shadow:       0 8px 24px rgba(0,0,0,.4);
+      --font-mono:    'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    }
+
+    /* ── Reset ─────────────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 14px; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+      line-height: 1.5;
+      min-height: 100vh;
+    }
+    a { color: var(--primary); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    button { cursor: pointer; font: inherit; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { text-align: left; padding: 8px 12px; }
+    input, select { font: inherit; }
+    ::placeholder { color: var(--text-muted); }
+    :focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+    /* ── Scrollbar ─────────────────────────────────────────────────────── */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: var(--surface); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    /* ── Layout ────────────────────────────────────────────────────────── */
+    .site-header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .header-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 600;
+      font-size: 15px;
+      white-space: nowrap;
+    }
+    .header-brand svg { flex-shrink: 0; }
+    .header-spacer { flex: 1; }
+    .header-controls {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .api-status {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--text-sec);
+    }
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--text-muted);
+      flex-shrink: 0;
+    }
+    .status-dot.ok     { background: var(--success); box-shadow: 0 0 0 2px var(--success-dim); }
+    .status-dot.warn   { background: var(--warning); box-shadow: 0 0 0 2px var(--warning-dim); }
+    .status-dot.error  { background: var(--danger);  box-shadow: 0 0 0 2px var(--danger-dim);  }
+    .status-dot.pulse  { animation: pulse 2s infinite; }
+    @keyframes pulse {
+      0%,100% { opacity: 1; }
+      50%      { opacity: .4; }
+    }
+
+    .main-container {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 0 24px 40px;
+    }
+
+    /* ── Tabs ──────────────────────────────────────────────────────────── */
+    .tab-nav {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+      background: var(--surface);
+      position: sticky;
+      top: 56px;
+      z-index: 90;
+      gap: 4px;
+    }
+    .tab-btn {
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      color: var(--text-sec);
+      padding: 14px 16px 12px;
+      font-size: 13px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: color .15s, border-color .15s;
+      margin-bottom: -1px;
+    }
+    .tab-btn:hover { color: var(--text); }
+    .tab-btn.active {
+      color: var(--text);
+      border-bottom-color: var(--primary);
+    }
+    .tab-badge {
+      background: var(--surface-3);
+      color: var(--text-sec);
+      font-size: 11px;
+      padding: 1px 6px;
+      border-radius: 10px;
+    }
+    .tab-badge.red { background: var(--danger-dim); color: var(--danger); }
+
+    /* ── Panels ────────────────────────────────────────────────────────── */
+    .panel { display: none; padding-top: 24px; }
+    .panel.active { display: block; }
+
+    /* ── Stats Grid ────────────────────────────────────────────────────── */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 16px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .stat-label {
+      font-size: 11px;
+      color: var(--text-sec);
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      font-weight: 500;
+    }
+    .stat-value {
+      font-size: 28px;
+      font-weight: 700;
+      line-height: 1.1;
+      color: var(--text);
+    }
+    .stat-value.green  { color: var(--success); }
+    .stat-value.yellow { color: var(--warning); }
+    .stat-value.red    { color: var(--danger); }
+    .stat-value.blue   { color: var(--primary); }
+    .stat-sub {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    /* ── Section ───────────────────────────────────────────────────────── */
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      margin-bottom: 24px;
+      overflow: hidden;
+    }
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--border);
+      gap: 12px;
+    }
+    .section-title {
+      font-size: 13px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .section-icon {
+      color: var(--text-sec);
+      font-size: 14px;
+    }
+    .section-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .section-body { padding: 0; }
+
+    /* ── Table ─────────────────────────────────────────────────────────── */
+    .data-table {
+      width: 100%;
+      font-size: 13px;
+    }
+    .data-table thead tr {
+      border-bottom: 1px solid var(--border);
+    }
+    .data-table th {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color: var(--text-sec);
+      padding: 10px 16px;
+      white-space: nowrap;
+      cursor: pointer;
+      user-select: none;
+    }
+    .data-table th:hover { color: var(--text); }
+    .data-table th.sorted { color: var(--primary); }
+    .data-table th .sort-icon { margin-left: 4px; opacity: .5; }
+    .data-table tbody tr {
+      border-bottom: 1px solid var(--border-sub);
+      transition: background .1s;
+    }
+    .data-table tbody tr:last-child { border-bottom: none; }
+    .data-table tbody tr:hover { background: var(--surface-2); }
+    .data-table td {
+      padding: 10px 16px;
+      vertical-align: middle;
+      color: var(--text);
+    }
+    .data-table td.muted { color: var(--text-sec); }
+    .data-table td.mono  { font-family: var(--font-mono); font-size: 12px; }
+
+    /* ── Cards Grid (upstreams, apps) ──────────────────────────────────── */
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 16px;
+      padding: 16px 20px;
+    }
+    .app-card {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      transition: border-color .15s;
+    }
+    .app-card:hover { border-color: var(--primary); }
+    .app-card-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .app-card-name {
+      font-weight: 600;
+      font-size: 13px;
+      line-height: 1.3;
+    }
+    .app-card-meta {
+      font-size: 11px;
+      color: var(--text-sec);
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .app-card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11px;
+      color: var(--text-muted);
+      padding-top: 8px;
+      border-top: 1px solid var(--border-sub);
+    }
+
+    /* ── Badges ────────────────────────────────────────────────────────── */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+    .badge-green  { background: var(--success-dim); color: var(--success); }
+    .badge-yellow { background: var(--warning-dim); color: var(--warning); }
+    .badge-red    { background: var(--danger-dim);  color: var(--danger); }
+    .badge-gray   { background: var(--surface-3);   color: var(--text-sec); }
+    .badge-blue   { background: var(--primary-dim); color: var(--primary); }
+    .badge-purple { background: var(--purple-dim);  color: var(--purple); }
+
+    /* ── Buttons ───────────────────────────────────────────────────────── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      background: var(--surface-2);
+      color: var(--text);
+      font-size: 12px;
+      font-weight: 500;
+      transition: background .15s, border-color .15s;
+      white-space: nowrap;
+    }
+    .btn:hover { background: var(--surface-3); border-color: var(--text-sec); }
+    .btn:active { transform: translateY(1px); }
+    .btn.primary {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: #fff;
+    }
+    .btn.primary:hover { background: #79c0ff; border-color: #79c0ff; }
+    .btn.danger { background: var(--danger-dim); border-color: var(--danger); color: var(--danger); }
+    .btn.sm { padding: 4px 8px; font-size: 11px; }
+    .btn:disabled {
+      opacity: .5;
+      cursor: default;
+      pointer-events: none;
+    }
+
+    /* ── Form Controls ─────────────────────────────────────────────────── */
+    .filter-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      flex-wrap: wrap;
+    }
+    .filter-row label { font-size: 11px; color: var(--text-sec); white-space: nowrap; }
+    .input-field {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      padding: 5px 10px;
+      font-size: 12px;
+      outline: none;
+      transition: border-color .15s;
+    }
+    .input-field:focus { border-color: var(--primary); }
+    .select-field {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      padding: 5px 10px;
+      font-size: 12px;
+      outline: none;
+      cursor: pointer;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%238b949e' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 8px center;
+      padding-right: 24px;
+    }
+    .select-field:focus { border-color: var(--primary); }
+    .time-toggle {
+      display: flex;
+      gap: 2px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 2px;
+    }
+    .time-toggle button {
+      border: none;
+      background: none;
+      color: var(--text-sec);
+      padding: 3px 10px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 500;
+      transition: background .15s, color .15s;
+    }
+    .time-toggle button.active {
+      background: var(--primary);
+      color: #fff;
+    }
+    .time-toggle button:hover:not(.active) { background: var(--surface-3); color: var(--text); }
+
+    /* ── Score Ring ────────────────────────────────────────────────────── */
+    .score-container {
+      display: flex;
+      align-items: center;
+      gap: 32px;
+      padding: 24px;
+    }
+    .score-ring {
+      position: relative;
+      width: 120px;
+      height: 120px;
+      flex-shrink: 0;
+    }
+    .score-ring svg {
+      transform: rotate(-90deg);
+    }
+    .score-ring-text {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .score-ring-num {
+      font-size: 28px;
+      font-weight: 700;
+    }
+    .score-ring-label {
+      font-size: 10px;
+      color: var(--text-sec);
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+    .score-details {
+      flex: 1;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+    .score-item {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .score-item-label {
+      font-size: 11px;
+      color: var(--text-sec);
+    }
+    .score-item-value {
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    /* ── Policy Cards ──────────────────────────────────────────────────── */
+    .policy-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
+      padding: 16px 20px;
+    }
+    .policy-card {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 14px;
+    }
+    .policy-card-title {
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .policy-card-body {
+      font-size: 12px;
+      color: var(--text-sec);
+      line-height: 1.6;
+    }
+    .policy-pill {
+      display: inline-block;
+      background: var(--surface-3);
+      color: var(--text-sec);
+      border-radius: 4px;
+      padding: 1px 6px;
+      font-size: 11px;
+      font-family: var(--font-mono);
+      margin: 1px;
+    }
+
+    /* ── Timeline Chart ────────────────────────────────────────────────── */
+    .chart-wrap {
+      padding: 16px 20px;
+      height: 180px;
+      position: relative;
+    }
+    .chart-svg {
+      width: 100%;
+      height: 100%;
+      overflow: visible;
+    }
+
+    /* ── Empty State ───────────────────────────────────────────────────── */
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 40px 20px;
+      color: var(--text-muted);
+      font-size: 13px;
+      text-align: center;
+    }
+    .empty-state svg { opacity: .4; }
+    .empty-state h4 { color: var(--text-sec); font-size: 14px; margin: 0; }
+
+    /* ── Loading Skeleton ──────────────────────────────────────────────── */
+    .skeleton {
+      background: linear-gradient(90deg, var(--surface-2) 25%, var(--surface-3) 50%, var(--surface-2) 75%);
+      background-size: 400% 100%;
+      animation: shimmer 1.4s infinite;
+      border-radius: var(--radius);
+    }
+    @keyframes shimmer {
+      0%   { background-position: 100% 0; }
+      100% { background-position: -100% 0; }
+    }
+    .skeleton-row {
+      height: 40px;
+      margin-bottom: 8px;
+    }
+    .skeleton-text {
+      height: 14px;
+      width: 60%;
+      display: inline-block;
+    }
+
+    /* ── Auth Modal ────────────────────────────────────────────────────── */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.7);
+      backdrop-filter: blur(4px);
+      z-index: 200;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .modal-backdrop.hidden { display: none; }
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 28px;
+      max-width: 420px;
+      width: 100%;
+      box-shadow: var(--shadow);
+    }
+    .modal h3 {
+      font-size: 16px;
+      margin-bottom: 8px;
+    }
+    .modal p {
+      font-size: 13px;
+      color: var(--text-sec);
+      margin-bottom: 20px;
+    }
+    .modal-field {
+      margin-bottom: 16px;
+    }
+    .modal-field label {
+      display: block;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-sec);
+      margin-bottom: 6px;
+    }
+    .modal-field input {
+      width: 100%;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      padding: 8px 12px;
+      font-size: 13px;
+      font-family: var(--font-mono);
+      outline: none;
+    }
+    .modal-field input:focus { border-color: var(--primary); }
+    .modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
+    .modal-error {
+      background: var(--danger-dim);
+      color: var(--danger);
+      border: 1px solid var(--danger);
+      border-radius: var(--radius);
+      padding: 8px 12px;
+      font-size: 12px;
+      margin-bottom: 16px;
+    }
+    .modal-error.hidden { display: none; }
+
+    /* ── Alert ─────────────────────────────────────────────────────────── */
+    .alert {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 12px 16px;
+      border-radius: var(--radius);
+      font-size: 13px;
+      margin-bottom: 20px;
+    }
+    .alert-warn { background: var(--warning-dim); color: var(--warning); border: 1px solid var(--warning); }
+    .alert-err  { background: var(--danger-dim);  color: var(--danger);  border: 1px solid var(--danger); }
+    .alert-info { background: var(--primary-dim); color: var(--info);    border: 1px solid var(--primary); }
+    .alert.hidden { display: none; }
+
+    /* ── Responsive ────────────────────────────────────────────────────── */
+    @media (max-width: 768px) {
+      .site-header { padding: 0 16px; }
+      .main-container { padding: 0 16px 32px; }
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+      .cards-grid { grid-template-columns: 1fr; }
+      .score-container { flex-direction: column; }
+      .score-details { grid-template-columns: repeat(2, 1fr); }
+      .tab-nav { overflow-x: auto; gap: 0; }
+      .tab-btn { flex-shrink: 0; }
+    }
+
+    /* ── Misc ──────────────────────────────────────────────────────────── */
+    .flex { display: flex; align-items: center; }
+    .flex-gap { gap: 8px; }
+    .text-right { text-align: right; }
+    .nowrap { white-space: nowrap; }
+    .mono { font-family: var(--font-mono); }
+    .truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .last-refresh { font-size: 11px; color: var(--text-muted); }
+    .loading-overlay {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 6px 12px;
+      border-radius: var(--radius);
+      background: var(--surface-2);
+      font-size: 12px;
+      color: var(--text-sec);
+    }
+    .loading-overlay.visible { display: flex; }
+    .spinner {
+      width: 12px;
+      height: 12px;
+      border: 2px solid var(--border);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin .6s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .refresh-icon { transition: transform .3s; }
+    .refresh-icon.spinning { animation: spin .6s linear infinite; }
+  </style>
+</head>
+<body>
+
+<!-- ── Header ──────────────────────────────────────────────────────────── -->
+<header class="site-header">
+  <div class="header-brand">
+    <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+      <rect width="28" height="28" rx="6" fill="#1f4068"/>
+      <path d="M7 14h6M15 10l6 4-6 4" stroke="#58a6ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="10" cy="14" r="2" fill="#58a6ff"/>
+    </svg>
+    Shuvdex · Governance
+  </div>
+  <div class="header-spacer"></div>
+  <div class="header-controls">
+    <div class="loading-overlay" id="loading-indicator">
+      <div class="spinner"></div>
+      Refreshing…
+    </div>
+    <span class="last-refresh" id="last-refresh-ts"></span>
+    <div class="api-status">
+      <div class="status-dot" id="api-status-dot"></div>
+      <span id="api-status-text">Connecting…</span>
+    </div>
+    <button class="btn sm" id="refresh-btn" title="Refresh now">
+      <svg class="refresh-icon" id="refresh-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 2v6h-6M3 12a9 9 0 0115-6.7L21 8M3 22v-6h6M21 12a9 9 0 01-15 6.7L3 16"/>
+      </svg>
+      Refresh
+    </button>
+    <button class="btn sm" id="autorefresh-btn" title="Toggle auto-refresh">Auto ⏸</button>
+    <button class="btn sm" id="auth-btn" title="Configure API token">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="11" width="18" height="11" rx="2"/>
+        <path d="M7 11V7a5 5 0 0110 0v4"/>
+      </svg>
+      Auth
+    </button>
+  </div>
+</header>
+
+<!-- ── Tabs ─────────────────────────────────────────────────────────────── -->
+<nav class="tab-nav">
+  <button class="tab-btn active" data-tab="msp">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+    MSP Admin
+  </button>
+  <button class="tab-btn" data-tab="gov">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+    Client Governance
+  </button>
+</nav>
+
+<!-- ── Main ─────────────────────────────────────────────────────────────── -->
+<main class="main-container">
+
+  <!-- Global error alert -->
+  <div class="alert alert-err hidden" id="global-error" style="margin-top:20px">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    <span id="global-error-text"></span>
+  </div>
+
+  <!-- ── MSP Admin Panel ───────────────────────────────────────────────── -->
+  <div id="panel-msp" class="panel active">
+
+    <!-- Stats row -->
+    <div class="stats-grid" id="msp-stats">
+      <div class="stat-card"><div class="stat-label">Packages</div><div class="stat-value blue" id="s-connectors">—</div><div class="stat-sub">local capabilities</div></div>
+      <div class="stat-card"><div class="stat-label">Upstreams</div><div class="stat-value" id="s-upstreams">—</div><div class="stat-sub" id="s-upstreams-sub">MCP servers</div></div>
+      <div class="stat-card"><div class="stat-label">Policies</div><div class="stat-value blue" id="s-policies">—</div><div class="stat-sub">access rules</div></div>
+      <div class="stat-card"><div class="stat-label">Credentials</div><div class="stat-value" id="s-credentials">—</div><div class="stat-sub" id="s-creds-sub">stored secrets</div></div>
+      <div class="stat-card"><div class="stat-label">Audit Events</div><div class="stat-value" id="s-events">—</div><div class="stat-sub">since last restart</div></div>
+      <div class="stat-card"><div class="stat-label">Error Rate</div><div class="stat-value" id="s-errorrate">—</div><div class="stat-sub">of audited calls</div></div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title">
+          <span class="section-icon">⚡</span> Quick Actions
+        </div>
+      </div>
+      <div class="section-body" style="padding:14px 20px;display:flex;gap:10px;flex-wrap:wrap">
+        <button class="btn" id="btn-sync-all">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6M3 12a9 9 0 0115-6.7L21 8M3 22v-6h6M21 12a9 9 0 01-15 6.7L3 16"/></svg>
+          Sync All Upstreams
+        </button>
+        <button class="btn" id="btn-reindex">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          Reindex Packages
+        </button>
+        <button class="btn" id="btn-export-audit">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+          Export Audit Log
+        </button>
+        <span id="action-feedback" style="align-self:center;font-size:12px;color:var(--success)"></span>
+      </div>
+    </div>
+
+    <!-- Upstream Health -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title">
+          <span class="section-icon">🔌</span> Upstream MCP Servers
+          <span class="tab-badge" id="upstream-count-badge">0</span>
+        </div>
+        <div class="section-actions">
+          <button class="btn sm" onclick="loadData()">↻ Refresh</button>
+        </div>
+      </div>
+      <div class="section-body">
+        <div id="upstreams-content">
+          <div class="empty-state">
+            <div class="spinner"></div>
+            <span>Loading upstreams…</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Packages / Capabilities -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title">
+          <span class="section-icon">📦</span> Capability Packages
+          <span class="tab-badge" id="packages-count-badge">0</span>
+        </div>
+        <div class="section-actions">
+          <input class="input-field" id="pkg-search" placeholder="Filter packages…" style="width:180px">
+        </div>
+      </div>
+      <div class="section-body">
+        <div id="packages-content">
+          <div class="empty-state"><div class="spinner"></div><span>Loading…</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Audit Events -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title">
+          <span class="section-icon">📋</span> Audit Log
+        </div>
+      </div>
+      <div class="section-body">
+        <div class="filter-row">
+          <label>Decision</label>
+          <select class="select-field" id="audit-filter-decision">
+            <option value="">All</option>
+            <option value="allow">Allow</option>
+            <option value="deny">Deny</option>
+            <option value="approval_required">Approval Required</option>
+            <option value="break_glass">Break Glass</option>
+          </select>
+          <label>Action</label>
+          <select class="select-field" id="audit-filter-action">
+            <option value="">All actions</option>
+            <option value="tool_call">tool_call</option>
+            <option value="resource_read">resource_read</option>
+            <option value="tools_list">tools_list</option>
+            <option value="token_issue">token_issue</option>
+            <option value="policy_change">policy_change</option>
+          </select>
+          <div style="flex:1"></div>
+          <div class="time-toggle" id="audit-time-toggle">
+            <button class="active" data-hours="24">24h</button>
+            <button data-hours="168">7d</button>
+          </div>
+          <button class="btn sm" id="btn-apply-audit-filter">Apply</button>
+        </div>
+        <div id="audit-content">
+          <div class="empty-state"><div class="spinner"></div><span>Loading audit events…</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Policies -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title">
+          <span class="section-icon">🛡</span> Access Policies
+          <span class="tab-badge" id="policies-count-badge">0</span>
+        </div>
+      </div>
+      <div class="section-body">
+        <div id="policies-content">
+          <div class="empty-state"><div class="spinner"></div><span>Loading…</span></div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /panel-msp -->
+
+
+  <!-- ── Client Governance Panel ──────────────────────────────────────── -->
+  <div id="panel-gov" class="panel">
+
+    <!-- Governance Posture -->
+    <div class="section" style="margin-bottom:24px">
+      <div class="section-header">
+        <div class="section-title">
+          <span class="section-icon">🏛</span> Governance Posture
+        </div>
+      </div>
+      <div class="section-body">
+        <div class="score-container" id="gov-score-container">
+          <div class="score-ring">
+            <svg width="120" height="120" viewBox="0 0 120 120">
+              <circle cx="60" cy="60" r="50" fill="none" stroke="var(--surface-3)" stroke-width="10"/>
+              <circle id="score-arc" cx="60" cy="60" r="50" fill="none" stroke="var(--success)" stroke-width="10"
+                stroke-dasharray="314 314" stroke-dashoffset="314" stroke-linecap="round"
+                style="transition:stroke-dashoffset 1s ease, stroke .5s"/>
+            </svg>
+            <div class="score-ring-text">
+              <span class="score-ring-num" id="score-num">—</span>
+              <span class="score-ring-label">/ 100</span>
+            </div>
+          </div>
+          <div class="score-details" id="score-details">
+            <div class="score-item"><div class="score-item-label">Packages</div><div class="score-item-value" id="gd-packages">—</div></div>
+            <div class="score-item"><div class="score-item-label">Upstreams</div><div class="score-item-value" id="gd-upstreams">—</div></div>
+            <div class="score-item"><div class="score-item-label">Policies</div><div class="score-item-value" id="gd-policies">—</div></div>
+            <div class="score-item"><div class="score-item-label">Credentials</div><div class="score-item-value" id="gd-credentials">—</div></div>
+            <div class="score-item"><div class="score-item-label">Audit Events</div><div class="score-item-value" id="gd-events">—</div></div>
+            <div class="score-item"><div class="score-item-label">Avg Latency</div><div class="score-item-value" id="gd-latency">—</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Activity Timeline -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title">
+          <span class="section-icon">📈</span> Activity Timeline
+        </div>
+        <div class="section-actions">
+          <div class="time-toggle" id="timeline-toggle">
+            <button class="active" data-hours="24">24h</button>
+            <button data-hours="72">3d</button>
+            <button data-hours="168">7d</button>
+          </div>
+        </div>
+      </div>
+      <div class="section-body">
+        <div class="chart-wrap" id="chart-wrap">
+          <svg class="chart-svg" id="timeline-chart"></svg>
+        </div>
+        <div style="display:flex;gap:16px;padding:0 20px 12px;font-size:11px;color:var(--text-sec)">
+          <span>● <span style="color:var(--success)">Allow</span></span>
+          <span>● <span style="color:var(--danger)">Deny</span></span>
+          <span>● <span style="color:var(--warning)">Approval Required</span></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Connected Apps -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title">
+          <span class="section-icon">🔌</span> Connected Integrations
+          <span class="tab-badge" id="gov-upstream-count">0</span>
+        </div>
+      </div>
+      <div class="section-body">
+        <div id="gov-apps-content">
+          <div class="empty-state"><div class="spinner"></div><span>Loading…</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Policy Summary -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title">
+          <span class="section-icon">📜</span> Policy Summary
+          <span class="tab-badge" id="gov-policies-count">0</span>
+        </div>
+      </div>
+      <div class="section-body">
+        <div id="gov-policies-content">
+          <div class="empty-state"><div class="spinner"></div><span>Loading policies…</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Connection Audit Trail -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title">
+          <span class="section-icon">🔍</span> Connection Audit Trail
+        </div>
+        <div class="section-actions">
+          <div class="time-toggle" id="gov-audit-toggle">
+            <button class="active" data-hours="24">24h</button>
+            <button data-hours="168">7d</button>
+            <button data-hours="720">30d</button>
+          </div>
+        </div>
+      </div>
+      <div class="section-body">
+        <div id="gov-audit-content">
+          <div class="empty-state"><div class="spinner"></div><span>Loading audit trail…</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Credentials -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title">
+          <span class="section-icon">🔑</span> Credentials & Bindings
+          <span class="tab-badge" id="gov-creds-count">0</span>
+        </div>
+      </div>
+      <div class="section-body">
+        <div id="gov-creds-content">
+          <div class="empty-state"><div class="spinner"></div><span>Loading credentials…</span></div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /panel-gov -->
+
+</main><!-- /main-container -->
+
+<!-- ── Auth Modal ───────────────────────────────────────────────────────── -->
+<div class="modal-backdrop hidden" id="auth-modal">
+  <div class="modal">
+    <h3>🔐 API Authentication</h3>
+    <p>Enter your Shuvdex API Bearer token to connect to the management API. Leave blank if running with <code style="color:var(--success)">DEV_MODE=true</code>.</p>
+    <div class="modal-error hidden" id="auth-error"></div>
+    <div class="modal-field">
+      <label>Bearer Token</label>
+      <input type="password" id="auth-token-input" placeholder="eyJhbGciOiJS..." autocomplete="off" />
+    </div>
+    <div class="modal-field">
+      <label>API Base URL <span style="color:var(--text-muted)">(optional override)</span></label>
+      <input type="url" id="auth-base-input" placeholder="http://localhost:3847" autocomplete="off" />
+    </div>
+    <div class="modal-actions">
+      <button class="btn" id="auth-cancel-btn">Cancel</button>
+      <button class="btn primary" id="auth-save-btn">Connect</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════════════════
+   Shuvdex Governance Dashboard — embedded JavaScript
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+// ── Config ──────────────────────────────────────────────────────────────────
+const STORAGE_TOKEN_KEY = 'sdx_token';
+const STORAGE_BASE_KEY  = 'sdx_api_base';
+const DEFAULT_REFRESH_MS = 30_000;
+
+let apiBase  = sessionStorage.getItem(STORAGE_BASE_KEY)  || '';
+let authToken = sessionStorage.getItem(STORAGE_TOKEN_KEY) || '';
+let autoRefreshEnabled = true;
+let refreshTimer = null;
+let isLoading = false;
+
+// ── State ────────────────────────────────────────────────────────────────────
+const S = {
+  summary: null,
+  upstreams: [],
+  packages: [],
+  policies: [],
+  credentials: [],
+  bindings: [],
+  auditEvents: [],
+  auditTimeline: null,
+  healthOverview: null,
+  auditHours: 24,
+  govAuditHours: 24,
+  timelineHours: 24,
+  pkgFilter: '',
+  auditDecision: '',
+  auditAction: '',
+};
+
+// ── API Client ───────────────────────────────────────────────────────────────
+async function apiFetch(path, opts = {}) {
+  const url = apiBase + path;
+  const headers = { 'Content-Type': 'application/json', ...(opts.headers || {}) };
+  if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+  const res = await fetch(url, { ...opts, headers });
+  if (res.status === 401) {
+    showAuthModal();
+    throw Object.assign(new Error('Unauthorized'), { status: 401 });
+  }
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    throw new Error(`HTTP ${res.status}: ${text || res.statusText}`);
+  }
+  return res.json();
+}
+
+// Safe fetch that returns null on error instead of throwing
+async function safeApiFetch(path, opts = {}) {
+  try {
+    return await apiFetch(path, opts);
+  } catch (e) {
+    if (e.status === 401) throw e; // propagate auth errors
+    console.warn('[dashboard] fetch failed:', path, e.message);
+    return null;
+  }
+}
+
+// ── Data Loading ─────────────────────────────────────────────────────────────
+async function loadData() {
+  if (isLoading) return;
+  isLoading = true;
+
+  setLoadingState(true);
+  hideGlobalError();
+
+  try {
+    const params = new URLSearchParams();
+    if (S.auditDecision) params.set('decision', S.auditDecision);
+    if (S.auditAction)   params.set('action',   S.auditAction);
+    params.set('limit', '100');
+    const auditPath = `/api/audit?${params}`;
+
+    const govParams = new URLSearchParams({ limit: '50' });
+    const now = new Date();
+    govParams.set('from', new Date(now - S.govAuditHours * 3600_000).toISOString());
+    const govAuditPath = `/api/audit?${govParams}`;
+
+    const [
+      summary,
+      upstreams,
+      packages,
+      policies,
+      credentials,
+      bindings,
+      auditResult,
+      govAuditResult,
+      healthOverview,
+      timelineResult,
+    ] = await Promise.all([
+      safeApiFetch('/api/dashboard/summary'),
+      safeApiFetch('/api/upstreams'),
+      safeApiFetch('/api/packages'),
+      safeApiFetch('/api/policies'),
+      safeApiFetch('/api/credentials'),
+      safeApiFetch('/api/credentials/bindings'),
+      safeApiFetch(auditPath),
+      safeApiFetch(govAuditPath),
+      safeApiFetch('/api/dashboard/health-overview'),
+      safeApiFetch(`/api/dashboard/audit-timeline?hours=${S.timelineHours}`),
+    ]);
+
+    S.summary       = summary;
+    S.upstreams     = Array.isArray(upstreams) ? upstreams : [];
+    S.packages      = Array.isArray(packages)  ? packages  : [];
+    S.policies      = Array.isArray(policies)  ? policies  : [];
+    S.credentials   = Array.isArray(credentials) ? credentials : [];
+    S.bindings      = Array.isArray(bindings) ? bindings : [];
+    S.auditEvents   = auditResult?.events   ?? [];
+    S.govAuditEvents = govAuditResult?.events ?? [];
+    S.healthOverview = healthOverview;
+    S.auditTimeline  = timelineResult;
+
+    await checkApiHealth();
+    renderAll();
+    setLastRefresh();
+  } catch (e) {
+    if (e.status !== 401) {
+      showGlobalError(e.message);
+    }
+  } finally {
+    isLoading = false;
+    setLoadingState(false);
+  }
+}
+
+async function loadAuditOnly() {
+  const params = new URLSearchParams();
+  if (S.auditDecision) params.set('decision', S.auditDecision);
+  if (S.auditAction)   params.set('action',   S.auditAction);
+  params.set('limit', '100');
+  const result = await safeApiFetch(`/api/audit?${params}`);
+  S.auditEvents = result?.events ?? [];
+  renderAuditTable();
+}
+
+async function loadGovAuditOnly() {
+  const now = new Date();
+  const params = new URLSearchParams({
+    limit: '50',
+    from: new Date(now - S.govAuditHours * 3600_000).toISOString(),
+  });
+  const result = await safeApiFetch(`/api/audit?${params}`);
+  S.govAuditEvents = result?.events ?? [];
+  renderGovAuditTable();
+}
+
+async function loadTimelineOnly() {
+  const result = await safeApiFetch(`/api/dashboard/audit-timeline?hours=${S.timelineHours}`);
+  S.auditTimeline = result;
+  renderTimeline();
+}
+
+async function checkApiHealth() {
+  try {
+    const health = await fetch(apiBase + '/health');
+    if (health.ok) {
+      setApiStatus('ok', 'Connected');
+    } else {
+      setApiStatus('warn', 'Degraded');
+    }
+  } catch {
+    setApiStatus('error', 'Unreachable');
+  }
+}
+
+// ── Render: All ──────────────────────────────────────────────────────────────
+function renderAll() {
+  renderMspStats();
+  renderUpstreams();
+  renderPackages();
+  renderAuditTable();
+  renderPolicies();
+  renderGovScore();
+  renderGovApps();
+  renderGovPolicies();
+  renderGovAuditTable();
+  renderGovCreds();
+  renderTimeline();
+  updateBadgeCounts();
+}
+
+// ── Render: MSP Stats ─────────────────────────────────────────────────────────
+function renderMspStats() {
+  const m = S.summary;
+  setText('s-connectors', m ? m.activeConnectors : S.packages.length);
+  
+  const upCnt = m ? m.upstreamCount : S.upstreams.length;
+  const healthy = m ? m.healthyUpstreams : S.upstreams.filter(u => u.healthStatus === 'healthy').length;
+  setText('s-upstreams', upCnt);
+  setText('s-upstreams-sub', upCnt > 0 ? `${healthy} healthy` : 'MCP servers');
+  setClass('s-upstreams', upCnt === 0 ? '' : healthy === upCnt ? 'green' : healthy > 0 ? 'yellow' : 'red');
+
+  setText('s-policies', m ? m.totalPolicies : S.policies.length);
+  const credCnt = m ? m.totalCredentials : S.credentials.length;
+  setText('s-credentials', credCnt);
+  setText('s-creds-sub', `${S.bindings.length} bindings`);
+  
+  const metrics = m?.auditMetrics;
+  setText('s-events', metrics ? metrics.totalEvents : '—');
+  if (metrics) {
+    const errPct = (metrics.errorRate * 100).toFixed(1);
+    setText('s-errorrate', errPct + '%');
+    setClass('s-errorrate', metrics.errorRate > 0.1 ? 'red' : metrics.errorRate > 0.02 ? 'yellow' : 'green');
+  } else {
+    setText('s-errorrate', '—');
+  }
+}
+
+// ── Render: Upstreams ─────────────────────────────────────────────────────────
+function renderUpstreams() {
+  const el = document.getElementById('upstreams-content');
+  if (!el) return;
+
+  if (S.upstreams.length === 0) {
+    el.innerHTML = emptyState('🔌', 'No upstreams registered', 'Add remote MCP servers via the API or CLI.');
+    return;
+  }
+
+  const rows = S.upstreams.map(u => `
+    <tr>
+      <td><span class="truncate" style="max-width:200px;display:block" title="${esc(u.name)}">${esc(u.name)}</span></td>
+      <td class="mono muted">${esc(u.namespace)}</td>
+      <td>${esc(u.transport)}</td>
+      <td>${healthBadge(u.healthStatus)}</td>
+      <td>${trustBadge(u.trustState)}</td>
+      <td class="text-right muted">${u.toolCount ?? '—'}</td>
+      <td class="muted nowrap">${relTime(u.lastCapabilitySync)}</td>
+      <td class="muted nowrap">${relTime(u.updatedAt)}</td>
+    </tr>`).join('');
+
+  el.innerHTML = `
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Namespace</th>
+          <th>Transport</th>
+          <th>Health</th>
+          <th>Trust</th>
+          <th class="text-right">Tools</th>
+          <th>Last Sync</th>
+          <th>Updated</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
+// ── Render: Packages ──────────────────────────────────────────────────────────
+function renderPackages() {
+  const el = document.getElementById('packages-content');
+  if (!el) return;
+
+  const filter = S.pkgFilter.toLowerCase();
+  const pkgs = filter
+    ? S.packages.filter(p => (p.name || p.id || '').toLowerCase().includes(filter) || (p.description || '').toLowerCase().includes(filter))
+    : S.packages;
+
+  if (pkgs.length === 0) {
+    el.innerHTML = emptyState('📦', 'No packages found', filter ? 'Try a different search term.' : 'Import skill archives or index the local repository.');
+    return;
+  }
+
+  const rows = pkgs.map(p => {
+    const caps = (p.capabilities || []).length;
+    const src = p.source?.type || 'local';
+    return `
+      <tr>
+        <td><span class="truncate" style="max-width:220px;display:block" title="${esc(p.id)}">${esc(p.name || p.id)}</span></td>
+        <td class="mono muted" style="font-size:11px">${esc(p.id)}</td>
+        <td class="muted">${esc(p.version || '—')}</td>
+        <td><span class="badge badge-${src === 'local' ? 'blue' : 'purple'}">${esc(src)}</span></td>
+        <td class="text-right muted">${caps}</td>
+        <td class="muted">${esc((p.tags || []).slice(0,3).join(', ') || '—')}</td>
+      </tr>`;
+  }).join('');
+
+  el.innerHTML = `
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>ID</th>
+          <th>Version</th>
+          <th>Source</th>
+          <th class="text-right">Caps</th>
+          <th>Tags</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
+// ── Render: Audit Table ───────────────────────────────────────────────────────
+function renderAuditTable() {
+  const el = document.getElementById('audit-content');
+  if (!el) return;
+
+  if (S.auditEvents.length === 0) {
+    el.innerHTML = emptyState('📋', 'No audit events', 'Events are recorded when MCP tools are called or policies are changed.');
+    return;
+  }
+
+  const rows = S.auditEvents.map(e => `
+    <tr>
+      <td class="muted nowrap" title="${esc(e.timestamp)}">${relTime(e.timestamp)}</td>
+      <td class="mono" style="font-size:11px;max-width:150px" class="truncate">${esc(e.actor?.subjectId || '—')}</td>
+      <td>${esc(e.action || '—')}</td>
+      <td class="muted">${esc(e.target?.name || e.target?.id || '—')}</td>
+      <td>${decisionBadge(e.decision)}</td>
+      <td class="muted">${actionClassBadge(e.actionClass)}</td>
+      <td class="muted text-right">${e.outcome?.latencyMs != null ? e.outcome.latencyMs + 'ms' : '—'}</td>
+    </tr>`).join('');
+
+  el.innerHTML = `
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Time</th>
+          <th>Actor</th>
+          <th>Action</th>
+          <th>Target</th>
+          <th>Decision</th>
+          <th>Class</th>
+          <th class="text-right">Latency</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
+// ── Render: Policies ──────────────────────────────────────────────────────────
+function renderPolicies() {
+  const el = document.getElementById('policies-content');
+  if (!el) return;
+
+  if (S.policies.length === 0) {
+    el.innerHTML = emptyState('🛡', 'No policies defined', 'Create access policies via the API to control which capabilities can be used.');
+    return;
+  }
+
+  const rows = S.policies.map(p => {
+    const allowed = (p.allowPackages || []).length + (p.allowCapabilities || []).length;
+    const denied  = (p.denyPackages  || []).length + (p.denyCapabilities  || []).length;
+    const maxRisk = p.maxRiskLevel || 'unrestricted';
+    return `
+      <tr>
+        <td><span class="truncate" style="max-width:200px;display:block">${esc(p.id)}</span></td>
+        <td class="muted">${esc(p.description || '—')}</td>
+        <td class="muted">${(p.scopes || []).slice(0,2).map(s=>`<span class="policy-pill">${esc(s)}</span>`).join('')||'—'}</td>
+        <td><span class="badge badge-${allowed > 0 ? 'green' : 'gray'}">${allowed} allowed</span></td>
+        <td><span class="badge badge-${denied > 0 ? 'red' : 'gray'}">${denied} denied</span></td>
+        <td>${riskBadge(maxRisk)}</td>
+      </tr>`;
+  }).join('');
+
+  el.innerHTML = `
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Policy ID</th>
+          <th>Description</th>
+          <th>Scopes</th>
+          <th>Allowed</th>
+          <th>Denied</th>
+          <th>Max Risk</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
+// ── Render: Governance Score ──────────────────────────────────────────────────
+function renderGovScore() {
+  const m = S.summary;
+  if (!m) return;
+
+  const score = m.governanceScore ?? 0;
+  const el = document.getElementById('score-num');
+  if (el) el.textContent = score;
+
+  // Animate the arc
+  const arc = document.getElementById('score-arc');
+  if (arc) {
+    const circumference = 2 * Math.PI * 50; // r=50
+    const offset = circumference * (1 - score / 100);
+    arc.style.strokeDasharray = `${circumference} ${circumference}`;
+    arc.style.strokeDashoffset = offset;
+    arc.style.stroke = score >= 80 ? 'var(--success)' : score >= 60 ? 'var(--warning)' : 'var(--danger)';
+  }
+
+  // Details
+  setText('gd-packages',    m.activeConnectors ?? S.packages.length);
+  setText('gd-upstreams',   m.upstreamCount ?? S.upstreams.length);
+  setText('gd-policies',    m.totalPolicies ?? S.policies.length);
+  setText('gd-credentials', m.totalCredentials ?? S.credentials.length);
+  const metrics = m.auditMetrics;
+  setText('gd-events',   metrics ? metrics.totalEvents : '—');
+  setText('gd-latency',  metrics?.avgLatencyMs ? metrics.avgLatencyMs.toFixed(0) + 'ms' : '—');
+}
+
+// ── Render: Gov Apps (Upstream Cards) ─────────────────────────────────────────
+function renderGovApps() {
+  const el = document.getElementById('gov-apps-content');
+  if (!el) return;
+
+  if (S.upstreams.length === 0) {
+    el.innerHTML = emptyState('🔌', 'No integrations connected', 'Register upstream MCP servers to enable tool access.');
+    return;
+  }
+
+  const cards = S.upstreams.map(u => `
+    <div class="app-card">
+      <div class="app-card-header">
+        <div>
+          <div class="app-card-name">${esc(u.name)}</div>
+          <div class="app-card-meta">
+            <span>${esc(u.namespace)}</span>
+            <span>${esc(u.transport)} · ${esc(u.endpoint || '')}</span>
+          </div>
+        </div>
+        ${healthBadge(u.healthStatus)}
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        ${trustBadge(u.trustState)}
+        ${u.toolCount ? `<span class="badge badge-blue">${u.toolCount} tools</span>` : ''}
+      </div>
+      <div class="app-card-footer">
+        <span>Synced ${relTime(u.lastCapabilitySync)}</span>
+        <span>Updated ${relTime(u.updatedAt)}</span>
+      </div>
+    </div>`).join('');
+
+  el.innerHTML = `<div class="cards-grid">${cards}</div>`;
+}
+
+// ── Render: Gov Policies ──────────────────────────────────────────────────────
+function renderGovPolicies() {
+  const el = document.getElementById('gov-policies-content');
+  if (!el) return;
+
+  if (S.policies.length === 0) {
+    el.innerHTML = emptyState('📜', 'No policies configured', 'No access policies are defined. All capability access may be unrestricted.');
+    return;
+  }
+
+  const cards = S.policies.map(p => {
+    const allowPkgs = p.allowPackages || [];
+    const denyPkgs  = p.denyPackages  || [];
+    const allowCaps = p.allowCapabilities || [];
+    const denyCaps  = p.denyCapabilities  || [];
+    const scopes = p.scopes || [];
+    const hostTags = p.hostTags || [];
+
+    return `
+      <div class="policy-card">
+        <div class="policy-card-title">
+          <span>${esc(p.id)}</span>
+          ${p.maxRiskLevel ? riskBadge(p.maxRiskLevel) : ''}
+        </div>
+        <div class="policy-card-body">
+          ${p.description ? `<p style="margin-bottom:8px;color:var(--text-sec)">${esc(p.description)}</p>` : ''}
+          ${scopes.length ? `<div style="margin-bottom:4px"><strong>Scopes:</strong> ${scopes.map(s=>`<span class="policy-pill">${esc(s)}</span>`).join('')}</div>` : ''}
+          ${hostTags.length ? `<div style="margin-bottom:4px"><strong>Host tags:</strong> ${hostTags.map(t=>`<span class="policy-pill">${esc(t)}</span>`).join('')}</div>` : ''}
+          ${allowPkgs.length ? `<div style="margin-bottom:4px"><strong style="color:var(--success)">✓ Allow packages:</strong> ${allowPkgs.map(p=>`<span class="policy-pill">${esc(p)}</span>`).join('')}</div>` : ''}
+          ${denyPkgs.length  ? `<div style="margin-bottom:4px"><strong style="color:var(--danger)">✗ Deny packages:</strong> ${denyPkgs.map(p=>`<span class="policy-pill">${esc(p)}</span>`).join('')}</div>` : ''}
+          ${allowCaps.length ? `<div style="margin-bottom:4px"><strong style="color:var(--success)">✓ Allow caps:</strong> ${allowCaps.map(c=>`<span class="policy-pill">${esc(c)}</span>`).join('')}</div>` : ''}
+          ${denyCaps.length  ? `<div><strong style="color:var(--danger)">✗ Deny caps:</strong> ${denyCaps.map(c=>`<span class="policy-pill">${esc(c)}</span>`).join('')}</div>` : ''}
+          ${!allowPkgs.length && !denyPkgs.length && !allowCaps.length && !denyCaps.length ? '<span style="color:var(--text-muted)">No package restrictions defined</span>' : ''}
+        </div>
+      </div>`;
+  }).join('');
+
+  el.innerHTML = `<div class="policy-grid">${cards}</div>`;
+}
+
+// ── Render: Gov Audit Trail ───────────────────────────────────────────────────
+function renderGovAuditTable() {
+  const el = document.getElementById('gov-audit-content');
+  if (!el) return;
+
+  const events = S.govAuditEvents || [];
+  if (events.length === 0) {
+    el.innerHTML = emptyState('🔍', 'No activity in this period', 'MCP tool calls and capability accesses are recorded here.');
+    return;
+  }
+
+  const rows = events.map(e => `
+    <tr>
+      <td class="muted nowrap" title="${esc(e.timestamp)}">${relTime(e.timestamp)}</td>
+      <td class="mono" style="font-size:11px">${esc(e.actor?.email || e.actor?.subjectId || '—')}</td>
+      <td>${esc(e.action || '—')}</td>
+      <td class="muted">${esc(e.target?.name || e.target?.id || e.packageRef?.packageId || '—')}</td>
+      <td>${decisionBadge(e.decision)}</td>
+      <td>${riskBadge(e.riskLevel || '')}</td>
+    </tr>`).join('');
+
+  el.innerHTML = `
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Time</th>
+          <th>User</th>
+          <th>Query Type</th>
+          <th>Target App</th>
+          <th>Decision</th>
+          <th>Risk</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
+// ── Render: Gov Credentials ───────────────────────────────────────────────────
+function renderGovCreds() {
+  const el = document.getElementById('gov-creds-content');
+  if (!el) return;
+
+  if (S.credentials.length === 0) {
+    el.innerHTML = emptyState('🔑', 'No credentials stored', 'Add API keys and OAuth credentials to enable authenticated integrations.');
+    return;
+  }
+
+  const rows = S.credentials.map(cr => {
+    const boundCount = S.bindings.filter(b => b.credentialId === cr.credentialId).length;
+    return `
+      <tr>
+        <td class="mono" style="font-size:11px">${esc(cr.credentialId)}</td>
+        <td class="muted">${esc(cr.description || '—')}</td>
+        <td><span class="badge badge-blue">${esc(cr.schemeType || cr.scheme?.type || '—')}</span></td>
+        <td class="muted">${esc(cr.packageId || cr.sourceId || '—')}</td>
+        <td class="muted text-right">${boundCount}</td>
+        <td class="muted nowrap">${relTime(cr.updatedAt)}</td>
+      </tr>`;
+  }).join('');
+
+  el.innerHTML = `
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Credential ID</th>
+          <th>Description</th>
+          <th>Type</th>
+          <th>Package</th>
+          <th class="text-right">Bindings</th>
+          <th>Updated</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
+// ── Render: Timeline Chart ────────────────────────────────────────────────────
+function renderTimeline() {
+  const svg = document.getElementById('timeline-chart');
+  const wrap = document.getElementById('chart-wrap');
+  if (!svg || !wrap) return;
+
+  const tl = S.auditTimeline;
+  if (!tl || !tl.timeline || tl.timeline.length === 0) {
+    svg.innerHTML = '';
+    wrap.innerHTML += '';
+    return;
+  }
+
+  const data = tl.timeline;
+  const W = wrap.clientWidth || 800;
+  const H = 160;
+  const PADR = 8;
+  const PADL = 40;
+  const PADT = 10;
+  const PADB = 24;
+  const innerW = W - PADL - PADR;
+  const innerH = H - PADT - PADB;
+
+  const maxVal = Math.max(...data.map(d => d.count), 1);
+  const barW = Math.max(1, innerW / data.length - 1);
+
+  let allowBars = '', denyBars = '', approvBars = '', labels = '';
+  data.forEach((bin, i) => {
+    const x = PADL + i * (innerW / data.length);
+    const bH_total = innerH * (bin.count / maxVal);
+    const bH_allow  = innerH * (bin.allowCount  / maxVal);
+    const bH_deny   = innerH * (bin.denyCount   / maxVal);
+    const bH_approv = innerH * (bin.approvalCount / maxVal);
+
+    if (bin.count > 0) {
+      // Stacked bar: allow (bottom), approval (middle), deny (top)
+      let yOff = H - PADB;
+      if (bin.allowCount > 0) {
+        const h = innerH * (bin.allowCount / maxVal);
+        yOff -= h;
+        allowBars += `<rect x="${x}" y="${yOff}" width="${barW}" height="${h}" fill="var(--success)" opacity=".75" rx="1"/>`;
+      }
+      if (bin.approvalCount > 0) {
+        const h = innerH * (bin.approvalCount / maxVal);
+        yOff -= h;
+        approvBars += `<rect x="${x}" y="${yOff}" width="${barW}" height="${h}" fill="var(--warning)" opacity=".75" rx="1"/>`;
+      }
+      if (bin.denyCount > 0) {
+        const h = innerH * (bin.denyCount / maxVal);
+        yOff -= h;
+        denyBars += `<rect x="${x}" y="${yOff}" width="${barW}" height="${h}" fill="var(--danger)" opacity=".75" rx="1"/>`;
+      }
+    }
+
+    // Show every Nth label to avoid crowding
+    const nth = data.length > 48 ? 12 : data.length > 24 ? 6 : data.length > 12 ? 3 : 1;
+    if (i % nth === 0) {
+      const shortLabel = bin.label || bin.hour?.slice(11, 16) || '';
+      labels += `<text x="${x + barW/2}" y="${H - 2}" fill="var(--text-muted)" font-size="9" text-anchor="middle">${esc(shortLabel)}</text>`;
+    }
+  });
+
+  // Y-axis grid
+  let grid = '';
+  for (let i = 0; i <= 4; i++) {
+    const y = PADT + (innerH * (1 - i/4));
+    const val = Math.round(maxVal * i / 4);
+    grid += `<line x1="${PADL}" y1="${y}" x2="${W - PADR}" y2="${y}" stroke="var(--border-sub)" stroke-dasharray="2,3"/>`;
+    grid += `<text x="${PADL - 4}" y="${y + 3}" fill="var(--text-muted)" font-size="9" text-anchor="end">${val}</text>`;
+  }
+
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  svg.innerHTML = `${grid}${allowBars}${approvBars}${denyBars}${labels}`;
+}
+
+// ── Badge Helpers ─────────────────────────────────────────────────────────────
+function healthBadge(s) {
+  const map = {
+    healthy:   ['green',  '● Healthy'],
+    degraded:  ['yellow', '● Degraded'],
+    unhealthy: ['red',    '● Unhealthy'],
+    unknown:   ['gray',   '○ Unknown'],
+  };
+  const [cls, label] = map[s] || ['gray', '○ ' + (s || 'unknown')];
+  return `<span class="badge badge-${cls}">${label}</span>`;
+}
+
+function trustBadge(s) {
+  const map = {
+    trusted:        ['green',  '✓ Trusted'],
+    untrusted:      ['red',    '✗ Untrusted'],
+    suspended:      ['gray',   '⊘ Suspended'],
+    pending_review: ['yellow', '? Pending'],
+  };
+  const [cls, label] = map[s] || ['gray', s || '—'];
+  return `<span class="badge badge-${cls}">${label}</span>`;
+}
+
+function decisionBadge(s) {
+  const map = {
+    allow:            ['green',  '✓ allow'],
+    deny:             ['red',    '✗ deny'],
+    approval_required:['yellow', '? approval'],
+    break_glass:      ['purple', '! break-glass'],
+  };
+  const [cls, label] = map[s] || ['gray', s || '—'];
+  return `<span class="badge badge-${cls}">${label}</span>`;
+}
+
+function riskBadge(s) {
+  const map = {
+    low:        ['green',  'low'],
+    medium:     ['yellow', 'medium'],
+    high:       ['red',    'high'],
+    restricted: ['red',    'restricted'],
+  };
+  const [cls, label] = map[s] || ['gray', s || '—'];
+  if (!s) return '<span class="badge badge-gray">—</span>';
+  return `<span class="badge badge-${cls}">${label}</span>`;
+}
+
+function actionClassBadge(s) {
+  const map = {
+    read:     'blue',
+    write:    'yellow',
+    admin:    'red',
+    external: 'purple',
+  };
+  if (!s) return '—';
+  return `<span class="badge badge-${map[s] || 'gray'}">${s}</span>`;
+}
+
+// ── Misc Helpers ──────────────────────────────────────────────────────────────
+function updateBadgeCounts() {
+  setText('upstream-count-badge',  S.upstreams.length);
+  setText('packages-count-badge',  S.packages.length);
+  setText('policies-count-badge',  S.policies.length);
+  setText('gov-upstream-count',    S.upstreams.length);
+  setText('gov-policies-count',    S.policies.length);
+  setText('gov-creds-count',       S.credentials.length);
+}
+
+function esc(str) {
+  if (str == null) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function setText(id, val) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = val ?? '—';
+}
+
+function setClass(id, cls) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.className = el.className.replace(/\b(green|yellow|red|blue|purple)\b/g, '');
+  if (cls) el.classList.add(cls);
+}
+
+function emptyState(icon, title, sub) {
+  return `<div class="empty-state">
+    <span style="font-size:32px">${icon}</span>
+    <h4>${esc(title)}</h4>
+    <span>${esc(sub)}</span>
+  </div>`;
+}
+
+function relTime(ts) {
+  if (!ts) return '—';
+  const diff = Date.now() - new Date(ts).getTime();
+  if (isNaN(diff)) return '—';
+  const abs = Math.abs(diff);
+  const secs = Math.floor(abs / 1000);
+  if (secs < 5)  return 'just now';
+  if (secs < 60) return secs + 's ago';
+  const mins = Math.floor(secs / 60);
+  if (mins < 60) return mins + 'm ago';
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24)  return hrs + 'h ago';
+  const days = Math.floor(hrs / 24);
+  if (days < 30) return days + 'd ago';
+  return new Date(ts).toLocaleDateString();
+}
+
+// ── UI State ──────────────────────────────────────────────────────────────────
+function setLoadingState(loading) {
+  const ind = document.getElementById('loading-indicator');
+  const icon = document.getElementById('refresh-icon');
+  if (ind)  ind.classList.toggle('visible', loading);
+  if (icon) icon.classList.toggle('spinning', loading);
+  const btn = document.getElementById('refresh-btn');
+  if (btn)  btn.disabled = loading;
+}
+
+function setApiStatus(state, text) {
+  const dot  = document.getElementById('api-status-dot');
+  const span = document.getElementById('api-status-text');
+  if (dot)  { dot.className = 'status-dot ' + state; dot.classList.toggle('pulse', state === 'ok'); }
+  if (span) span.textContent = text;
+}
+
+function setLastRefresh() {
+  const el = document.getElementById('last-refresh-ts');
+  if (el) el.textContent = 'Updated ' + new Date().toLocaleTimeString();
+}
+
+function showGlobalError(msg) {
+  const el = document.getElementById('global-error');
+  const txt = document.getElementById('global-error-text');
+  if (el) el.classList.remove('hidden');
+  if (txt) txt.textContent = msg;
+}
+
+function hideGlobalError() {
+  const el = document.getElementById('global-error');
+  if (el) el.classList.add('hidden');
+}
+
+// ── Tab Navigation ────────────────────────────────────────────────────────────
+function switchTab(name) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
+  document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.id === 'panel-' + name));
+}
+
+// ── Time Toggle ───────────────────────────────────────────────────────────────
+function setupTimeToggle(containerId, stateKey, onChangeFn) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  el.addEventListener('click', e => {
+    const btn = e.target.closest('button');
+    if (!btn || !btn.dataset.hours) return;
+    el.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    S[stateKey] = Number(btn.dataset.hours);
+    onChangeFn();
+  });
+}
+
+// ── Auth Modal ────────────────────────────────────────────────────────────────
+function showAuthModal() {
+  const modal = document.getElementById('auth-modal');
+  const tokenInput = document.getElementById('auth-token-input');
+  const baseInput = document.getElementById('auth-base-input');
+  if (tokenInput) tokenInput.value = authToken;
+  if (baseInput)  baseInput.value  = apiBase;
+  if (modal) modal.classList.remove('hidden');
+}
+
+function hideAuthModal() {
+  const modal = document.getElementById('auth-modal');
+  if (modal) modal.classList.add('hidden');
+  hideAuthError();
+}
+
+function showAuthError(msg) {
+  const el = document.getElementById('auth-error');
+  if (el) { el.textContent = msg; el.classList.remove('hidden'); }
+}
+
+function hideAuthError() {
+  const el = document.getElementById('auth-error');
+  if (el) el.classList.add('hidden');
+}
+
+// ── Auto Refresh ──────────────────────────────────────────────────────────────
+function startAutoRefresh() {
+  stopAutoRefresh();
+  refreshTimer = setInterval(loadData, DEFAULT_REFRESH_MS);
+}
+
+function stopAutoRefresh() {
+  if (refreshTimer) { clearInterval(refreshTimer); refreshTimer = null; }
+}
+
+function toggleAutoRefresh() {
+  autoRefreshEnabled = !autoRefreshEnabled;
+  const btn = document.getElementById('autorefresh-btn');
+  if (autoRefreshEnabled) {
+    startAutoRefresh();
+    if (btn) btn.textContent = 'Auto ▶';
+  } else {
+    stopAutoRefresh();
+    if (btn) btn.textContent = 'Auto ⏸';
+  }
+}
+
+// ── Quick Actions ─────────────────────────────────────────────────────────────
+async function syncAllUpstreams() {
+  const btn = document.getElementById('btn-sync-all');
+  const fb  = document.getElementById('action-feedback');
+  if (btn) btn.disabled = true;
+  if (fb)  fb.textContent = '';
+  try {
+    const results = await Promise.allSettled(
+      S.upstreams.map(u => apiFetch(`/api/upstreams/${u.upstreamId}/sync`, { method: 'POST' }))
+    );
+    const ok = results.filter(r => r.status === 'fulfilled').length;
+    if (fb) fb.textContent = `✓ Sync requested for ${ok}/${S.upstreams.length} upstreams`;
+    setTimeout(() => { if (fb) fb.textContent = ''; }, 5000);
+    await loadData();
+  } catch (e) {
+    if (fb) { fb.style.color = 'var(--danger)'; fb.textContent = '✗ ' + e.message; }
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+async function reindexPackages() {
+  const btn = document.getElementById('btn-reindex');
+  const fb  = document.getElementById('action-feedback');
+  if (btn) btn.disabled = true;
+  if (fb)  { fb.style.color = 'var(--text-sec)'; fb.textContent = 'Reindexing…'; }
+  try {
+    await apiFetch('/api/packages/reindex', { method: 'POST' });
+    if (fb) { fb.style.color = 'var(--success)'; fb.textContent = '✓ Packages reindexed'; }
+    setTimeout(() => { if (fb) fb.textContent = ''; }, 4000);
+    await loadData();
+  } catch (e) {
+    if (fb) { fb.style.color = 'var(--danger)'; fb.textContent = '✗ ' + e.message; }
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+function exportAuditLog() {
+  const url = apiBase + '/api/audit/export';
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `audit-${new Date().toISOString().slice(0,10)}.jsonl`;
+  // Need auth header — open in new tab as a workaround
+  window.open(url, '_blank');
+}
+
+// ── Initialization ────────────────────────────────────────────────────────────
+function init() {
+  // Tab switching
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+  });
+
+  // Refresh button
+  document.getElementById('refresh-btn')?.addEventListener('click', loadData);
+
+  // Auto-refresh toggle
+  document.getElementById('autorefresh-btn')?.addEventListener('click', toggleAutoRefresh);
+
+  // Auth button
+  document.getElementById('auth-btn')?.addEventListener('click', showAuthModal);
+
+  // Auth modal
+  document.getElementById('auth-save-btn')?.addEventListener('click', async () => {
+    const tokenEl = document.getElementById('auth-token-input');
+    const baseEl  = document.getElementById('auth-base-input');
+    const token = tokenEl?.value.trim() || '';
+    const base  = baseEl?.value.trim()  || '';
+    authToken = token;
+    apiBase   = base;
+    sessionStorage.setItem(STORAGE_TOKEN_KEY, token);
+    sessionStorage.setItem(STORAGE_BASE_KEY,  base);
+    hideAuthError();
+    hideAuthModal();
+    await loadData();
+  });
+  document.getElementById('auth-cancel-btn')?.addEventListener('click', hideAuthModal);
+  document.getElementById('auth-modal')?.addEventListener('click', e => {
+    if (e.target === e.currentTarget) hideAuthModal();
+  });
+
+  // Package search
+  document.getElementById('pkg-search')?.addEventListener('input', e => {
+    S.pkgFilter = e.target.value;
+    renderPackages();
+  });
+
+  // Audit filter
+  document.getElementById('btn-apply-audit-filter')?.addEventListener('click', () => {
+    S.auditDecision = document.getElementById('audit-filter-decision')?.value || '';
+    S.auditAction   = document.getElementById('audit-filter-action')?.value   || '';
+    loadAuditOnly();
+  });
+
+  // Time toggles
+  setupTimeToggle('audit-time-toggle',  'auditHours',    loadAuditOnly);
+  setupTimeToggle('gov-audit-toggle',   'govAuditHours', loadGovAuditOnly);
+  setupTimeToggle('timeline-toggle',    'timelineHours', loadTimelineOnly);
+
+  // Quick actions
+  document.getElementById('btn-sync-all')?.addEventListener('click', syncAllUpstreams);
+  document.getElementById('btn-reindex')?.addEventListener('click', reindexPackages);
+  document.getElementById('btn-export-audit')?.addEventListener('click', exportAuditLog);
+
+  // Resize handler for chart
+  let resizeTimer;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(renderTimeline, 200);
+  });
+
+  // Initial load
+  setApiStatus('warn', 'Connecting…');
+  startAutoRefresh();
+  updateAutoRefreshBtn();
+  loadData();
+}
+
+function updateAutoRefreshBtn() {
+  const btn = document.getElementById('autorefresh-btn');
+  if (btn) btn.textContent = autoRefreshEnabled ? 'Auto ▶' : 'Auto ⏸';
+}
+
+// Kick off when DOM is ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init);
+} else {
+  init();
+}
+</script>
+</body>
+</html>

@@ -19,6 +19,7 @@ import { SkillIndexer, SkillIndexerLive } from "@shuvdex/skill-indexer";
 import { makeCredentialStoreLive } from "@shuvdex/credential-store";
 import { makeHttpExecutorLive } from "@shuvdex/http-executor";
 import { makeOpenApiSourceLive } from "@shuvdex/openapi-source";
+import { makeTenantManagerLive } from "@shuvdex/tenant-manager";
 import { auditRouter } from "./routes/audit.js";
 import { toolsRouter } from "./routes/tools.js";
 import { packagesRouter } from "./routes/packages.js";
@@ -27,7 +28,16 @@ import { skillsRouter } from "./routes/skills.js";
 import { tokensRouter } from "./routes/tokens.js";
 import { credentialsRouter } from "./routes/credentials.js";
 import { openapiSourcesRouter } from "./routes/openapi-sources.js";
+import { upstreamsRouter } from "./routes/upstreams.js";
+import { syncRouter } from "./routes/sync.js";
+import { approvalsRouter, breakGlassRouter } from "./routes/approvals.js";
+import { tenantsRouter, templatesRouter } from "./routes/tenants.js";
+import { dashboardRouter } from "./routes/dashboard.js";
+import { reportingRouter } from "./routes/reporting.js";
+import { requireAuth } from "./middleware/auth.js";
 import * as path from "node:path";
+import * as fs from "node:fs";
+import { fileURLToPath } from "node:url";
 
 const HOST = process.env["HOST"] ?? "0.0.0.0";
 const PORT = Number(process.env["PORT"] ?? 3847);
@@ -64,14 +74,33 @@ async function main(): Promise<void> {
     ? path.resolve(process.env["LOCAL_REPO_PATH"])
     : process.cwd();
 
+  const upstreamsDir = process.env["UPSTREAMS_DIR"]
+    ? path.resolve(process.env["UPSTREAMS_DIR"])
+    : path.resolve(process.cwd(), ".capabilities", "upstreams");
+  const capabilitiesRootDir = process.env["CAPABILITIES_ROOT_DIR"]
+    ? path.resolve(process.env["CAPABILITIES_ROOT_DIR"])
+    : path.resolve(process.cwd(), ".capabilities");
+  const credentialsDir = process.env["CREDENTIALS_DIR"]
+    ? path.resolve(process.env["CREDENTIALS_DIR"])
+    : path.resolve(process.cwd(), ".capabilities", "credentials");
+  const credentialKeyPath = process.env["CREDENTIAL_KEY_PATH"]
+    ? path.resolve(process.env["CREDENTIAL_KEY_PATH"])
+    : path.resolve(process.cwd(), ".capabilities", ".credential-key");
+  const openApiRootDir = process.env["OPENAPI_ROOT"]
+    ? path.resolve(process.env["OPENAPI_ROOT"])
+    : path.resolve(process.cwd(), ".capabilities");
+  const tenantDir = process.env["TENANT_DIR"]
+    ? path.resolve(process.env["TENANT_DIR"])
+    : path.resolve(process.cwd(), ".capabilities", "tenants");
+
   const capabilityRegistryLayer = makeCapabilityRegistryLive(capabilitiesDir);
   const credentialStoreLayer = makeCredentialStoreLive({
-    rootDir: path.resolve(process.cwd(), ".capabilities", "credentials"),
-    keyPath: path.resolve(process.cwd(), ".capabilities", ".credential-key"),
+    rootDir: credentialsDir,
+    keyPath: credentialKeyPath,
   });
   const httpExecutorLayer = Layer.provide(makeHttpExecutorLive(), credentialStoreLayer);
   const openApiSourceLayer = Layer.provide(
-    makeOpenApiSourceLive({ rootDir: path.resolve(process.cwd(), ".capabilities") }),
+    makeOpenApiSourceLive({ rootDir: openApiRootDir }),
     Layer.mergeAll(capabilityRegistryLayer, credentialStoreLayer, httpExecutorLayer),
   );
   const liveLayer = Layer.mergeAll(
@@ -82,9 +111,14 @@ async function main(): Promise<void> {
     Layer.provide(makeSkillImporterLive({ importsDir }), capabilityRegistryLayer),
     SkillIndexerLive,
     openApiSourceLayer,
+    makeTenantManagerLive({ rootDir: tenantDir }),
   );
   const managedRuntime = ManagedRuntime.make(liveLayer);
   const runtime = await managedRuntime.runtime();
+
+  // Ensure upstream registration directory exists on startup
+  const { mkdirSync } = await import("node:fs");
+  mkdirSync(upstreamsDir, { recursive: true });
 
   await Effect.runPromise(
     Effect.gen(function* () {
@@ -116,6 +150,14 @@ async function main(): Promise<void> {
     }),
   );
 
+  // ---------------------------------------------------------------------------
+  // Control-plane auth — applied to all /api/* routes.
+  // The /health endpoint is intentionally excluded (it stays public).
+  // Set DEV_MODE=true to bypass auth for local development.
+  // ---------------------------------------------------------------------------
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  app.use("/api/*", requireAuth(runtime as any));
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   app.route("/api/tools", toolsRouter(runtime as any));
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -132,6 +174,42 @@ async function main(): Promise<void> {
   app.route("/api/credentials", credentialsRouter(runtime as any));
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   app.route("/api/sources/openapi", openapiSourcesRouter(runtime as any));
+  app.route("/api/upstreams", upstreamsRouter(upstreamsDir));
+  app.route("/api/sync", syncRouter(upstreamsDir, capabilitiesRootDir));
+  app.route("/api/approvals", approvalsRouter(policyDir));
+  app.route("/api/break-glass", breakGlassRouter(policyDir));
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  app.route("/api/dashboard", dashboardRouter(runtime as any, upstreamsDir));
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  app.route("/api/reports", reportingRouter(runtime as any, policyDir));
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  app.route("/api/tenants", tenantsRouter(runtime as any));
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  app.route("/api/templates", templatesRouter(runtime as any));
+
+  // ---------------------------------------------------------------------------
+  // Dashboard HTML — served at GET /dashboard
+  // Resolves relative to the compiled JS location so it works in both
+  // tsx dev mode (src/index.ts) and compiled production (dist/index.js).
+  // ---------------------------------------------------------------------------
+  const __currentFile = fileURLToPath(import.meta.url);
+  const __packageRoot = path.dirname(path.dirname(__currentFile)); // apps/api/
+  const dashboardHtmlPath = process.env["DASHBOARD_HTML_PATH"]
+    ? path.resolve(process.env["DASHBOARD_HTML_PATH"])
+    : path.resolve(__packageRoot, "public", "dashboard.html");
+
+  app.get("/dashboard", (c) => {
+    if (!fs.existsSync(dashboardHtmlPath)) {
+      return c.text(
+        `Dashboard not found. Expected: ${dashboardHtmlPath}`,
+        404,
+      );
+    }
+    const html = fs.readFileSync(dashboardHtmlPath, "utf-8");
+    return new Response(html, {
+      headers: { "Content-Type": "text/html; charset=utf-8" },
+    });
+  });
 
   app.get("/health", (c) =>
     c.json({
@@ -140,6 +218,10 @@ async function main(): Promise<void> {
       capabilitiesDir,
       importsDir,
       policyDir,
+      credentialsDir,
+      openApiRootDir,
+      upstreamsDir,
+      tenantDir,
       localRepoPath,
     }),
   );

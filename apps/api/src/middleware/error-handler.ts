@@ -21,6 +21,10 @@ const TAG_TO_STATUS: Record<string, HttpStatus> = {
   CapabilityPackageNotFound: 404,
   SkillNotFound: 404,
   PolicyNotFound: 404,
+  TenantNotFound: 404,
+  EnvironmentNotFound: 404,
+  GatewayNotFound: 404,
+  PolicyTemplateNotFound: 404,
 
   // 409 — already exists
   ToolAlreadyExists: 409,
@@ -37,6 +41,7 @@ const TAG_TO_STATUS: Record<string, HttpStatus> = {
   CapabilityRegistryValidationError: 400,
   InvalidTokenError: 400,
   ArchiveValidationError: 400,
+  TenantManagerIOError: 500,
 };
 
 function extractTag(e: unknown): string | undefined {

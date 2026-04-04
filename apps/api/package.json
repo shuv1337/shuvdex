@@ -23,7 +23,8 @@
     "@shuvdex/openapi-source": "*",
     "@shuvdex/policy-engine": "*",
     "@shuvdex/skill-importer": "*",
-    "@shuvdex/skill-indexer": "*"
+    "@shuvdex/skill-indexer": "*",
+    "@shuvdex/tenant-manager": "*"
   },
   "devDependencies": {
     "@types/node": "^25.5.0",
