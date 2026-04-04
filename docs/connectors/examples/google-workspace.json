@@ -1,0 +1,75 @@
+{
+  "upstreamId": "google-workspace",
+  "name": "Google Workspace",
+  "description": "Google Workspace via Google MCP — Gmail, Drive, Calendar, Contacts",
+  "transport": "streamable-http",
+  "endpoint": "https://workspace.googleapis.com/mcp",
+  "namespace": "gws",
+  "credentialId": "cred-google-workspace",
+  "owner": "Latitudes",
+  "purpose": "Core business productivity integration for Google Workspace tenants",
+  "defaultActionClass": "read",
+  "defaultRiskLevel": "medium",
+  "capabilities": {
+    "gmail": {
+      "scopes": ["https://www.googleapis.com/auth/gmail.readonly", "https://www.googleapis.com/auth/gmail.send"],
+      "actionClass": "read",
+      "riskLevel": "medium",
+      "writeApprovalRequired": true,
+      "notes": "gmail.send classified as write — requires explicit approval per role"
+    },
+    "drive": {
+      "scopes": [
+        "https://www.googleapis.com/auth/drive.readonly",
+        "https://www.googleapis.com/auth/drive.file"
+      ],
+      "actionClass": "read",
+      "riskLevel": "medium",
+      "writeApprovalRequired": true,
+      "notes": "drive.file (create/edit files) classified as write — requires explicit approval per role"
+    },
+    "calendar": {
+      "scopes": [
+        "https://www.googleapis.com/auth/calendar.readonly",
+        "https://www.googleapis.com/auth/calendar.events"
+      ],
+      "actionClass": "read",
+      "riskLevel": "low",
+      "writeApprovalRequired": true,
+      "notes": "calendar.events write classified as write — requires explicit approval per role"
+    },
+    "contacts": {
+      "scopes": ["https://www.googleapis.com/auth/contacts.readonly"],
+      "actionClass": "read",
+      "riskLevel": "low",
+      "writeApprovalRequired": false,
+      "notes": "Contacts read-only; includes PII — flag for data handling review"
+    }
+  },
+  "auth": {
+    "type": "oauth2-service-account",
+    "tokenEndpoint": "https://oauth2.googleapis.com/token",
+    "audience": "https://workspace.googleapis.com",
+    "credentialFields": ["serviceAccountKey", "delegatedUser", "customerId"]
+  },
+  "health": {
+    "checkEndpoint": "https://www.googleapis.com/discovery/v1/apis",
+    "intervalSeconds": 300
+  },
+  "pinning": {
+    "enabled": true,
+    "hashAlgorithm": "sha256",
+    "mutationAction": "auto-disable-and-alert"
+  },
+  "policyTemplateHints": {
+    "allStaff": ["gmail.read", "drive.read", "calendar.read", "contacts.read"],
+    "leadership": ["gmail.read", "gmail.send", "drive.read", "drive.write", "calendar.readwrite", "contacts.read"],
+    "itAdmin": ["gmail.read", "drive.read", "calendar.read", "contacts.read"]
+  },
+  "notes": [
+    "Requires a Google Cloud project with Workspace APIs enabled and a service account with domain-wide delegation",
+    "Domain-wide delegation must be granted in the Google Workspace admin console",
+    "Namespace prefix: all tools surfaced as gws.<tool_name>",
+    "Google API rate limits vary by API — Gmail: 250 quota units/second/user, Drive: 1,000 requests/100 seconds/user"
+  ]
+}

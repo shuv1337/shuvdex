@@ -1,0 +1,80 @@
+{
+  "upstreamId": "quickbooks",
+  "name": "QuickBooks Online",
+  "description": "QuickBooks Online via Intuit MCP — invoices, vendors, P&L, customers",
+  "transport": "streamable-http",
+  "endpoint": "https://quickbooks.api.intuit.com/mcp",
+  "namespace": "qbo",
+  "credentialId": "cred-quickbooks-oauth",
+  "owner": "Latitudes",
+  "purpose": "Financial management integration — accounting and reporting",
+  "defaultActionClass": "read",
+  "defaultRiskLevel": "high",
+  "capabilities": {
+    "invoices": {
+      "scopes": ["com.intuit.quickbooks.accounting"],
+      "actionClass": "read",
+      "riskLevel": "high",
+      "writeApprovalRequired": true,
+      "notes": "Invoice creation and mutation classified as write/high-risk — finance role approval required"
+    },
+    "vendors": {
+      "scopes": ["com.intuit.quickbooks.accounting"],
+      "actionClass": "read",
+      "riskLevel": "high",
+      "writeApprovalRequired": true,
+      "notes": "Vendor write classified as write/high-risk — finance role approval required"
+    },
+    "reports": {
+      "scopes": ["com.intuit.quickbooks.accounting"],
+      "actionClass": "read",
+      "riskLevel": "high",
+      "writeApprovalRequired": false,
+      "notes": "P&L, balance sheet, cash flow — read-only financial reports; high-risk due to financial data sensitivity"
+    },
+    "customers": {
+      "scopes": ["com.intuit.quickbooks.accounting"],
+      "actionClass": "read",
+      "riskLevel": "medium",
+      "writeApprovalRequired": true,
+      "notes": "Customer records contain PII — read allowed for finance role, write requires explicit approval"
+    },
+    "payments": {
+      "scopes": ["com.intuit.quickbooks.accounting"],
+      "actionClass": "write",
+      "riskLevel": "restricted",
+      "writeApprovalRequired": true,
+      "notes": "Payment creation is restricted-risk — requires break-glass or pre-approved policy grant only"
+    }
+  },
+  "auth": {
+    "type": "oauth2-authorization-code",
+    "authorizationEndpoint": "https://appcenter.intuit.com/connect/oauth2",
+    "tokenEndpoint": "https://oauth2.platform.intuit.com/oauth2/v1/tokens/bearer",
+    "audience": "https://quickbooks.api.intuit.com",
+    "credentialFields": ["clientId", "clientSecret", "realmId", "refreshToken"]
+  },
+  "health": {
+    "checkEndpoint": "https://quickbooks.api.intuit.com/v3/company/{realmId}/companyinfo/{realmId}",
+    "intervalSeconds": 600
+  },
+  "pinning": {
+    "enabled": true,
+    "hashAlgorithm": "sha256",
+    "mutationAction": "auto-disable-and-alert"
+  },
+  "policyTemplateHints": {
+    "finance": ["invoices.read", "vendors.read", "reports.read", "customers.read"],
+    "financeManager": ["invoices.read", "invoices.write", "vendors.read", "vendors.write", "reports.read", "customers.read"],
+    "leadership": ["reports.read"],
+    "allStaff": []
+  },
+  "notes": [
+    "OAuth 2.0 authorization code flow — the client's QuickBooks admin must authorize during onboarding",
+    "Refresh tokens expire after 100 days of inactivity — monitor and prompt rotation",
+    "Namespace prefix: all tools surfaced as qbo.<tool_name>",
+    "Financial data is high-risk by default — restrict to Finance role group",
+    "Payment creation requires restricted-risk approval — do not enable without explicit client sign-off",
+    "Rate limits: 500 requests/minute per realm"
+  ]
+}

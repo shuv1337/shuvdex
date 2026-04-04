@@ -1,0 +1,76 @@
+{
+  "upstreamId": "m365",
+  "name": "Microsoft 365",
+  "description": "Microsoft 365 via Graph MCP — email, calendar, files, Teams, directory",
+  "transport": "streamable-http",
+  "endpoint": "https://graph.microsoft.com/mcp",
+  "namespace": "m365",
+  "credentialId": "cred-m365-graph",
+  "owner": "Latitudes",
+  "purpose": "Core business productivity integration",
+  "defaultActionClass": "read",
+  "defaultRiskLevel": "medium",
+  "capabilities": {
+    "mail": {
+      "scopes": ["Mail.Read", "Mail.Send"],
+      "actionClass": "read",
+      "riskLevel": "medium",
+      "writeApprovalRequired": true,
+      "notes": "Mail.Send classified as write — requires explicit approval per role"
+    },
+    "calendar": {
+      "scopes": ["Calendars.Read", "Calendars.ReadWrite"],
+      "actionClass": "read",
+      "riskLevel": "low",
+      "writeApprovalRequired": true,
+      "notes": "Calendars.ReadWrite classified as write — requires explicit approval per role"
+    },
+    "files": {
+      "scopes": ["Files.Read.All", "Files.ReadWrite.All"],
+      "actionClass": "read",
+      "riskLevel": "medium",
+      "writeApprovalRequired": true,
+      "notes": "Files.ReadWrite.All classified as write and high-risk — requires explicit approval"
+    },
+    "teams": {
+      "scopes": ["Chat.Read", "ChannelMessage.Read.All"],
+      "actionClass": "read",
+      "riskLevel": "medium",
+      "writeApprovalRequired": false,
+      "notes": "Read-only Teams/Chat access; message send is a separate approval-required capability"
+    },
+    "directory": {
+      "scopes": ["User.Read.All", "Group.Read.All"],
+      "actionClass": "read",
+      "riskLevel": "low",
+      "writeApprovalRequired": false,
+      "notes": "User and group directory reads; directory write is admin-class and not exposed by default"
+    }
+  },
+  "auth": {
+    "type": "oauth2-client-credentials",
+    "tokenEndpoint": "https://login.microsoftonline.com/{tenantId}/oauth2/v2.0/token",
+    "audience": "https://graph.microsoft.com",
+    "credentialFields": ["clientId", "clientSecret", "tenantId"]
+  },
+  "health": {
+    "checkEndpoint": "https://graph.microsoft.com/v1.0/$metadata",
+    "intervalSeconds": 300
+  },
+  "pinning": {
+    "enabled": true,
+    "hashAlgorithm": "sha256",
+    "mutationAction": "auto-disable-and-alert"
+  },
+  "policyTemplateHints": {
+    "allStaff": ["mail.read", "calendar.read", "files.read", "teams.read", "directory.read"],
+    "leadership": ["mail.read", "mail.send", "calendar.readwrite", "files.read", "teams.read", "directory.read"],
+    "itAdmin": ["mail.read", "calendar.read", "files.read", "teams.read", "directory.read", "directory.write"]
+  },
+  "notes": [
+    "Requires an Entra ID app registration with admin consent for all scopes",
+    "Delegated vs application permission model: use application permissions for server-to-server access",
+    "Namespace prefix: all tools surfaced as m365.<tool_name>",
+    "Graph API rate limits: 10,000 requests per 10 minutes per app per tenant"
+  ]
+}

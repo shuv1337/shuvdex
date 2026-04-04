@@ -1,0 +1,35 @@
+{
+  "templateId": "custom",
+  "name": "Custom",
+  "tier": "custom",
+  "description": "Custom tier — POA. Unlimited integrations, bespoke connectors, custom governance.",
+  "maxConnectors": -1,
+  "maxUsers": -1,
+  "allowedUpstreams": [],
+  "roleMappings": [
+    {
+      "groupId": "users",
+      "groupName": "Users",
+      "allowedPackages": ["*"],
+      "maxActionClass": "read",
+      "maxRiskLevel": "medium"
+    },
+    {
+      "groupId": "power-users",
+      "groupName": "Power Users",
+      "allowedPackages": ["*"],
+      "maxActionClass": "write",
+      "maxRiskLevel": "high"
+    },
+    {
+      "groupId": "admins",
+      "groupName": "Administrators",
+      "allowedPackages": ["*"],
+      "maxActionClass": "admin",
+      "maxRiskLevel": "restricted"
+    }
+  ],
+  "defaultReadOnly": false,
+  "auditRetentionDays": 365,
+  "reviewCadenceDays": 30
+}

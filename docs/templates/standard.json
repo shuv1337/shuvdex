@@ -1,0 +1,28 @@
+{
+  "templateId": "standard",
+  "name": "Standard",
+  "tier": "standard",
+  "description": "Standard tier — $179/mo. 5 integrations, selective write by role, quarterly review.",
+  "maxConnectors": 5,
+  "maxUsers": 50,
+  "allowedUpstreams": [],
+  "roleMappings": [
+    {
+      "groupId": "standard-users",
+      "groupName": "Standard Users",
+      "allowedPackages": ["*"],
+      "maxActionClass": "read",
+      "maxRiskLevel": "medium"
+    },
+    {
+      "groupId": "power-users",
+      "groupName": "Power Users",
+      "allowedPackages": ["*"],
+      "maxActionClass": "write",
+      "maxRiskLevel": "high"
+    }
+  ],
+  "defaultReadOnly": false,
+  "auditRetentionDays": 180,
+  "reviewCadenceDays": 90
+}

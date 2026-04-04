@@ -1,0 +1,21 @@
+{
+  "templateId": "core",
+  "name": "Core",
+  "tier": "core",
+  "description": "Core tier — $99/mo. 2 integrations, read-only access, full audit.",
+  "maxConnectors": 2,
+  "maxUsers": 20,
+  "allowedUpstreams": [],
+  "roleMappings": [
+    {
+      "groupId": "*",
+      "groupName": "All Users",
+      "allowedPackages": ["*"],
+      "maxActionClass": "read",
+      "maxRiskLevel": "medium"
+    }
+  ],
+  "defaultReadOnly": true,
+  "auditRetentionDays": 90,
+  "reviewCadenceDays": 90
+}

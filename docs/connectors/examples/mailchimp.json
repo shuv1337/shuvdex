@@ -1,0 +1,65 @@
+{
+  "upstreamId": "mailchimp",
+  "name": "Mailchimp",
+  "description": "Mailchimp email marketing — campaigns, lists, audience, performance analytics",
+  "transport": "streamable-http",
+  "endpoint": "TBD",
+  "namespace": "mailchimp",
+  "credentialId": "cred-mailchimp-api",
+  "owner": "Latitudes",
+  "purpose": "Email marketing integration — campaign visibility and audience management",
+  "defaultActionClass": "read",
+  "defaultRiskLevel": "medium",
+  "status": "planned",
+  "capabilities": {
+    "campaigns": {
+      "scopes": ["campaigns:read"],
+      "actionClass": "read",
+      "riskLevel": "low",
+      "writeApprovalRequired": false,
+      "notes": "Campaign list, status, and performance stats — read-only"
+    },
+    "lists": {
+      "scopes": ["lists:read", "lists:write"],
+      "actionClass": "read",
+      "riskLevel": "medium",
+      "writeApprovalRequired": true,
+      "notes": "Audience list data contains PII — read for marketing role, write (subscribe/unsubscribe) requires explicit approval"
+    },
+    "performance": {
+      "scopes": ["reports:read"],
+      "actionClass": "read",
+      "riskLevel": "low",
+      "writeApprovalRequired": false,
+      "notes": "Open rates, click rates, unsubscribes, revenue — read-only analytics"
+    }
+  },
+  "auth": {
+    "type": "api-key",
+    "credentialFields": ["apiKey", "serverPrefix"],
+    "notes": "API key format: <key>-<server> e.g. abc123-us6. Server prefix determines the data center endpoint"
+  },
+  "health": {
+    "checkEndpoint": "https://<server>.api.mailchimp.com/3.0/ping",
+    "intervalSeconds": 600
+  },
+  "pinning": {
+    "enabled": true,
+    "hashAlgorithm": "sha256",
+    "mutationAction": "auto-disable-and-alert"
+  },
+  "policyTemplateHints": {
+    "marketing": ["campaigns.read", "lists.read", "performance.read"],
+    "marketingManager": ["campaigns.read", "lists.read", "lists.write", "performance.read"],
+    "leadership": ["campaigns.read", "performance.read"],
+    "allStaff": []
+  },
+  "notes": [
+    "STATUS: Planned — MCP server implementation TBD. Evaluate official Mailchimp MCP or build via http_api adapter",
+    "Mailchimp API v3 is the current stable API; v3 base URL is https://<server>.api.mailchimp.com/3.0",
+    "API keys do not expire — rotate on a quarterly schedule",
+    "Namespace prefix: all tools surfaced as mailchimp.<tool_name>",
+    "Audience list data contains PII (email addresses, names, activity) — ensure DPA coverage",
+    "Rate limits: 10 simultaneous connections per API key"
+  ]
+}

@@ -1,0 +1,77 @@
+{
+  "upstreamId": "hubspot",
+  "name": "HubSpot CRM",
+  "description": "HubSpot CRM via HubSpot MCP server — contacts, deals, pipeline, activity",
+  "transport": "streamable-http",
+  "endpoint": "https://api.hubapi.com/mcp",
+  "namespace": "hubspot",
+  "credentialId": "cred-hubspot-api",
+  "owner": "Latitudes",
+  "purpose": "CRM and sales pipeline integration",
+  "defaultActionClass": "read",
+  "defaultRiskLevel": "medium",
+  "capabilities": {
+    "contacts": {
+      "scopes": ["crm.objects.contacts.read", "crm.objects.contacts.write"],
+      "actionClass": "read",
+      "riskLevel": "medium",
+      "writeApprovalRequired": true,
+      "notes": "Contact records contain PII — read allowed for sales role, write requires explicit approval"
+    },
+    "deals": {
+      "scopes": ["crm.objects.deals.read", "crm.objects.deals.write"],
+      "actionClass": "read",
+      "riskLevel": "medium",
+      "writeApprovalRequired": true,
+      "notes": "Deal mutation (stage changes, value updates) classified as write — sales manager approval required"
+    },
+    "pipeline": {
+      "scopes": ["crm.objects.deals.read"],
+      "actionClass": "read",
+      "riskLevel": "low",
+      "writeApprovalRequired": false,
+      "notes": "Pipeline overview and stage reporting — read-only, low-risk"
+    },
+    "activity": {
+      "scopes": ["crm.objects.contacts.read", "crm.objects.deals.read", "timeline.read"],
+      "actionClass": "read",
+      "riskLevel": "low",
+      "writeApprovalRequired": false,
+      "notes": "Activity timeline and engagement history — read-only"
+    },
+    "companies": {
+      "scopes": ["crm.objects.companies.read", "crm.objects.companies.write"],
+      "actionClass": "read",
+      "riskLevel": "low",
+      "writeApprovalRequired": true,
+      "notes": "Company records — read for all sales staff, write requires explicit approval"
+    }
+  },
+  "auth": {
+    "type": "api-key",
+    "credentialFields": ["privateAppToken"],
+    "notes": "Use HubSpot Private App tokens — legacy API keys are deprecated"
+  },
+  "health": {
+    "checkEndpoint": "https://api.hubapi.com/crm/v3/objects/contacts?limit=1",
+    "intervalSeconds": 300
+  },
+  "pinning": {
+    "enabled": true,
+    "hashAlgorithm": "sha256",
+    "mutationAction": "auto-disable-and-alert"
+  },
+  "policyTemplateHints": {
+    "sales": ["contacts.read", "deals.read", "pipeline.read", "activity.read", "companies.read"],
+    "salesManager": ["contacts.read", "contacts.write", "deals.read", "deals.write", "pipeline.read", "activity.read", "companies.read"],
+    "leadership": ["pipeline.read", "deals.read", "activity.read"],
+    "allStaff": []
+  },
+  "notes": [
+    "HubSpot Private App tokens do not expire — rotate on a quarterly schedule or on suspected compromise",
+    "Scopes must be selected when creating the Private App in the HubSpot account settings",
+    "Namespace prefix: all tools surfaced as hubspot.<tool_name>",
+    "PII in contact records — ensure data handling is covered in client DPA",
+    "Rate limits: 100 requests/10 seconds per Private App token (Enterprise: higher)"
+  ]
+}

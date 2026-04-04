@@ -1,0 +1,79 @@
+{
+  "upstreamId": "slack",
+  "name": "Slack",
+  "description": "Slack via Slack MCP server — messages, channels, search, user directory",
+  "transport": "streamable-http",
+  "endpoint": "https://slack.com/api/mcp",
+  "namespace": "slack",
+  "credentialId": "cred-slack-bot",
+  "owner": "Latitudes",
+  "purpose": "Team communication and search integration",
+  "defaultActionClass": "read",
+  "defaultRiskLevel": "medium",
+  "status": "planned",
+  "capabilities": {
+    "messages": {
+      "scopes": ["channels:history", "groups:history", "im:history", "mpim:history"],
+      "actionClass": "read",
+      "riskLevel": "medium",
+      "writeApprovalRequired": false,
+      "notes": "Message history read — medium-risk due to potential sensitive content in channels"
+    },
+    "channels": {
+      "scopes": ["channels:read", "groups:read"],
+      "actionClass": "read",
+      "riskLevel": "low",
+      "writeApprovalRequired": false,
+      "notes": "Channel list and metadata — read-only"
+    },
+    "search": {
+      "scopes": ["search:read"],
+      "actionClass": "read",
+      "riskLevel": "medium",
+      "writeApprovalRequired": false,
+      "notes": "Workspace-wide search — medium-risk, respects Slack's existing channel access controls"
+    },
+    "post": {
+      "scopes": ["chat:write"],
+      "actionClass": "write",
+      "riskLevel": "high",
+      "writeApprovalRequired": true,
+      "notes": "Posting messages on behalf of the bot — write/high-risk, requires explicit approval and must be restricted to designated channels"
+    },
+    "users": {
+      "scopes": ["users:read", "users.profile:read"],
+      "actionClass": "read",
+      "riskLevel": "low",
+      "writeApprovalRequired": false,
+      "notes": "User directory and profile lookup — read-only"
+    }
+  },
+  "auth": {
+    "type": "oauth2-bot-token",
+    "credentialFields": ["botToken", "appToken"],
+    "notes": "Slack Bot User OAuth Token (xoxb-...). Socket Mode app tokens (xapp-...) for event subscriptions if needed"
+  },
+  "health": {
+    "checkEndpoint": "https://slack.com/api/auth.test",
+    "intervalSeconds": 300
+  },
+  "pinning": {
+    "enabled": true,
+    "hashAlgorithm": "sha256",
+    "mutationAction": "auto-disable-and-alert"
+  },
+  "policyTemplateHints": {
+    "allStaff": ["messages.read", "channels.read", "search.read", "users.read"],
+    "communications": ["messages.read", "channels.read", "search.read", "users.read", "post"],
+    "leadership": ["messages.read", "channels.read", "search.read"],
+    "itAdmin": ["messages.read", "channels.read", "search.read", "users.read"]
+  },
+  "notes": [
+    "STATUS: Planned — evaluate @slack/mcp-server or official Slack MCP when available",
+    "Bot must be installed to the workspace by a Slack admin during onboarding",
+    "Bot only sees channels it has been invited to — scope naturally limits access",
+    "Message post capability (chat:write) is write/high-risk — restrict to approved channels only",
+    "Namespace prefix: all tools surfaced as slack.<tool_name>",
+    "Rate limits: Tier 3 methods allow ~50 requests/minute per workspace"
+  ]
+}
