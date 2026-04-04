@@ -1,0 +1,36 @@
+node_modules
+dist
+*.tsbuildinfo
+.turbo
+coverage
+
+# Local capability data (never bake secrets into image)
+.capabilities
+
+# Git history
+.git
+.gitignore
+
+# Docs and planning artefacts
+*.md
+docs/
+RUNBOOK*.md
+
+# Editor and local tooling
+.vscode
+.idea
+.pi
+.codex
+.factory
+.rodney
+opencode.jsonc
+.run
+.qa-screenshots
+dogfood-output
+
+# Local scripts that should never be in the image
+scripts/
+
+# OS artefacts
+.DS_Store
+Thumbs.db

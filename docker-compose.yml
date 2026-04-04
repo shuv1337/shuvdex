@@ -1,0 +1,99 @@
+version: "3.9"
+
+services:
+  # ── MCP Server ────────────────────────────────────────────────────────────
+  mcp-server:
+    build:
+      context: .
+      target: mcp-server
+    ports:
+      - "${MCP_PORT:-3848}:3848"
+    volumes:
+      - capabilities-data:/data
+      - ${LOCAL_REPO_PATH:-.}:/repo:ro
+    environment:
+      - MCP_HOST=0.0.0.0
+      - MCP_PORT=3848
+      - LOCAL_REPO_PATH=/repo
+      - CAPABILITIES_DIR=/data/packages
+      - POLICY_DIR=/data/policy
+      - CREDENTIALS_DIR=/data/credentials
+      - CREDENTIAL_KEY_PATH=/data/.credential-key
+      - SHUVDEX_MODE=${SHUVDEX_MODE:-production}
+      - IDP_ENTRA_TENANT_ID=${IDP_ENTRA_TENANT_ID:-}
+      - IDP_ENTRA_AUDIENCE=${IDP_ENTRA_AUDIENCE:-}
+      - IDP_GOOGLE_AUDIENCE=${IDP_GOOGLE_AUDIENCE:-}
+      - IDP_GOOGLE_ALLOWED_DOMAINS=${IDP_GOOGLE_ALLOWED_DOMAINS:-}
+    restart: unless-stopped
+    networks:
+      - shuvdex
+
+  # ── API Server ────────────────────────────────────────────────────────────
+  api-server:
+    build:
+      context: .
+      target: api-server
+    ports:
+      - "${API_PORT:-3847}:3847"
+    volumes:
+      - capabilities-data:/data
+      - ${LOCAL_REPO_PATH:-.}:/repo:ro
+    environment:
+      - HOST=0.0.0.0
+      - PORT=3847
+      - LOCAL_REPO_PATH=/repo
+      - CAPABILITIES_DIR=/data/packages
+      - POLICY_DIR=/data/policy
+      - IMPORTS_DIR=/data/imports
+      - CREDENTIALS_DIR=/data/credentials
+      - CREDENTIAL_KEY_PATH=/data/.credential-key
+      - OPENAPI_ROOT=/data
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-}
+      - SHUVDEX_MODE=${SHUVDEX_MODE:-production}
+      - DEV_MODE=${DEV_MODE:-}
+    restart: unless-stopped
+    networks:
+      - shuvdex
+    depends_on:
+      mcp-server:
+        condition: service_healthy
+
+  # ── Web UI (nginx) ────────────────────────────────────────────────────────
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    ports:
+      - "${WEB_PORT:-5173}:80"
+    networks:
+      - shuvdex
+    depends_on:
+      - api-server
+    restart: unless-stopped
+
+  # ── Tailscale (optional mesh networking) ─────────────────────────────────
+  tailscale:
+    image: tailscale/tailscale:latest
+    hostname: shuvdex
+    environment:
+      - TS_AUTHKEY=${TS_AUTHKEY:-}
+      - TS_STATE_DIR=/var/lib/tailscale
+      - TS_USERSPACE=true
+    volumes:
+      - tailscale-state:/var/lib/tailscale
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    restart: unless-stopped
+    networks:
+      - shuvdex
+    profiles:
+      - tailscale
+
+volumes:
+  capabilities-data:
+  tailscale-state:
+
+networks:
+  shuvdex:
+    driver: bridge
