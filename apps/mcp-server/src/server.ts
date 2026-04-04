@@ -12,6 +12,10 @@ import type {
   PolicyEngineService,
   TokenClaims,
 } from "@shuvdex/policy-engine";
+import {
+  generateCorrelationId,
+} from "@shuvdex/policy-engine";
+import type { RuntimeAuditInput } from "@shuvdex/policy-engine";
 import type { ExecutionProvidersService } from "@shuvdex/execution-providers";
 
 export interface ServerConfig {
@@ -19,7 +23,7 @@ export interface ServerConfig {
   readonly claims?: TokenClaims;
   readonly policy?: Pick<
     PolicyEngineService,
-    "authorizeCapability" | "recordAuditEvent" | "defaultClaims"
+    "authorizeCapability" | "recordAuditEvent" | "defaultClaims" | "audit"
   >;
   readonly executors?: Pick<ExecutionProvidersService, "executeTool">;
 }
@@ -133,6 +137,10 @@ async function authorize(
   return { allowed: decision.allowed, reason: decision.reason };
 }
 
+/**
+ * Record a legacy-shape AuditEvent (kept for backward compat).  New call
+ * sites should use auditRuntime() for richer structured records.
+ */
 async function audit(
   config: ServerConfig | undefined,
   event: Omit<AuditEvent, "id" | "timestamp">,
@@ -144,6 +152,20 @@ async function audit(
       timestamp: new Date().toISOString(),
       ...event,
     }),
+  ).catch(() => undefined);
+}
+
+/**
+ * Record a rich RuntimeAuditRecord through the AuditService.
+ * Falls back silently when no policy engine is configured.
+ */
+async function auditRuntime(
+  config: ServerConfig | undefined,
+  input: RuntimeAuditInput,
+): Promise<void> {
+  if (!config?.policy?.audit) return;
+  await Effect.runPromise(
+    config.policy.audit.recordRuntimeEvent(input),
   ).catch(() => undefined);
 }
 
@@ -213,30 +235,48 @@ export function createServer(config?: ServerConfig): McpServer {
           inputSchema: schema,
         },
         async (args) => {
+          const correlationId = generateCorrelationId();
+          const startMs = Date.now();
+          const subjectId = config?.claims?.subjectId ?? "local-stdio";
+
           const decision = await authorize(config, capability);
           if (!decision.allowed) {
-            await audit(config, {
-              action: "call_tool",
-              subjectId: config?.claims?.subjectId ?? "local-stdio",
-              capabilityId: capability.id,
-              packageId: capability.packageId,
+            await auditRuntime(config, {
+              actor: { subjectId, subjectType: config?.claims?.subjectType ?? "service" },
+              action: "tool_call",
+              actionClass: "external",
+              target: { type: "tool", id: capability.id, name: capability.title },
+              packageRef: { packageId: capability.packageId, capabilityId: capability.id },
               decision: "deny",
-              reason: decision.reason,
-              executor: capability.executorRef?.executorType,
+              decisionReason: decision.reason,
+              correlationId,
+              outcome: {
+                status: "error",
+                latencyMs: Date.now() - startMs,
+                errorClass: "AuthorizationDenied",
+                errorMessage: decision.reason,
+              },
             });
             return json({ error: decision.reason }, true);
           }
 
           const result = await executeTool(config, capability, args ?? {});
+          const latencyMs = Date.now() - startMs;
 
-          await audit(config, {
-            action: "call_tool",
-            subjectId: config?.claims?.subjectId ?? "local-stdio",
-            capabilityId: capability.id,
-            packageId: capability.packageId,
+          await auditRuntime(config, {
+            actor: { subjectId, subjectType: config?.claims?.subjectType ?? "service" },
+            action: "tool_call",
+            actionClass: "external",
+            target: { type: "tool", id: capability.id, name: capability.title },
+            packageRef: { packageId: capability.packageId, capabilityId: capability.id },
             decision: result.isError ? "deny" : "allow",
-            reason: result.isError ? "Execution returned error" : "Executed",
-            executor: capability.executorRef?.executorType,
+            decisionReason: result.isError ? "Execution returned error" : "Executed",
+            correlationId,
+            outcome: {
+              status: result.isError ? "error" : "success",
+              latencyMs,
+              ...(result.isError ? { errorClass: "ExecutionError" } : {}),
+            },
           });
 
           return result;
@@ -255,33 +295,71 @@ export function createServer(config?: ServerConfig): McpServer {
           mimeType: resource.mimeType,
         },
         async () => {
+          const correlationId = generateCorrelationId();
+          const startMs = Date.now();
+          const subjectId = config?.claims?.subjectId ?? "local-stdio";
+
           const decision = await authorize(config, capability);
           if (!decision.allowed) {
-            await audit(config, {
-              action: "read_resource",
-              subjectId: config?.claims?.subjectId ?? "local-stdio",
-              capabilityId: capability.id,
-              packageId: capability.packageId,
+            await auditRuntime(config, {
+              actor: { subjectId, subjectType: config?.claims?.subjectType ?? "service" },
+              action: "resource_read",
+              actionClass: "read",
+              target: { type: "resource", id: capability.id, name: capability.title },
+              packageRef: { packageId: capability.packageId, capabilityId: capability.id },
               decision: "deny",
-              reason: decision.reason,
+              decisionReason: decision.reason,
+              correlationId,
+              outcome: {
+                status: "error",
+                latencyMs: Date.now() - startMs,
+                errorClass: "AuthorizationDenied",
+                errorMessage: decision.reason,
+              },
             });
             throw new Error(decision.reason);
           }
 
-          await audit(config, {
-            action: "read_resource",
-            subjectId: config?.claims?.subjectId ?? "local-stdio",
-            capabilityId: capability.id,
-            packageId: capability.packageId,
+          let payload: ReturnType<typeof resourcePayload>;
+          try {
+            payload = resourcePayload(capability, config);
+          } catch (err) {
+            await auditRuntime(config, {
+              actor: { subjectId, subjectType: config?.claims?.subjectType ?? "service" },
+              action: "resource_read",
+              actionClass: "read",
+              target: { type: "resource", id: capability.id, name: capability.title },
+              packageRef: { packageId: capability.packageId, capabilityId: capability.id },
+              decision: "deny",
+              decisionReason: "Resource payload error",
+              correlationId,
+              outcome: {
+                status: "error",
+                latencyMs: Date.now() - startMs,
+                errorClass: "ResourcePayloadError",
+                errorMessage: String(err),
+              },
+            });
+            throw err;
+          }
+
+          await auditRuntime(config, {
+            actor: { subjectId, subjectType: config?.claims?.subjectType ?? "service" },
+            action: "resource_read",
+            actionClass: "read",
+            target: { type: "resource", id: capability.id, name: capability.title },
+            packageRef: { packageId: capability.packageId, capabilityId: capability.id },
             decision: "allow",
-            reason: "Resource read",
+            decisionReason: "Resource read",
+            correlationId,
+            outcome: { status: "success", latencyMs: Date.now() - startMs },
           });
           return {
             contents: [
               {
                 uri: resource.uri,
                 mimeType: resource.mimeType,
-                ...resourcePayload(capability, config),
+                ...payload,
               },
             ],
           };
@@ -305,25 +383,40 @@ export function createServer(config?: ServerConfig): McpServer {
           argsSchema,
         },
         async (args) => {
+          const correlationId = generateCorrelationId();
+          const startMs = Date.now();
+          const subjectId = config?.claims?.subjectId ?? "local-stdio";
+
           const decision = await authorize(config, capability);
           if (!decision.allowed) {
-            await audit(config, {
-              action: "get_prompt",
-              subjectId: config?.claims?.subjectId ?? "local-stdio",
-              capabilityId: capability.id,
-              packageId: capability.packageId,
+            await auditRuntime(config, {
+              actor: { subjectId, subjectType: config?.claims?.subjectType ?? "service" },
+              action: "prompt_get",
+              actionClass: "read",
+              target: { type: "prompt", id: capability.id, name: capability.title },
+              packageRef: { packageId: capability.packageId, capabilityId: capability.id },
               decision: "deny",
-              reason: decision.reason,
+              decisionReason: decision.reason,
+              correlationId,
+              outcome: {
+                status: "error",
+                latencyMs: Date.now() - startMs,
+                errorClass: "AuthorizationDenied",
+                errorMessage: decision.reason,
+              },
             });
             throw new Error(decision.reason);
           }
-          await audit(config, {
-            action: "get_prompt",
-            subjectId: config?.claims?.subjectId ?? "local-stdio",
-            capabilityId: capability.id,
-            packageId: capability.packageId,
+          await auditRuntime(config, {
+            actor: { subjectId, subjectType: config?.claims?.subjectType ?? "service" },
+            action: "prompt_get",
+            actionClass: "read",
+            target: { type: "prompt", id: capability.id, name: capability.title },
+            packageRef: { packageId: capability.packageId, capabilityId: capability.id },
             decision: "allow",
-            reason: "Prompt served",
+            decisionReason: "Prompt served",
+            correlationId,
+            outcome: { status: "success", latencyMs: Date.now() - startMs },
           });
           return {
             messages: (prompt.messages ?? []).map((message) => ({

@@ -21,10 +21,12 @@
     "@shuvdex/credential-store": "*",
     "@shuvdex/execution-providers": "*",
     "@shuvdex/http-executor": "*",
+    "@shuvdex/mcp-proxy": "*",
     "@shuvdex/openapi-source": "*",
     "@shuvdex/policy-engine": "*",
     "@shuvdex/skill-importer": "*",
     "@shuvdex/skill-indexer": "*",
+    "@shuvdex/tenant-manager": "*",
     "@modelcontextprotocol/sdk": "^1.27.1",
     "effect": "^3.21.0",
     "zod": "^3.25.0 || ^4.0.0"

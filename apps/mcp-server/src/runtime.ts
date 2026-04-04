@@ -9,7 +9,9 @@ import {
 } from "@shuvdex/execution-providers";
 import { makeCredentialStoreLive } from "@shuvdex/credential-store";
 import { makeHttpExecutorLive } from "@shuvdex/http-executor";
+import { makeMcpProxyLive } from "@shuvdex/mcp-proxy";
 import { makePolicyEngineLive, PolicyEngine } from "@shuvdex/policy-engine";
+import type { PolicyEngineService } from "@shuvdex/policy-engine";
 import { SkillIndexer, SkillIndexerLive } from "@shuvdex/skill-indexer";
 import type { ServerConfig } from "./server.js";
 import * as path from "node:path";
@@ -31,6 +33,16 @@ export interface LoadedServerRuntime {
   readonly indexedArtifactCount: number;
   readonly packageCount: number;
   readonly startupDurationMs: number;
+  /**
+   * Direct handle to the policy engine for per-request token resolution.
+   * Exposes `verifyToken`, `resolveExternalToken`, and `defaultClaims` so the
+   * HTTP layer can resolve caller identity without depending on the full
+   * Effect runtime context.
+   */
+  readonly policyEngine: Pick<
+    PolicyEngineService,
+    "verifyToken" | "resolveExternalToken" | "defaultClaims"
+  >;
   readonly dispose: () => Promise<void>;
 }
 
@@ -64,16 +76,37 @@ export async function loadServerRuntime(
   const startedAt = Date.now();
   const paths = resolveServerPaths(cwd);
 
+  const credentialStoreRootDir = process.env["CREDENTIALS_DIR"]
+    ? path.resolve(process.env["CREDENTIALS_DIR"])
+    : path.resolve(cwd, ".capabilities", "credentials");
+  const credentialKeyPath = process.env["CREDENTIAL_KEY_PATH"]
+    ? path.resolve(process.env["CREDENTIAL_KEY_PATH"])
+    : path.resolve(cwd, ".capabilities", ".credential-key");
+
   const capabilityRegistryLayer = makeCapabilityRegistryLive(paths.capabilitiesDir);
   const credentialStoreLayer = makeCredentialStoreLive({
-    rootDir: path.resolve(cwd, ".capabilities", "credentials"),
+    rootDir: credentialStoreRootDir,
+    keyPath: credentialKeyPath,
   });
+
+  const mcpProxyRootDir = process.env["MCP_PROXY_DIR"]
+    ? path.resolve(process.env["MCP_PROXY_DIR"])
+    : path.resolve(cwd, ".capabilities", "mcp-proxy");
+  const mcpProxyLayer = Layer.provide(
+    makeMcpProxyLive({ rootDir: mcpProxyRootDir }),
+    credentialStoreLayer,
+  );
+
   const httpExecutorLayer = Layer.provide(makeHttpExecutorLive(), credentialStoreLayer);
-  const executionProvidersLayer = Layer.provide(makeExecutionProvidersLive(), httpExecutorLayer);
+  const executionProvidersLayer = Layer.provide(
+    makeExecutionProvidersLive(),
+    Layer.merge(httpExecutorLayer, mcpProxyLayer),
+  );
   const liveLayer = Layer.mergeAll(
     capabilityRegistryLayer,
     credentialStoreLayer,
     httpExecutorLayer,
+    mcpProxyLayer,
     makePolicyEngineLive({ policyDir: paths.policyDir }),
     SkillIndexerLive,
     executionProvidersLayer,
@@ -155,6 +188,7 @@ export async function loadServerRuntime(
     indexedArtifactCount,
     packageCount: packages.length,
     startupDurationMs,
+    policyEngine: policy,
     dispose: () => managedRuntime.dispose(),
   };
 }
