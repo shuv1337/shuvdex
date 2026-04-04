@@ -1,5 +1,7 @@
 # shuvdex — Implementation Plan
 
+> **Spec alignment:** This plan is aligned with `docs/shuvdex_system_spec.md` (v0.3) and `docs/shuvdex_clean_system_spec.md` (v0.1). Section references like §9.7 refer to the system spec unless prefixed with "clean spec."
+
 ## Product
 
 **shuvdex** is the platform behind **Latitudes Managed AI Connectivity** — a governed capability gateway and control plane that gives SMBs a single, audited, policy-controlled endpoint for AI-to-business-system access.
@@ -49,14 +51,26 @@ One endpoint per tenant/environment. Presents a single MCP surface to AI hosts. 
 - `module_runtime` — local module execution
 - `http_api` — direct HTTP/OpenAPI-backed execution
 - `mcp_proxy` — upstream vendor MCP server proxying (the primary adapter for client-facing integrations)
+- `builtin` — reserved for future platform-native capabilities where direct implementation is preferable to external adapters (schema-level type, not yet implemented)
 
 ### Governance layer
 - Approved vs restricted packages per tenant
 - Per-role access (Entra groups / Google Workspace groups → policy tiers)
 - Read-only default with explicit write approval
-- Approval-required operations for data-mutating tools
+- Four action classifications: `read`, `write`, `admin`, `external` — each with distinct policy treatment
+- Four risk levels: `low`, `medium`, `high`, `restricted` — restricted capabilities require explicit approval or break-glass
+- Approval-required operations for data-mutating tools and restricted-risk capabilities
 - Environment-specific visibility
 - Tenant-specific exceptions and overrides
+- Per-capability certification states (unknown, reviewed, approved, restricted, deprecated) independent of package-level approval
+
+### Connector strategy
+- **BYOS (Bring Your Own Stack):** connect the apps the client already runs, not a predefined stack
+- Preferred strategy by source quality:
+  1. Use upstream MCP through `mcp_proxy` when the vendor MCP is sufficient
+  2. Use `http_api` when the vendor has a strong API but no strong MCP server
+  3. Use `module_runtime` for custom logic, normalization, or bespoke systems
+- Each connector is a maintained asset — Latitudes monitors upstream API changes, pushes skill updates proactively, and ensures connection stability
 
 ### Security layer
 - Tool description hash pinning at approval time
@@ -96,8 +110,24 @@ Containerize. Get identity on Entra/Google from day one. Harden enough that Phas
 
 ### 1C. Structured audit foundation
 - Structured JSON logs for: capability discovery, authorization decisions (allow/deny/reason), tool invocations (caller, tool, target system, outcome, latency), package lifecycle events
-- Correlation IDs across control plane → gateway → adapter
-- Audit record schema: caller, tenant, environment, capability, package, target system, risk level, action class (read/write), outcome, latency
+- Correlation IDs across control plane → gateway → adapter → upstream
+- Runtime audit record schema (per spec §9.9 / §16.1):
+  - eventId, timestamp
+  - tenantId, environmentId
+  - actor (caller identity from IdP), actor groups/roles
+  - action (tool_call, resource_read, prompt_get, package_approve, credential_rotate, policy_change, etc.)
+  - target type and target id
+  - package and capability reference, source system accessed
+  - action class (`read`, `write`, `admin`)
+  - decision (allow, deny, approval_required, break_glass) with decision reason
+  - correlation id / session id
+  - outcome (success, error, timeout), latency
+  - redacted request metadata, redacted response metadata
+- Administrative audit records (per spec §16.2):
+  - who approved or changed something
+  - what changed (with previous and new state)
+  - justification where relevant
+  - effective time
 - Metrics: package load failures, auth failures, invocation failures, execution latency
 
 ### 1D. Docker Compose packaging
@@ -137,8 +167,9 @@ Implement `mcp_proxy` — the adapter that connects shuvdex as an MCP client to 
 
 ### 2A. mcp_proxy adapter
 - Implement `mcp_proxy` execution path using `@modelcontextprotocol/sdk` client
-- First targets, matching the live product integrations:
+- First targets, matching the live product integrations on the sales page:
   - **Microsoft 365** (M365 Graph MCP — email, calendar, files, Teams, directory)
+  - **Google Workspace** (Gmail, Drive, Calendar, contacts) — listed as live on sales page, must be in the first wave
   - **QuickBooks Online** (invoices, vendors, P&L, customers)
   - **HubSpot CRM** (contacts, deals, pipeline, activity)
 - Support both stdio (local MCP servers) and Streamable HTTP (remote) upstream transports
@@ -146,7 +177,9 @@ Implement `mcp_proxy` — the adapter that connects shuvdex as an MCP client to 
 - Proxy `tools/call` through credential store
 - Namespace all upstream tools: `m365.search_emails`, `quickbooks.list_invoices`, `hubspot.get_deal`
 - Preserve provenance metadata: source, transport, last-synced, trust state
-- Enforce read-only default: tools tagged as write-capable require explicit policy approval
+- Classify every proxied tool by action class: `read`, `write`, `admin`, or `external`
+- Enforce read-only default: tools classified as write/admin/external require explicit policy approval
+- Tag every proxied capability with a risk level: `low`, `medium`, `high`, or `restricted`
 
 ### 2B. Upstream registry and health
 - Registry per upstream: owner, purpose, auth mode, transport mode, health status, last capability sync, tool count
@@ -157,8 +190,15 @@ Implement `mcp_proxy` — the adapter that connects shuvdex as an MCP client to 
 ### 2C. Upstream credential isolation
 - Inbound auth (Entra/Google JWT from user) and outbound auth (M365 Graph token, QuickBooks OAuth, HubSpot API key) fully separated
 - Credentials bound per upstream connector, resolved from credential store at invocation time
+- Credential binding data model (per spec §9.7):
+  - bindingId, tenantId, environmentId, credentialId
+  - credential type (API key, OAuth client credentials, OAuth authorization code, bearer token, service account)
+  - allowed packages, allowed capabilities, scopes
+  - rotation metadata: last rotated, rotation interval, next rotation
 - No token passthrough from inbound request
 - Outbound auth adapters: API keys, bearer tokens, OAuth 2.0 client credentials, OAuth 2.0 authorization code (for M365 delegated access)
+- Credential access is itself an auditable event
+- Rotation tracking and alerting visible to operators
 
 ### 2D. Capability caching and sync
 - Cache upstream tool/resource/prompt metadata locally
@@ -173,11 +213,13 @@ Implement `mcp_proxy` — the adapter that connects shuvdex as an MCP client to 
 - **Change detection alerting:** Diff upstream metadata on every refresh, notify operators of any changes. Never silently propagate upstream mutations
 
 ## Exit criteria
-- shuvdex fronts local modules, HTTP APIs, and at least 3 upstream MCP servers (M365, QuickBooks, HubSpot)
+- shuvdex fronts local modules, HTTP APIs, and at least 4 upstream MCP servers (M365, Google Workspace, QuickBooks, HubSpot)
 - Invocations route correctly to upstream backends
 - Upstream auth is isolated from inbound auth
 - All upstream tools are namespaced with provenance
+- Every proxied tool is classified by action class (read/write/admin/external) and risk level (low/medium/high/restricted)
 - Write-capable tools are blocked by default unless policy-approved
+- Restricted-risk tools require explicit approval or break-glass
 - Description pinning and change detection are active
 - Operators can add and manage upstream sources without code changes
 
@@ -194,27 +236,59 @@ Per-client capability surfaces. Different clients see different tool sets based 
 ## Workstreams
 
 ### 3A. Tenant and environment domain model
-- Core entities: tenant, environment (prod/staging), gateway deployment, package assignment, credential binding, policy bundle
+- Core entities (per spec §9.1–§9.3):
+  - **Tenant:** tenantId, name, status (active/suspended/archived), subscription tier (core/standard/custom), identity provider type and configuration, owner metadata, data residency notes
+  - **Environment:** environmentId, tenantId, name, type, gateway configuration reference, credential namespace, policy bundle assignment
+  - **Gateway:** gatewayId, tenantId, environmentId, endpoint URL, transport config, auth mode, enabled packages, health status, deployment metadata
 - Inheritance: base package sets with tenant-specific overrides
 - Per-tenant identity provider mapping (Entra tenant ID or Google Workspace domain)
 - Tenant-scoped credential bindings — a client's QuickBooks OAuth token is only accessible to their tenant
+- Tenant isolation must apply to: capability assignments, credentials, audit records, policy evaluation, approval state, runtime session context, and caching
 - Environment-specific visibility
 - Latitudes internal MSP is tenant #1, proving the model
 
 ### 3B. Policy-driven disclosure engine
-- Compute visible capability set at session init based on: tenant, environment, caller identity groups, subscription tier, tool trust state
+- Compute visible capability set at session init based on: tenant, environment, caller identity groups, subscription tier, tool trust state, risk level, approval status, and capability certification state
+- All five capability kinds participate in disclosure: `tool`, `resource`, `prompt`, `module`, `connector`
 - Per-package-per-tenant states: approved, restricted, approval-required, disabled
+- Four risk levels enforced: `low` (auto-approve eligible), `medium` (standard approval), `high` (explicit approval per role), `restricted` (break-glass or pre-approved policy grant only)
+- Four action classifications enforced: `read` (auto-approve eligible), `write` (requires explicit approval per role), `admin` (requires admin-level approval), `external` (same as write, plus external side-effect audit)
 - Tier enforcement:
   - Core ($99): 2 upstream connectors visible
   - Standard ($179): 5 upstream connectors visible
   - Custom: unlimited
 - Role-based filtering: finance group sees QuickBooks + Xero tools, marketing group sees Mailchimp + HubSpot tools, leadership sees everything (matches sales page "Role-Appropriate Access" promise)
-- Read-only tools auto-approved. Write-capable tools require explicit approval per role
+- Read-only/low-risk tools auto-approved. Write-capable, admin, external, and high/restricted-risk tools require explicit approval per role
 
-### 3C. Approval workflows
-- State machine: `discovered → pending_review → approved → active` (or `rejected`)
-- Break-glass with enhanced audit logging
-- Approval-required for: any write-capable tool, any tool accessing PII, any custom/bespoke connector
+### 3C. Approval and certification workflows
+
+**Package approval states** (per spec §14.2):
+- `discovered` → `pending_review` → `approved` → `active` (or `rejected`)
+- Additional states: `restricted`, `deprecated`, `disabled`
+- Full set: discovered, pending_review, approved, active, restricted, rejected, deprecated, disabled
+
+**Per-capability certification states** (per clean spec §10.3, independent of package approval):
+- `unknown` → `reviewed` → `approved` (or `restricted` / `deprecated`)
+- Certification is per-capability, not per-package — one package may contain approved and restricted capabilities
+
+**Approval scope** (per spec §14.3) — approval may apply at any of these levels:
+- Connector package (approve QuickBooks connector for this tenant)
+- Individual capability (approve `quickbooks.create_invoice` as a write tool)
+- Write permission subset (approve write for finance group only)
+- Credential scope set (approve M365 Graph with calendar + mail scopes, not files)
+- Environment-specific deployment (approve for production but not staging)
+
+**Break-glass procedures:**
+- Break-glass invocations must be available when configured
+- Break-glass use must produce enhanced audit records including justification
+- Break-glass usage must trigger operator notification
+- Post-incident review must be required
+
+**Access revocation** (per spec §10.4):
+- When a user's IdP account is disabled or group membership changes, Shuvdex must revoke or alter effective access without a separate manual process
+- For active sessions: either invalidate the session or send capability change notifications where the transport supports it
+
+- Approval-required for: any write-capable tool, any tool accessing PII, any custom/bespoke connector, any restricted-risk capability
 - Notifications to Latitudes operators via webhook (Teams/Slack/email)
 - Operator approval via admin API or admin UI
 
@@ -227,19 +301,22 @@ Per-client capability surfaces. Different clients see different tool sets based 
 ### 3E. Client governance dashboard
 Two views from the same API:
 
-**Latitudes Admin View (MSP operators):**
-- Cross-tenant overview
-- Package management, upstream health, audit search
-- Credential rotation, connector status
+**Latitudes Admin View (MSP operators, per spec §8.3):**
+- Cross-tenant overview and deployment management
+- Connector onboarding and package management
+- Credential rotation and binding management
 - Approval queue across all tenants
-- Deployment management
+- Upstream health dashboard
+- Audit search and incident investigation
+- Drift and change detection alerts
 
-**Client Governance View (tenant-scoped, matches sales page dashboard mockup):**
+**Client Governance View (tenant-scoped, matches sales page dashboard mockup, per spec §8.3):**
 - User access table: who can connect, what role/tier, what access level
 - Connected apps per user: which integrations each person can reach
-- Connection audit trail: timestamp, user, query description, target app — last 24 hours / 7 days / 30 days
+- Connection audit trail: timestamp, user, query description, target app (filterable by 24h / 7d / 30d)
 - Pending approval requests (for write access, new connectors)
-- Policy summary: what's enabled, what's restricted
+- Policy summary: what's enabled, what's restricted, whether write is active anywhere
+- Governance posture overview
 
 ### 3F. Tenant lifecycle operations
 - Onboarding flow: create tenant → assign identity provider → select policy template → bind credentials → deploy gateway → generate connection URL
@@ -271,17 +348,39 @@ Harden the full OAuth 2.1 MCP authorization flow per the Nov 2025 spec. Formaliz
 - Protected Resource Metadata endpoint (RFC 9728) pointing to client's Entra tenant or Google Workspace
 - OIDC Discovery for authorization server configuration
 - Token audience validation scoped to the specific shuvdex tenant gateway endpoint
-- Incremental scope consent via `WWW-Authenticate` challenges for sensitive tool classes (write access, PII access)
+- Incremental scope consent via `WWW-Authenticate` challenges for sensitive tool classes:
+  - Write access to any integration
+  - PII access (contacts, employee data, financial records)
+  - Admin-class operations
+  - External-class operations with side effects outside the tenant boundary
 - PKCE for public clients (Claude Desktop, Cursor, ChatGPT desktop)
+- Correct 401/403 behavior per the MCP spec
 - The user experience: open AI assistant → add shuvdex URL → sign in with work account → done. No separate credentials
 
 ### 4B. Session and transport hardening
-- `MCP-Session-Id` lifecycle: issuance, validation, expiry, revocation
-- Capability change propagation to active sessions (tool disabled mid-session → removed from active session)
-- Reconnect with `Last-Event-ID` resumability per Streamable HTTP spec
-- Rate limiting per tenant and per user
+
+**Session data model** (per spec §7.4):
+- sessionId, gatewayId, tenantId, environmentId
+- actor identity (resolved from IdP token)
+- protocol version, negotiated capabilities
+- disclosed capability set (the actual tools/resources/prompts visible to this session)
+- auth context
+- creation and expiry timestamps
+
+**Session lifecycle:**
+- `MCP-Session-Id` issuance via response header during initialization
+- Clients must include session ID on all subsequent requests
+- Gateway must respond with HTTP 404 to expired session IDs; clients handle 404 by re-initializing
+- Session storage abstracted to support: in-memory (internal v1), distributed (multi-instance), future stateless models
+
+**Transport hardening:**
+- SSE resumability: event IDs globally unique within a session, `Last-Event-ID`-based reconnection per Streamable HTTP spec (spec §7.6)
+- Capability change propagation to active sessions (tool disabled mid-session → removed from active session or session invalidated)
+- Rate limiting per tenant, per user, and per capability
+- Per-capability concurrency limits where needed (per spec §17.5)
 - Connection quotas (max concurrent sessions per tenant based on tier)
 - Abuse protection: request size limits, invocation frequency caps
+- Circuit breakers for unhealthy upstream systems
 
 ### 4C. Deployment reference architectures
 **Standard Hosted (default):**
@@ -351,22 +450,23 @@ Standard playbooks for:
 30/60/90-day success milestones per client.
 
 ### 5B. Expanding the connector catalog
-Priority order for remaining integrations after Phase 2 targets:
-- **Google Workspace** (Gmail, Drive, Calendar, Contacts) — live on sales page
+Priority order for remaining integrations after Phase 2 targets (M365, Google Workspace, QuickBooks, HubSpot):
 - **Mailchimp** (campaigns, lists, performance) — live on sales page
-- **Slack** (messages, channels, search)
 - **Website Analytics** (traffic, forms, conversions) — live on sales page
+- **Slack** (messages, channels, search)
 - **Xero** (accounts, invoices, reporting) — Q2 2026 on sales page
 - **Shopify** (orders, inventory, customers) — Q2 2026 on sales page
 - Bespoke/custom connectors built per Custom tier client requirements
 
-Each new connector follows the same pattern: `mcp_proxy` adapter → namespace → description pin → policy template update → operator runbook.
+Each new connector follows the same pattern: `mcp_proxy` adapter → namespace → description pin → risk/action classification → policy template update → operator runbook.
 
-### 5C. Reporting and billing
+### 5C. Reporting, billing, and compliance
 - Usage reporting by tenant: tool calls by app, active users, approval events, policy violations
 - Billable dimensions: tier (Core/Standard/Custom), connector count, user count
-- Governance value reports for renewals and quarterly reviews: what was accessed, by whom, what was blocked, what approvals were processed
+- Governance value reports for renewals and quarterly reviews (per spec §16.3): what was accessed, by whom, what was blocked, what approvals were processed, what write requests were denied
 - "When someone asks 'what has our AI been doing with our data?' you have a complete, accurate answer" — this report is the renewal tool
+- **Compliance exports** (per spec §16.3): structured export for external auditors or compliance review — structured data, not just dashboard views
+- **Change history** (per spec §16.3): approval decisions, connector drift events, policy changes over time — exportable and queryable
 
 ### 5D. Reliability and support
 - SLA definitions per tier
@@ -399,9 +499,9 @@ These span all phases and are continuous:
 
 **A. Identity and authorization** — Entra/Google integration in Phase 1, per-tenant mapping in Phase 3, full OAuth 2.1 MCP flow in Phase 4.
 
-**B. Audit and observability** — structured events in Phase 1, upstream correlation in Phase 2, tenant-scoped reporting in Phase 3, compliance exports and the client-facing audit trail in Phase 4.
+**B. Audit and observability** — structured events (runtime + administrative) in Phase 1, upstream correlation in Phase 2, tenant-scoped reporting in Phase 3, compliance exports and the client-facing audit trail in Phase 4-5.
 
-**C. Package lifecycle and certification** — approval workflows start in Phase 2 (description pinning), formalize in Phase 3 (state machine), verify in Phase 4 (security suite).
+**C. Package lifecycle and certification** — approval workflows start in Phase 2 (description pinning), formalize in Phase 3 (8-state package approval + per-capability certification states), verify in Phase 4 (security suite).
 
 **D. MCP security posture** — description pinning in Phase 2, approval-gated mutation in Phase 3, verification suite in Phase 4. Continuous monitoring thereafter.
 
@@ -416,7 +516,7 @@ These span all phases and are continuous:
 | Phase | Duration | Cumulative | Key Milestone |
 |-------|----------|-----------|---------------|
 | Phase 1 — Foundation | 4-5 weeks | Week 5 | Containerized, Entra/Google auth, audit logs |
-| Phase 2 — Federation + Security | 5-6 weeks | Week 11 | Live upstream proxying (M365, QuickBooks, HubSpot) |
+| Phase 2 — Federation + Security | 5-6 weeks | Week 11 | Live upstream proxying (M365, Google Workspace, QuickBooks, HubSpot) |
 | Phase 3 — Multi-Tenancy + Dashboard | 5-6 weeks | Week 17 | Per-tenant surfaces, client governance dashboard |
 | Phase 4 — External Hardening | 3-4 weeks | Week 21 | Customer-ready OAuth, deployment blueprints |
 | Phase 5 — Go-to-Market | 4-6 weeks | Week 27 | First client pilots live |
@@ -431,10 +531,10 @@ If starting today:
 
 1. **Week 1-2:** Docker Compose packaging. Strip hardcoded paths. Auth on admin API. Entra JWT validation for Latitudes tenant
 2. **Week 3-4:** Structured audit events. Safer HTTP defaults (Origin validation, localhost bind). Operator workflow validation
-3. **Week 5-6:** `mcp_proxy` adapter — M365 Graph MCP as first upstream. Namespace tools. Pin descriptions on first sync
+3. **Week 5-6:** `mcp_proxy` adapter — M365 Graph MCP and Google Workspace as first upstreams. Namespace tools. Pin descriptions on first sync
 4. **Week 7-8:** QuickBooks and HubSpot upstreams. Upstream registry + health. Credential isolation. Change detection alerting
 
-At week 8: containerized, identity-provider-authed, audited MCP gateway federating M365 + QuickBooks + HubSpot with security hardening. That's the internal demo. That's the proof of concept for the first client pilot.
+At week 8: containerized, identity-provider-authed, audited MCP gateway federating M365 + Google Workspace + QuickBooks + HubSpot with security hardening. That's the internal demo. That's the proof of concept for the first client pilot.
 
 ---
 
@@ -449,3 +549,15 @@ At week 8: containerized, identity-provider-authed, audited MCP gateway federati
 | Upstream vendor API changes break connectors | High | Medium | Health monitoring, proactive updates, graceful degradation. "We Keep It Running" is a core service promise — staff for it |
 | MCP security incident at a client | Medium | High | Description pinning, audit logging, kill-switch per tool. The gateway IS the mitigation. Incident response runbook for Custom tier |
 | Underpricing connector development for Custom tier | Medium | Medium | Track actual hours per bespoke connector. Build pricing model from real data during pilots. POA structure gives flexibility |
+
+---
+
+# Spec alignment notes
+
+The following items are defined in the system specs but are intentionally deferred or noted as future work in this plan:
+
+- **`builtin` executor type:** Schema-level type reserved for future platform-native capabilities. No implementation work planned yet.
+- **Discovery and metadata roadmap (clean spec §22):** Richer machine-readable server metadata (gateway identity, capability catalog, package-level discovery) is additive and should not block session-based capability negotiation. Tracked as a post-Phase 5 enhancement.
+- **`module` and `connector` capability kinds:** The schema supports five kinds (tool, resource, prompt, module, connector). All five participate in Phase 3 disclosure. Module and connector kinds are already in the schema and will be addressed as capabilities use them.
+- **Pooled gateway architecture (clean spec §11.2):** The spec allows either dedicated gateways per tenant or a pooled gateway with strong runtime isolation. Phase 4C describes Standard Hosted (shared host, container isolation) and Dedicated (isolated VPS). Pooled-process gateway is a future optimization if container-per-tenant becomes too expensive at scale.
+- **Credential type: custom header/cookie (spec §15.2):** Supported in the spec as a catch-all for systems that don't use standard auth. Will be implemented on demand when a connector requires it.
