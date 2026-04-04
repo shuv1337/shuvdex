@@ -6,6 +6,7 @@
   "workspaces": [
     "apps/*",
     "packages/*",
+    "tests",
     "tests/*"
   ],
   "scripts": {

@@ -21,4 +21,5 @@ PLAN*.md
 .capabilities/imports/
 .capabilities/credentials/
 .capabilities/sources/
+.capabilities/upstreams/
 .capabilities/.credential-key

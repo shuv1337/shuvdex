@@ -3,6 +3,7 @@
   "references": [
     { "path": "packages/telemetry" },
     { "path": "packages/capability-registry" },
+    { "path": "packages/mcp-proxy" },
     { "path": "packages/credential-store" },
     { "path": "packages/http-executor" },
     { "path": "packages/openapi-source" },
@@ -10,6 +11,7 @@
     { "path": "packages/policy-engine" },
     { "path": "packages/execution-providers" },
     { "path": "apps/mcp-server" },
-    { "path": "apps/api" }
+    { "path": "apps/api" },
+    { "path": "packages/tenant-manager" }
   ]
 }
