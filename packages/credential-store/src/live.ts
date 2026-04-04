@@ -6,6 +6,7 @@ import {
   CredentialStore,
   type CredentialStoreService,
   type CredentialRecord,
+  type CredentialBinding,
   type RedactedCredentialRecord,
   type CredentialScheme,
   type AuthMaterial,
@@ -134,6 +135,60 @@ export function makeCredentialStoreLive(
   );
   const tokenCache = new Map<string, { token: string; expiresAt: number }>();
 
+  // ---------------------------------------------------------------------------
+  // Binding helpers
+  // ---------------------------------------------------------------------------
+
+  const bindingsDir = path.join(rootDir, "bindings");
+  fs.mkdirSync(bindingsDir, { recursive: true });
+
+  function loadBindingFiles(): CredentialBinding[] {
+    if (!fs.existsSync(bindingsDir)) return [];
+    const results: CredentialBinding[] = [];
+    for (const entry of fs.readdirSync(bindingsDir, { withFileTypes: true })) {
+      if (!entry.isFile() || !entry.name.endsWith(".json")) continue;
+      try {
+        const raw = fs.readFileSync(path.join(bindingsDir, entry.name), "utf-8");
+        results.push(JSON.parse(raw) as CredentialBinding);
+      } catch {
+        // ignore malformed binding files at startup
+      }
+    }
+    return results.sort((a, b) => a.bindingId.localeCompare(b.bindingId));
+  }
+
+  const bindingsRef = Ref.unsafeMake(
+    new Map(loadBindingFiles().map((b) => [b.bindingId, b] as const)),
+  );
+
+  function bindingFilePath(bindingId: string): string {
+    return path.join(bindingsDir, `${bindingId}.json`);
+  }
+
+  function persistBinding(binding: CredentialBinding) {
+    return Effect.try({
+      try: () => {
+        fs.writeFileSync(bindingFilePath(binding.bindingId), JSON.stringify(binding, null, 2), "utf-8");
+      },
+      catch: (cause) => new CredentialStoreIOError({ path: bindingsDir, cause: String(cause) }),
+    });
+  }
+
+  function checkRotationOverdue(binding: CredentialBinding): void {
+    const { rotation } = binding;
+    if (!rotation?.lastRotated || !rotation?.rotationIntervalDays) return;
+    const lastRotatedMs = new Date(rotation.lastRotated).getTime();
+    if (!Number.isFinite(lastRotatedMs)) return;
+    const intervalMs = rotation.rotationIntervalDays * 24 * 60 * 60 * 1000;
+    const nextDue = lastRotatedMs + intervalMs;
+    if (Date.now() > nextDue) {
+      process.stderr.write(
+        `[credential-store] WARNING: Binding '${binding.bindingId}' (credential '${binding.credentialId}') ` +
+          `rotation overdue since ${new Date(nextDue).toISOString()}\n`,
+      );
+    }
+  }
+
   const persist = (record: CredentialRecord) =>
     Effect.try({
       try: () => {
@@ -146,6 +201,10 @@ export function makeCredentialStoreLive(
       },
       catch: (cause) => new CredentialStoreIOError({ path: rootDir, cause: String(cause) }),
     });
+
+  // ---------------------------------------------------------------------------
+  // Service implementation
+  // ---------------------------------------------------------------------------
 
   const service: CredentialStoreService = {
     listCredentials: () =>
@@ -211,6 +270,64 @@ export function makeCredentialStoreLive(
           catch: (cause) => new CredentialStoreIOError({ path: rootDir, cause: String(cause) }),
         });
       }) as Effect.Effect<void, CredentialNotFound | CredentialStoreIOError>,
+    // -------------------------------------------------------------------------
+    // Binding methods
+    // -------------------------------------------------------------------------
+
+    listBindings: () =>
+      Ref.get(bindingsRef).pipe(
+        Effect.map((bindings) =>
+          Array.from(bindings.values()).sort((a, b) => a.bindingId.localeCompare(b.bindingId)),
+        ),
+      ) as Effect.Effect<ReadonlyArray<CredentialBinding>, never>,
+
+    upsertBinding: (binding) =>
+      Effect.gen(function* () {
+        if (!binding.bindingId) {
+          return yield* Effect.fail(
+            new CredentialStoreValidationError({ issues: "bindingId is required" }),
+          );
+        }
+        if (!binding.credentialId) {
+          return yield* Effect.fail(
+            new CredentialStoreValidationError({
+              credentialId: binding.credentialId,
+              issues: "credentialId is required",
+            }),
+          );
+        }
+        yield* Ref.update(bindingsRef, (state) => new Map(state).set(binding.bindingId, binding));
+        yield* persistBinding(binding);
+        return binding;
+      }) as Effect.Effect<CredentialBinding, CredentialStoreIOError | CredentialStoreValidationError>,
+
+    deleteBinding: (bindingId) =>
+      Effect.gen(function* () {
+        yield* Ref.update(bindingsRef, (state) => {
+          const next = new Map(state);
+          next.delete(bindingId);
+          return next;
+        });
+        yield* Effect.try({
+          try: () => fs.rmSync(bindingFilePath(bindingId), { force: true }),
+          catch: (cause) => new CredentialStoreIOError({ path: bindingsDir, cause: String(cause) }),
+        });
+      }) as Effect.Effect<void, CredentialStoreIOError>,
+
+    resolveBinding: (credentialId, tenantId) =>
+      Ref.get(bindingsRef).pipe(
+        Effect.map((bindings) => {
+          const candidates = Array.from(bindings.values()).filter(
+            (b) =>
+              b.credentialId === credentialId &&
+              (tenantId === undefined || b.tenantId === tenantId),
+          );
+          const match = candidates[0] ?? null;
+          if (match) checkRotationOverdue(match);
+          return match;
+        }),
+      ) as Effect.Effect<CredentialBinding | null, never>,
+
     resolveAuthMaterial: (credentialId) =>
       Effect.gen(function* () {
         const record = yield* service.getCredential(credentialId);

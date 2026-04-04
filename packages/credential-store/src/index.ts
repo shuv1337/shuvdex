@@ -1,6 +1,7 @@
 export { CredentialStore } from "./types.js";
 export type {
   AuthMaterial,
+  CredentialBinding,
   CredentialRecord,
   CredentialScheme,
   CredentialStoreService,
