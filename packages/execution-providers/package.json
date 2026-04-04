@@ -21,6 +21,7 @@
   "dependencies": {
     "@shuvdex/capability-registry": "*",
     "@shuvdex/http-executor": "*",
+    "@shuvdex/mcp-proxy": "*",
     "@shuvdex/telemetry": "*",
     "effect": "^3.21.0"
   },

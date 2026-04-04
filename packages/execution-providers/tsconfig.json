@@ -10,6 +10,7 @@
     { "path": "../capability-registry" },
     { "path": "../credential-store" },
     { "path": "../http-executor" },
+    { "path": "../mcp-proxy" },
     { "path": "../telemetry" }
   ]
 }
