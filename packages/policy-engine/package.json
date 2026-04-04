@@ -21,6 +21,7 @@
   "dependencies": {
     "@shuvdex/capability-registry": "*",
     "effect": "^3.21.0",
+    "jose": "^6.0.10",
     "yaml": "^2.8.2"
   },
   "devDependencies": {

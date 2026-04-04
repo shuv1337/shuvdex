@@ -1,8 +1,23 @@
 import { Context, Effect } from "effect";
 import type { CapabilityDefinition } from "@shuvdex/capability-registry";
 import type { InvalidTokenError, PolicyEngineIOError, PolicyNotFound } from "./errors.js";
+import type { AuditServiceInterface } from "./audit-service.js";
+import type { IdPConfig } from "./idp.js";
+
+export type { IdPConfig } from "./idp.js";
 
 export type SubjectType = "host" | "install" | "user" | "service";
+
+/**
+ * Operator role for fine-grained RBAC on control-plane routes.
+ * "platform_admin" → full access; "operator" → read-only ops; others for scoped duties.
+ */
+export type OperatorRole =
+  | "platform_admin"
+  | "package_publisher"
+  | "security_reviewer"
+  | "auditor"
+  | "operator";
 
 export interface TokenClaims {
   readonly jti: string;
@@ -17,6 +32,8 @@ export interface TokenClaims {
   readonly expiresAt: number;
   readonly issuer: string;
   readonly keyId: string;
+  /** Optional operator role for RBAC on control-plane routes. Backward-compatible (optional). */
+  readonly role?: OperatorRole;
 }
 
 export interface CapabilitySubjectPolicy {
@@ -68,10 +85,28 @@ export interface IssueTokenInput {
 }
 
 export interface PolicyEngineService {
+  /**
+   * Access to the rich audit service for querying, exporting, and metrics.
+   * Events are also recorded via recordAuditEvent for backward compat.
+   */
+  readonly audit: AuditServiceInterface;
   readonly issueToken: (
     input: IssueTokenInput,
   ) => Effect.Effect<{ token: string; claims: TokenClaims }>;
   readonly verifyToken: (
+    token: string,
+  ) => Effect.Effect<TokenClaims, InvalidTokenError>;
+  /**
+   * Unified token resolver that accepts both internal HMAC JWTs (issued by
+   * `issueToken`) and external IdP JWTs (Entra ID, Google Workspace).
+   *
+   * - Internal tokens (kid === "local-hs256"): delegated to `verifyToken`.
+   * - External tokens: validated via the configured IdP and mapped to
+   *   `TokenClaims` using the group → scope mapping in `idp-config.json`.
+   *
+   * @param token - Raw JWT string (without "Bearer " prefix)
+   */
+  readonly resolveExternalToken: (
     token: string,
   ) => Effect.Effect<TokenClaims, InvalidTokenError>;
   readonly revokeToken: (jti: string) => Effect.Effect<void, PolicyEngineIOError>;

@@ -10,16 +10,25 @@ import type {
   AuditEvent,
   AuthorizationDecision,
   CapabilitySubjectPolicy,
+  IdPConfig,
   IssueTokenInput,
   PolicyEngineService,
   TokenClaims,
 } from "./types.js";
+import { resolveIdentity } from "./idp.js";
+import type { GroupMapping } from "./idp.js";
+import { makeAuditServiceImpl } from "./audit-live.js";
+import type { AuditServiceInterface } from "./audit-service.js";
+import type { AuditDecision, RuntimeAuditAction } from "./audit-types.js";
 
 interface PolicyEnginePaths {
   readonly rootDir: string;
   readonly policiesPath: string;
   readonly revocationsPath: string;
+  /** @deprecated – kept for reference; new audit writes go to {rootDir}/audit/ */
   readonly auditPath: string;
+  readonly auditDir: string;
+  readonly idpConfigPath: string;
 }
 
 const DEFAULT_ISSUER = "shuvdex";
@@ -89,6 +98,8 @@ export function makePolicyEngineLive(
     policiesPath: path.join(rootDir, "policies.json"),
     revocationsPath: path.join(rootDir, "revocations.json"),
     auditPath: path.join(rootDir, "audit.jsonl"),
+    auditDir: path.join(rootDir, "audit"),
+    idpConfigPath: path.join(rootDir, "idp-config.json"),
   };
   const secret = options?.secret ?? "shuvdex-dev-secret";
   fs.mkdirSync(rootDir, { recursive: true });
@@ -98,7 +109,9 @@ export function makePolicyEngineLive(
   const revocationsRef = Ref.unsafeMake<string[]>(
     readJsonFile(paths.revocationsPath, []),
   );
-  const auditRef = Ref.unsafeMake<AuditEvent[]>([]);
+
+  // Rich audit service – manages its own in-memory buffer and JSONL files.
+  const auditSvc: AuditServiceInterface = makeAuditServiceImpl({ auditDir: paths.auditDir });
 
   const persistPolicies = (policies: CapabilitySubjectPolicy[]) =>
     Effect.try({
@@ -114,14 +127,78 @@ export function makePolicyEngineLive(
         new PolicyEngineIOError({ path: paths.revocationsPath, cause: String(cause) }),
     });
 
-  const persistAudit = (event: AuditEvent) =>
-    Effect.try({
-      try: () => fs.appendFileSync(paths.auditPath, `${JSON.stringify(event)}\n`, "utf-8"),
-      catch: (cause) =>
-        new PolicyEngineIOError({ path: paths.auditPath, cause: String(cause) }),
-    });
+  // ---------------------------------------------------------------------------
+  // Legacy AuditEvent bridge helpers
+  // ---------------------------------------------------------------------------
+
+  function legacyActionToRuntimeAction(action: AuditEvent["action"]): RuntimeAuditAction {
+    switch (action) {
+      case "call_tool":      return "tool_call";
+      case "read_resource":  return "resource_read";
+      case "get_prompt":     return "prompt_get";
+      case "list_tools":     return "tools_list";
+      case "list_resources": return "resources_list";
+      case "list_prompts":   return "prompts_list";
+    }
+  }
+
+  function runtimeDecisionToLegacy(decision: AuditDecision): "allow" | "deny" {
+    return decision === "allow" ? "allow" : "deny";
+  }
+
+  /**
+   * Map a set of IdP group IDs/names to shuvdex scopes using the groupMapping
+   * configuration. Groups not present in the map are ignored.
+   */
+  function groupsToScopes(groups: string[], mapping: GroupMapping | undefined): string[] {
+    if (!mapping || groups.length === 0) return [];
+    const scopes = new Set<string>();
+    for (const group of groups) {
+      const mapped = mapping[group];
+      if (mapped) {
+        for (const scope of mapped) {
+          scopes.add(scope);
+        }
+      }
+    }
+    return Array.from(scopes);
+  }
+
+  /** Build TokenClaims from a resolved external identity + optional IdP config. */
+  function externalIdentityToClaims(
+    identity: Awaited<ReturnType<typeof resolveIdentity>>,
+    idpConfig: IdPConfig,
+  ): TokenClaims {
+    const now = Math.floor(Date.now() / 1000);
+    // Derive scopes from group mapping (provider-specific)
+    let scopes: string[] = [];
+    if (identity.provider === "entra" && idpConfig.entra?.groupMapping) {
+      scopes = groupsToScopes(identity.groups, idpConfig.entra.groupMapping);
+    }
+    // Fall back to read-only scope when no group mapping matches
+    if (scopes.length === 0) {
+      scopes = ["capabilities:read"];
+    }
+
+    return {
+      jti: randomUUID(),
+      subjectType: "user",
+      subjectId: identity.subjectId || identity.email,
+      hostTags: [],
+      clientTags: [identity.provider],
+      scopes,
+      allowedPackages: ["*"],
+      deniedPackages: [],
+      issuedAt: now,
+      // External tokens expire in 1 hour (the underlying token exp is already validated)
+      expiresAt: now + 60 * 60,
+      issuer: identity.provider === "entra" ? identity.tenantId : "google",
+      keyId: `external-${identity.provider}`,
+    };
+  }
 
   const service: PolicyEngineService = {
+        audit: auditSvc,
         issueToken: (input: IssueTokenInput) =>
           Effect.sync(() => {
             const now = Math.floor(Date.now() / 1000);
@@ -165,6 +242,50 @@ export function makePolicyEngineLive(
               return yield* Effect.fail(new InvalidTokenError({ reason: "Token expired" }));
             }
             return claims;
+          }),
+        resolveExternalToken: (token: string) =>
+          Effect.gen(function* () {
+            // Detect internal tokens by checking the kid in the header part.
+            // Internal tokens always use kid "local-hs256".
+            const parts = token.split(".");
+            if (parts.length === 3 && parts[0]) {
+              try {
+                const header = JSON.parse(
+                  Buffer.from(parts[0], "base64url").toString("utf-8"),
+                ) as { kid?: string };
+                if (header.kid === DEFAULT_KEY_ID) {
+                  // Delegate to the internal HMAC verifier
+                  return yield* service.verifyToken(token);
+                }
+              } catch {
+                // If header decode fails, fall through to IdP validation
+              }
+            }
+
+            // External IdP token — load config and validate
+            const idpConfig = readJsonFile<IdPConfig>(paths.idpConfigPath, {});
+
+            if (!idpConfig.entra && !idpConfig.google) {
+              return yield* Effect.fail(
+                new InvalidTokenError({
+                  reason:
+                    "No IdP configured (idp-config.json not found or empty) and token is not an internal JWT",
+                }),
+              );
+            }
+
+            try {
+              const identity = yield* Effect.tryPromise({
+                try: () => resolveIdentity(token, idpConfig),
+                catch: (cause) =>
+                  new InvalidTokenError({ reason: `IdP validation failed: ${String(cause)}` }),
+              });
+              return externalIdentityToClaims(identity, idpConfig);
+            } catch (cause) {
+              return yield* Effect.fail(
+                new InvalidTokenError({ reason: `External token resolution failed: ${String(cause)}` }),
+              );
+            }
           }),
         revokeToken: (jti: string) =>
           Ref.updateAndGet(revocationsRef, (revocations) =>
@@ -326,23 +447,56 @@ export function makePolicyEngineLive(
             } satisfies AuthorizationDecision;
           }),
         recordAuditEvent: (event) =>
-          Ref.update(auditRef, (events) => [event, ...events].slice(0, 5000)).pipe(
-            Effect.flatMap(() => persistAudit(event)),
+          auditSvc.recordRuntimeEvent({
+            actor: {
+              subjectId: event.subjectId,
+              subjectType: "service",
+            },
+            action: legacyActionToRuntimeAction(event.action),
+            actionClass:
+              event.action === "call_tool" ? "external" : "read",
+            decision: event.decision as AuditDecision,
+            decisionReason: event.reason,
+            target: event.capabilityId
+              ? { type: "tool", id: event.capabilityId }
+              : undefined,
+            packageRef: event.packageId
+              ? { packageId: event.packageId, capabilityId: event.capabilityId }
+              : undefined,
+          }).pipe(
+            // recordAuditEvent on the public interface still carries
+            // PolicyEngineIOError for backward compat – but since the
+            // underlying audit service swallows IO errors, this Effect
+            // can never actually fail.  Cast so callers see the old type.
+            Effect.mapError(
+              () => new PolicyEngineIOError({ path: paths.auditDir, cause: "audit write" }),
+            ),
           ),
         listAuditEvents: () =>
-          Ref.get(auditRef).pipe(
-            Effect.map((inMemory) => {
-              const persisted = fs.existsSync(paths.auditPath)
-                ? fs
-                    .readFileSync(paths.auditPath, "utf-8")
-                    .split("\n")
-                    .filter((line) => line.length > 0)
-                    .map((line) => JSON.parse(line) as AuditEvent)
-                : [];
-              return [...inMemory, ...persisted].sort((a, b) =>
-                b.timestamp.localeCompare(a.timestamp),
-              );
-            }),
+          auditSvc.queryEvents({ limit: 10_000 }).pipe(
+            Effect.map((result) =>
+              result.events.map((record) => {
+                const legacyActionMap: Partial<Record<string, AuditEvent["action"]>> = {
+                  tool_call:      "call_tool",
+                  resource_read:  "read_resource",
+                  prompt_get:     "get_prompt",
+                  tools_list:     "list_tools",
+                  resources_list: "list_resources",
+                  prompts_list:   "list_prompts",
+                };
+                return {
+                  id: record.eventId,
+                  timestamp: record.timestamp,
+                  action: (legacyActionMap[record.action] ?? "call_tool") as AuditEvent["action"],
+                  subjectId: record.actor.subjectId,
+                  capabilityId: record.packageRef?.capabilityId,
+                  packageId: record.packageRef?.packageId,
+                  decision: runtimeDecisionToLegacy(record.decision),
+                  reason: record.decisionReason,
+                  executor: undefined,
+                } satisfies AuditEvent;
+              }),
+            ),
           ),
         defaultClaims: () => buildDefaultClaims(),
   };
