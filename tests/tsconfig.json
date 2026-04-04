@@ -1,0 +1,21 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "composite": false,
+    "incremental": false,
+    "declaration": false,
+    "declarationMap": false,
+    "noEmit": true
+  },
+  "include": ["src/**/*.ts"],
+  "references": [
+    { "path": "../packages/policy-engine" },
+    { "path": "../packages/capability-registry" },
+    { "path": "../packages/tenant-manager" },
+    { "path": "../packages/mcp-proxy" },
+    { "path": "../packages/credential-store" },
+    { "path": "../packages/telemetry" }
+  ]
+}
