@@ -1,0 +1,58 @@
+id: skill.ccusage
+version: 1.0.0
+title: CC Usage Aggregate
+description: Aggregate AI token usage and costs across coding assistants on the gateway host.
+tags:
+  - usage
+  - cost
+  - tokens
+  - aggregate
+visibility: public
+subjectScopes:
+  - skill:read
+  - skill:apply
+  - admin
+capabilities:
+  - id: skill.ccusage.aggregate
+    kind: tool
+    title: Aggregate CC usage
+    description: Aggregate AI token usage and costs across all coding assistants. Returns per-source and optional per-model breakdowns.
+    riskLevel: low
+    enabled: true
+    visibility: public
+    tags:
+      - usage
+      - cost
+    executorRef:
+      executorType: module_runtime
+      target: ./ccusage.mcp.mjs
+      timeoutMs: 30000
+    tool:
+      sideEffectLevel: read
+      timeoutMs: 30000
+      inputSchema:
+        type: object
+        properties:
+          days:
+            type: number
+            description: "Number of days to include (default 30, use 0 for all time)"
+          mode:
+            type: string
+            description: "Output mode: summary (totals per source) or models (per-model breakdown)"
+      outputSchema:
+        type: object
+        properties:
+          period:
+            type: string
+          totalCost:
+            type: number
+          totalInput:
+            type: number
+          totalOutput:
+            type: number
+          sources:
+            type: array
+          models:
+            type: array
+          durationMs:
+            type: number

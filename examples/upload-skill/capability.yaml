@@ -1,0 +1,56 @@
+id: skill.upload
+version: 1.0.0
+title: Upload to files.shuv.me
+description: Upload files to the Latitudes file sharing server. Accepts base64 content or a source URL.
+tags:
+  - upload
+  - files
+  - sharing
+visibility: public
+subjectScopes:
+  - skill:read
+  - skill:apply
+  - admin
+capabilities:
+  - id: skill.upload.file
+    kind: tool
+    title: Upload file
+    description: Upload a file to files.shuv.me. Provide either contentBase64+filename or sourceUrl+filename.
+    riskLevel: medium
+    enabled: true
+    visibility: public
+    tags:
+      - upload
+      - files
+    executorRef:
+      executorType: module_runtime
+      target: ./upload.mcp.mjs
+      timeoutMs: 30000
+    tool:
+      sideEffectLevel: write
+      timeoutMs: 30000
+      inputSchema:
+        type: object
+        properties:
+          contentBase64:
+            type: string
+            description: File content encoded as base64. Provide this OR sourceUrl.
+          sourceUrl:
+            type: string
+            description: URL to download the file from. Provide this OR contentBase64.
+          filename:
+            type: string
+            description: Destination filename (becomes the public URL path).
+        required:
+          - filename
+      outputSchema:
+        type: object
+        properties:
+          url:
+            type: string
+          filename:
+            type: string
+          bytes:
+            type: number
+          durationMs:
+            type: number

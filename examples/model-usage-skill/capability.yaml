@@ -1,0 +1,60 @@
+id: skill.model_usage
+version: 1.0.0
+title: Model Usage
+description: Query per-model AI usage and cost data from CodexBar local cost logs.
+tags:
+  - usage
+  - cost
+  - models
+  - codexbar
+visibility: public
+subjectScopes:
+  - skill:read
+  - skill:apply
+  - admin
+capabilities:
+  - id: skill.model_usage.query
+    kind: tool
+    title: Query model usage
+    description: Get per-model AI usage and cost summaries from CodexBar. Supports current model, all models, and summary modes.
+    riskLevel: low
+    enabled: true
+    visibility: public
+    tags:
+      - usage
+      - cost
+    executorRef:
+      executorType: module_runtime
+      target: ./model-usage.mcp.mjs
+      timeoutMs: 15000
+    tool:
+      sideEffectLevel: read
+      timeoutMs: 15000
+      inputSchema:
+        type: object
+        properties:
+          provider:
+            type: string
+            description: "Provider to query: codex or claude (default: codex)"
+          mode:
+            type: string
+            description: "Query mode: current (most recent model), all (all models), or summary (totals only)"
+          days:
+            type: number
+            description: "Number of days to include (default: all time)"
+          model:
+            type: string
+            description: "Override to query a specific model name"
+      outputSchema:
+        type: object
+        properties:
+          provider:
+            type: string
+          mode:
+            type: string
+          models:
+            type: array
+          totalCost:
+            type: number
+          durationMs:
+            type: number
