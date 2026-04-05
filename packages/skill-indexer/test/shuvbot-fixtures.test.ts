@@ -8,12 +8,7 @@ const fixtures = [
   {
     name: "visual-explainer",
     packageId: "skill.visual_explainer",
-    counts: { resource: 13, prompt: 8 },
-  },
-  {
-    name: "browser",
-    packageId: "skill.browser",
-    counts: { resource: 5, prompt: 1 },
+    counts: { resource: 13, prompt: 9 },
   },
   {
     name: "dogfood",

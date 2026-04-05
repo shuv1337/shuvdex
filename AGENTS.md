@@ -14,18 +14,32 @@ This file is for future coding agents working in this repo.
 - Health endpoint:
   - `http://shuvdev:3848/health`
 
+### Web UI (vite preview mode)
+- User systemd unit:
+  - `~/.config/systemd/user/shuvdex-web.service`
+- Runs `vite preview` on **shuvdev:5173**
+- SPA history fallback is configured via custom plugin in `apps/web/vite.config.ts`
+- API proxy is configured for preview mode to forward `/api` to `localhost:3847`
+- Health/validation:
+  - Root: `curl http://shuvdev:5173/`
+  - SPA fallback: `curl http://shuvdev:5173/packages` (should return 200 + HTML)
+  - API proxy: `curl http://shuvdev:5173/api/health`
+  - Static asset: `curl http://shuvdev:5173/assets/index-*.js`
+
 ## Important rule: rebuild + restart after server changes
 
-If you change anything that affects the remote MCP server, you must rebuild and restart it before claiming success.
+If you change anything that affects the remote MCP server **or web UI**, you must rebuild and restart before claiming success.
 
 This includes changes under:
 
 - `apps/mcp-server/**`
+- `apps/api/**`
+- `apps/web/**` (including `vite.config.ts`)
 - `packages/capability-registry/**`
 - `packages/skill-indexer/**`
 - `packages/policy-engine/**`
 - `packages/execution-providers/**`
-- `systemd/shuvdex-mcp.service`
+- `systemd/*.service`
 - scripts or docs that are supposed to reflect the live service behavior
 
 ## Restart procedure
@@ -51,6 +65,28 @@ systemctl --user daemon-reload
 systemctl --user restart shuvdex-mcp.service
 systemctl --user status --no-pager --full shuvdex-mcp.service | sed -n '1,80p'
 curl http://shuvdev:3848/health
+```
+
+### Web service restart (vite preview mode)
+
+The web service runs `vite preview` (production build served by Vite's preview server).
+
+If web code or `vite.config.ts` changed:
+
+```bash
+systemctl --user restart shuvdex-web.service
+systemctl --user status --no-pager --full shuvdex-web.service | sed -n '1,80p'
+# Verify SPA fallback works:
+curl -s http://shuvdev:5173/packages | head -5
+```
+
+If the unit file changed:
+
+```bash
+cp systemd/shuvdex-web.service ~/.config/systemd/user/shuvdex-web.service
+systemctl --user daemon-reload
+systemctl --user restart shuvdex-web.service
+systemctl --user status --no-pager --full shuvdex-web.service | sed -n '1,80p'
 ```
 
 ## Validation expectations
@@ -102,6 +138,7 @@ Supported current targets:
 - `gitea-version`
 - `dnsfilter-current-user`
 - `crawl`
+- `hetzner`
 
 ## Phase 4C/4D/4E — Deployment Docs, Security Tests, Connection Maintenance (completed 2026-04-04)
 

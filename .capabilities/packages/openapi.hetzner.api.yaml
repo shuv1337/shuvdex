@@ -1,0 +1,4046 @@
+id: openapi.hetzner.api
+version: 1.0.0
+title: Hetzner Cloud API
+description: Hetzner Cloud OpenAPI capability for managing servers, SSH keys,
+  images, and other cloud resources
+builtIn: false
+enabled: true
+source:
+  type: openapi
+  sourceId: openapi.hetzner.api.source
+  specUrl: /tmp/hetzner-openapi-1775405772901.json
+  selectedServerUrl: https://api.hetzner.cloud/v1
+  specChecksum: 1caa6040605b42b13aa44a4ac1fae1f87e348271c822b36e4b4971c06ead9a8b
+  credentialId: hetzner-api-token
+  lastSyncedAt: 2026-04-05T16:16:14.083Z
+  operationCount: 43
+capabilities:
+  - id: openapi.hetzner.api.list.datacenters
+    packageId: openapi.hetzner.api
+    version: 1.0.0
+    kind: tool
+    title: List Data Centers
+    description: |
+      Returns all [Data Centers](#tag/data-centers).
+    tags:
+      - Data Centers
+    riskLevel: low
+    subjectScopes:
+      - openapi.hetzner.api.read
+    executorRef:
+      executorType: http_api
+      timeoutMs: 30000
+      credentialId: hetzner-api-token
+      httpBinding:
+        method: get
+        baseUrl: https://api.hetzner.cloud/v1
+        pathTemplate: /datacenters
+        parameters:
+          - name: name
+            in: query
+            required: false
+            schema: &a1
+              type: string
+          - name: sort
+            in: query
+            required: false
+            schema: &a2
+              type: array
+              items:
+                type: string
+                enum:
+                  - id
+                  - id:asc
+                  - id:desc
+                  - name
+                  - name:asc
+                  - name:desc
+          - name: page
+            in: query
+            required: false
+            schema: &a3
+              type: integer
+              format: int64
+              default: 1
+              example: 1
+          - name: per_page
+            in: query
+            required: false
+            schema: &a4
+              type: integer
+              format: int64
+              default: 25
+              example: 25
+        securityRequirements:
+          - schemeId: APIToken
+            scopes: []
+    annotations:
+      openapi.method: get
+      openapi.path: /datacenters
+      openapi.operationId: openapi.hetzner.api.list.datacenters
+      openapi.server: https://api.hetzner.cloud/v1
+      openapi.credentialId: hetzner-api-token
+    provenance:
+      sourceSection: GET /datacenters
+      generatedFrom: /tmp/hetzner-openapi-1775405772901.json
+      derivedBy: openapi
+    certification:
+      status: untested
+    enabled: true
+    visibility: scoped
+    tool:
+      inputSchema:
+        type: object
+        properties:
+          query:
+            type: object
+            properties:
+              name: *a1
+              sort: *a2
+              page: *a3
+              per_page: *a4
+            additionalProperties: false
+        required:
+          - query
+      outputSchema:
+        type: object
+      sideEffectLevel: read
+      timeoutMs: 30000
+  - id: openapi.hetzner.api.get.datacenter
+    packageId: openapi.hetzner.api
+    version: 1.0.0
+    kind: tool
+    title: Get a Data Center
+    description: |
+      Returns a single [Data Center](#tag/data-centers).
+    tags:
+      - Data Centers
+    riskLevel: low
+    subjectScopes:
+      - openapi.hetzner.api.read
+    executorRef:
+      executorType: http_api
+      timeoutMs: 30000
+      credentialId: hetzner-api-token
+      httpBinding:
+        method: get
+        baseUrl: https://api.hetzner.cloud/v1
+        pathTemplate: /datacenters/{{id}}
+        parameters:
+          - name: id
+            in: path
+            required: true
+            schema: &a5
+              description: ID of the [Data Center](#tag/data-centers).
+              type: integer
+              format: int64
+              minimum: 1
+              maximum: 9007199254740991
+              example: 42
+        securityRequirements:
+          - schemeId: APIToken
+            scopes: []
+    annotations:
+      openapi.method: get
+      openapi.path: /datacenters/{id}
+      openapi.operationId: openapi.hetzner.api.get.datacenter
+      openapi.server: https://api.hetzner.cloud/v1
+      openapi.credentialId: hetzner-api-token
+    provenance:
+      sourceSection: GET /datacenters/{id}
+      generatedFrom: /tmp/hetzner-openapi-1775405772901.json
+      derivedBy: openapi
+    certification:
+      status: untested
+    enabled: true
+    visibility: scoped
+    tool:
+      inputSchema:
+        type: object
+        properties:
+          path:
+            type: object
+            properties:
+              id: *a5
+            required:
+              - id
+            additionalProperties: false
+        required:
+          - path
+      outputSchema:
+        type: object
+      sideEffectLevel: read
+      timeoutMs: 30000
+  - id: openapi.hetzner.api.list.firewalls
+    packageId: openapi.hetzner.api
+    version: 1.0.0
+    kind: tool
+    title: List Firewalls
+    description: |
+      Returns all [Firewalls](#tag/firewalls).
+
+      Use the provided URI parameters to modify the result.
+    tags:
+      - Firewalls
+    riskLevel: low
+    subjectScopes:
+      - openapi.hetzner.api.read
+    executorRef:
+      executorType: http_api
+      timeoutMs: 30000
+      credentialId: hetzner-api-token
+      httpBinding:
+        method: get
+        baseUrl: https://api.hetzner.cloud/v1
+        pathTemplate: /firewalls
+        parameters:
+          - name: sort
+            in: query
+            required: false
+            schema: &a6
+              type: array
+              items:
+                type: string
+                enum:
+                  - id
+                  - id:asc
+                  - id:desc
+                  - name
+                  - name:asc
+                  - name:desc
+                  - created
+                  - created:asc
+                  - created:desc
+          - name: name
+            in: query
+            required: false
+            schema: &a7
+              type: string
+          - name: label_selector
+            in: query
+            required: false
+            schema: &a8
+              type: string
+          - name: page
+            in: query
+            required: false
+            schema: &a9
+              type: integer
+              format: int64
+              default: 1
+              example: 1
+          - name: per_page
+            in: query
+            required: false
+            schema: &a10
+              type: integer
+              format: int64
+              default: 25
+              example: 25
+        securityRequirements:
+          - schemeId: APIToken
+            scopes: []
+    annotations:
+      openapi.method: get
+      openapi.path: /firewalls
+      openapi.operationId: openapi.hetzner.api.list.firewalls
+      openapi.server: https://api.hetzner.cloud/v1
+      openapi.credentialId: hetzner-api-token
+    provenance:
+      sourceSection: GET /firewalls
+      generatedFrom: /tmp/hetzner-openapi-1775405772901.json
+      derivedBy: openapi
+    certification:
+      status: untested
+    enabled: true
+    visibility: scoped
+    tool:
+      inputSchema:
+        type: object
+        properties:
+          query:
+            type: object
+            properties:
+              sort: *a6
+              name: *a7
+              label_selector: *a8
+              page: *a9
+              per_page: *a10
+            additionalProperties: false
+        required:
+          - query
+      outputSchema:
+        type: object
+      sideEffectLevel: read
+      timeoutMs: 30000
+  - id: openapi.hetzner.api.list.firewalls.actions
+    packageId: openapi.hetzner.api
+    version: 1.0.0
+    kind: tool
+    title: List Actions
+    description: |
+      Returns all [Actions](#tag/actions) for [Firewalls](#tag/firewalls).
+
+      Use the provided URI parameters to modify the result.
+    tags:
+      - Firewall Actions
+    riskLevel: low
+    subjectScopes:
+      - openapi.hetzner.api.read
+    executorRef:
+      executorType: http_api
+      timeoutMs: 30000
+      credentialId: hetzner-api-token
+      httpBinding:
+        method: get
+        baseUrl: https://api.hetzner.cloud/v1
+        pathTemplate: /firewalls/actions
+        parameters:
+          - name: id
+            in: query
+            required: false
+            schema: &a11
+              type: array
+              items:
+                description: ID of the [Action](#description/actions).
+                type: integer
+                format: int64
+                minimum: 1
+                maximum: 9007199254740991
+                example: 42
+          - name: sort
+            in: query
+            required: false
+            schema: &a12
+              type: array
+              items:
+                type: string
+                enum:
+                  - id
+                  - id:asc
+                  - id:desc
+                  - command
+                  - command:asc
+                  - command:desc
+                  - status
+                  - status:asc
+                  - status:desc
+                  - started
+                  - started:asc
+                  - started:desc
+                  - finished
+                  - finished:asc
+                  - finished:desc
+          - name: status
+            in: query
+            required: false
+            schema: &a13
+              type: array
+              items:
+                description: Status of the Action.
+                type: string
+                enum:
+                  - running
+                  - success
+                  - error
+          - name: page
+            in: query
+            required: false
+            schema: &a14
+              type: integer
+              format: int64
+              default: 1
+              example: 1
+          - name: per_page
+            in: query
+            required: false
+            schema: &a15
+              type: integer
+              format: int64
+              default: 25
+              example: 25
+        securityRequirements:
+          - schemeId: APIToken
+            scopes: []
+    annotations:
+      openapi.method: get
+      openapi.path: /firewalls/actions
+      openapi.operationId: openapi.hetzner.api.list.firewalls.actions
+      openapi.server: https://api.hetzner.cloud/v1
+      openapi.credentialId: hetzner-api-token
+    provenance:
+      sourceSection: GET /firewalls/actions
+      generatedFrom: /tmp/hetzner-openapi-1775405772901.json
+      derivedBy: openapi
+    certification:
+      status: untested
+    enabled: true
+    visibility: scoped
+    tool:
+      inputSchema:
+        type: object
+        properties:
+          query:
+            type: object
+            properties:
+              id: *a11
+              sort: *a12
+              status: *a13
+              page: *a14
+              per_page: *a15
+            additionalProperties: false
+        required:
+          - query
+      outputSchema:
+        type: object
+      sideEffectLevel: read
+      timeoutMs: 30000
+  - id: openapi.hetzner.api.get.firewalls.action
+    packageId: openapi.hetzner.api
+    version: 1.0.0
+    kind: tool
+    title: Get an Action
+    description: |
+      Returns the specific [Action](#tag/actions).
+    tags:
+      - Firewall Actions
+    riskLevel: low
+    subjectScopes:
+      - openapi.hetzner.api.read
+    executorRef:
+      executorType: http_api
+      timeoutMs: 30000
+      credentialId: hetzner-api-token
+      httpBinding:
+        method: get
+        baseUrl: https://api.hetzner.cloud/v1
+        pathTemplate: /firewalls/actions/{{id}}
+        parameters:
+          - name: id
+            in: path
+            required: true
+            schema: &a16
+              description: ID of the [Action](#description/actions).
+              type: integer
+              format: int64
+              minimum: 1
+              maximum: 9007199254740991
+              example: 42
+        securityRequirements:
+          - schemeId: APIToken
+            scopes: []
+    annotations:
+      openapi.method: get
+      openapi.path: /firewalls/actions/{id}
+      openapi.operationId: openapi.hetzner.api.get.firewalls.action
+      openapi.server: https://api.hetzner.cloud/v1
+      openapi.credentialId: hetzner-api-token
+    provenance:
+      sourceSection: GET /firewalls/actions/{id}
+      generatedFrom: /tmp/hetzner-openapi-1775405772901.json
+      derivedBy: openapi
+    certification:
+      status: untested
+    enabled: true
+    visibility: scoped
+    tool:
+      inputSchema:
+        type: object
+        properties:
+          path:
+            type: object
+            properties:
+              id: *a16
+            required:
+              - id
+            additionalProperties: false
+        required:
+          - path
+      outputSchema:
+        type: object
+      sideEffectLevel: read
+      timeoutMs: 30000
+  - id: openapi.hetzner.api.get.firewall
+    packageId: openapi.hetzner.api
+    version: 1.0.0
+    kind: tool
+    title: Get a Firewall
+    description: |
+      Returns a single [Firewall](#tag/firewalls).
+    tags:
+      - Firewalls
+    riskLevel: low
+    subjectScopes:
+      - openapi.hetzner.api.read
+    executorRef:
+      executorType: http_api
+      timeoutMs: 30000
+      credentialId: hetzner-api-token
+      httpBinding:
+        method: get
+        baseUrl: https://api.hetzner.cloud/v1
+        pathTemplate: /firewalls/{{id}}
+        parameters:
+          - name: id
+            in: path
+            required: true
+            schema: &a17
+              description: ID of the [Firewall](#tag/firewalls).
+              type: integer
+              format: int64
+              minimum: 1
+              maximum: 9007199254740991
+              example: 42
+        securityRequirements:
+          - schemeId: APIToken
+            scopes: []
+    annotations:
+      openapi.method: get
+      openapi.path: /firewalls/{id}
+      openapi.operationId: openapi.hetzner.api.get.firewall
+      openapi.server: https://api.hetzner.cloud/v1
+      openapi.credentialId: hetzner-api-token
+    provenance:
+      sourceSection: GET /firewalls/{id}
+      generatedFrom: /tmp/hetzner-openapi-1775405772901.json
+      derivedBy: openapi
+    certification:
+      status: untested
+    enabled: true
+    visibility: scoped
+    tool:
+      inputSchema:
+        type: object
+        properties:
+          path:
+            type: object
+            properties:
+              id: *a17
+            required:
+              - id
+            additionalProperties: false
+        required:
+          - path
+      outputSchema:
+        type: object
+      sideEffectLevel: read
+      timeoutMs: 30000
+  - id: openapi.hetzner.api.list.firewall.actions
+    packageId: openapi.hetzner.api
+    version: 1.0.0
+    kind: tool
+    title: List Actions for a Firewall
+    description: |
+      Returns all [Actions](#tag/actions) for the [Firewall](#tag/firewalls).
+
+      Use the provided URI parameters to modify the result.
+    tags:
+      - Firewall Actions
+    riskLevel: low
+    subjectScopes:
+      - openapi.hetzner.api.read
+    executorRef:
+      executorType: http_api
+      timeoutMs: 30000
+      credentialId: hetzner-api-token
+      httpBinding:
+        method: get
+        baseUrl: https://api.hetzner.cloud/v1
+        pathTemplate: /firewalls/{{id}}/actions
+        parameters:
+          - name: id
+            in: path
+            required: true
+            schema: &a18
+              description: ID of the [Firewall](#tag/firewalls).
+              type: integer
+              format: int64
+              minimum: 1
+              maximum: 9007199254740991
+              example: 42
+          - name: sort
+            in: query
+            required: false
+            schema: &a19
+              type: array
+              items:
+                type: string
+                enum:
+                  - id
+                  - id:asc
+                  - id:desc
+                  - command
+                  - command:asc
+                  - command:desc
+                  - status
+                  - status:asc
+                  - status:desc
+                  - started
+                  - started:asc
+                  - started:desc
+                  - finished
+                  - finished:asc
+                  - finished:desc
+          - name: status
+            in: query
+            required: false
+            schema: &a20
+              type: array
+              items:
+                description: Status of the Action.
+                type: string
+                enum:
+                  - running
+                  - success
+                  - error
+          - name: page
+            in: query
+            required: false
+            schema: &a21
+              type: integer
+              format: int64
+              default: 1
+              example: 1
+          - name: per_page
+            in: query
+            required: false
+            schema: &a22
+              type: integer
+              format: int64
+              default: 25
+              example: 25
+        securityRequirements:
+          - schemeId: APIToken
+            scopes: []
+    annotations:
+      openapi.method: get
+      openapi.path: /firewalls/{id}/actions
+      openapi.operationId: openapi.hetzner.api.list.firewall.actions
+      openapi.server: https://api.hetzner.cloud/v1
+      openapi.credentialId: hetzner-api-token
+    provenance:
+      sourceSection: GET /firewalls/{id}/actions
+      generatedFrom: /tmp/hetzner-openapi-1775405772901.json
+      derivedBy: openapi
+    certification:
+      status: untested
+    enabled: true
+    visibility: scoped
+    tool:
+      inputSchema:
+        type: object
+        properties:
+          path:
+            type: object
+            properties:
+              id: *a18
+            required:
+              - id
+            additionalProperties: false
+          query:
+            type: object
+            properties:
+              sort: *a19
+              status: *a20
+              page: *a21
+              per_page: *a22
+            additionalProperties: false
+        required:
+          - path
+          - query
+      outputSchema:
+        type: object
+      sideEffectLevel: read
+      timeoutMs: 30000
+  - id: openapi.hetzner.api.get.firewall.action
+    packageId: openapi.hetzner.api
+    version: 1.0.0
+    kind: tool
+    title: Get an Action for a Firewall
+    description: >
+      Returns a specific [Action](#tag/actions) for a [Firewall](#tag/firewalls).
+    tags:
+      - Firewall Actions
+    riskLevel: low
+    subjectScopes:
+      - openapi.hetzner.api.read
+    executorRef:
+      executorType: http_api
+      timeoutMs: 30000
+      credentialId: hetzner-api-token
+      httpBinding:
+        method: get
+        baseUrl: https://api.hetzner.cloud/v1
+        pathTemplate: /firewalls/{{id}}/actions/{{action_id}}
+        parameters:
+          - name: id
+            in: path
+            required: true
+            schema: &a23
+              description: ID of the [Firewall](#tag/firewalls).
+              type: integer
+              format: int64
+              minimum: 1
+              maximum: 9007199254740991
+              example: 42
+          - name: action_id
+            in: path
+            required: true
+            schema: &a24
+              description: ID of the [Action](#description/actions).
+              type: integer
+              format: int64
+              minimum: 1
+              maximum: 9007199254740991
+              example: 42
+        securityRequirements:
+          - schemeId: APIToken
+            scopes: []
+    annotations:
+      openapi.method: get
+      openapi.path: /firewalls/{id}/actions/{action_id}
+      openapi.operationId: openapi.hetzner.api.get.firewall.action
+      openapi.server: https://api.hetzner.cloud/v1
+      openapi.credentialId: hetzner-api-token
+    provenance:
+      sourceSection: GET /firewalls/{id}/actions/{action_id}
+      generatedFrom: /tmp/hetzner-openapi-1775405772901.json
+      derivedBy: openapi
+    certification:
+      status: untested
+    enabled: true
+    visibility: scoped
+    tool:
+      inputSchema:
+        type: object
+        properties:
+          path:
+            type: object
+            properties:
+              id: *a23
+              action_id: *a24
+            required:
+              - action_id
+              - id
+            additionalProperties: false
+        required:
+          - path
+      outputSchema:
+        type: object
+      sideEffectLevel: read
+      timeoutMs: 30000
+  - id: openapi.hetzner.api.list.floating.ips
+    packageId: openapi.hetzner.api
+    version: 1.0.0
+    kind: tool
+    title: List Floating IPs
+    description: |
+      List multiple [Floating IPs](#tag/floating-ips).
+
+      Use the provided URI parameters to modify the result.
+    tags:
+      - Floating IPs
+    riskLevel: low
+    subjectScopes:
+      - openapi.hetzner.api.read
+    executorRef:
+      executorType: http_api
+      timeoutMs: 30000
+      credentialId: hetzner-api-token
+      httpBinding:
+        method: get
+        baseUrl: https://api.hetzner.cloud/v1
+        pathTemplate: /floating_ips
+        parameters:
+          - name: name
+            in: query
+            required: false
+            schema: &a25
+              type: string
+          - name: label_selector
+            in: query
+            required: false
+            schema: &a26
+              type: string
+          - name: sort
+            in: query
+            required: false
+            schema: &a27
+              type: array
+              items:
+                type: string
+                enum:
+                  - id
+                  - id:asc
+                  - id:desc
+                  - created
+                  - created:asc
+                  - created:desc
+          - name: page
+            in: query
+            required: false
+            schema: &a28
+              type: integer
+              format: int64
+              default: 1
+              example: 1
+          - name: per_page
+            in: query
+            required: false
+            schema: &a29
+              type: integer
+              format: int64
+              default: 25
+              example: 25
+        securityRequirements:
+          - schemeId: APIToken
+            scopes: []
+    annotations:
+      openapi.method: get
+      openapi.path: /floating_ips
+      openapi.operationId: openapi.hetzner.api.list.floating.ips
+      openapi.server: https://api.hetzner.cloud/v1
+      openapi.credentialId: hetzner-api-token
+    provenance:
+      sourceSection: GET /floating_ips
+      generatedFrom: /tmp/hetzner-openapi-1775405772901.json
+      derivedBy: openapi
+    certification:
+      status: untested
+    enabled: true
+    visibility: scoped
+    tool:
+      inputSchema:
+        type: object
+        properties:
+          query:
+            type: object
+            properties:
+              name: *a25
+              label_selector: *a26
+              sort: *a27
+              page: *a28
+              per_page: *a29
+            additionalProperties: false
+        required:
+          - query
+      outputSchema:
+        type: object
+      sideEffectLevel: read
+      timeoutMs: 30000
+  - id: openapi.hetzner.api.list.floating.ips.actions
+    packageId: openapi.hetzner.api
+    version: 1.0.0
+    kind: tool
+    title: List Actions
+    description: |
+      Lists multiple [Actions](#tag/actions).
+
+      Use the provided URI parameters to modify the result.
+    tags:
+      - Floating IP Actions
+    riskLevel: low
+    subjectScopes:
+      - openapi.hetzner.api.read
+    executorRef:
+      executorType: http_api
+      timeoutMs: 30000
+      credentialId: hetzner-api-token
+      httpBinding:
+        method: get
+        baseUrl: https://api.hetzner.cloud/v1
+        pathTemplate: /floating_ips/actions
+        parameters:
+          - name: id
+            in: query
+            required: false
+            schema: &a30
+              type: array
+              items:
+                description: ID of the [Action](#description/actions).
+                type: integer
+                format: int64
+                minimum: 1
+                maximum: 9007199254740991
+                example: 42
+          - name: sort
+            in: query
+            required: false
+            schema: &a31
+              type: array
+              items:
+                type: string
+                enum:
+                  - id
+                  - id:asc
+                  - id:desc
+                  - command
+                  - command:asc
+                  - command:desc
+                  - status
+                  - status:asc
+                  - status:desc
+                  - started
+                  - started:asc
+                  - started:desc
+                  - finished
+                  - finished:asc
+                  - finished:desc
+          - name: status
+            in: query
+            required: false
+            schema: &a32
+              type: array
+              items:
+                description: Status of the Action.
+                type: string
+                enum:
+                  - running
+                  - success
+                  - error
+          - name: page
+            in: query
+            required: false
+            schema: &a33
+              type: integer
+              format: int64
+              default: 1
+              example: 1
+          - name: per_page
+            in: query
+            required: false
+            schema: &a34
+              type: integer
+              format: int64
+              default: 25
+              example: 25
+        securityRequirements:
+          - schemeId: APIToken
+            scopes: []
+    annotations:
+      openapi.method: get
+      openapi.path: /floating_ips/actions
+      openapi.operationId: openapi.hetzner.api.list.floating.ips.actions
+      openapi.server: https://api.hetzner.cloud/v1
+      openapi.credentialId: hetzner-api-token
+    provenance:
+      sourceSection: GET /floating_ips/actions
+      generatedFrom: /tmp/hetzner-openapi-1775405772901.json
+      derivedBy: openapi
+    certification:
+      status: untested
+    enabled: true
+    visibility: scoped
+    tool:
+      inputSchema:
+        type: object
+        properties:
+          query:
+            type: object
+            properties:
+              id: *a30
+              sort: *a31
+              status: *a32
+              page: *a33
+              per_page: *a34
+            additionalProperties: false
+        required:
+          - query
+      outputSchema:
+        type: object
+      sideEffectLevel: read
+      timeoutMs: 30000
+  - id: openapi.hetzner.api.get.floating.ips.action
+    packageId: openapi.hetzner.api
+    version: 1.0.0
+    kind: tool
+    title: Get an Action
+    description: |
+      Returns a single [Action](#tag/actions).
+    tags:
+      - Floating IP Actions
+    riskLevel: low
+    subjectScopes:
+      - openapi.hetzner.api.read
+    executorRef:
+      executorType: http_api
+      timeoutMs: 30000
+      credentialId: hetzner-api-token
+      httpBinding:
+        method: get
+        baseUrl: https://api.hetzner.cloud/v1
+        pathTemplate: /floating_ips/actions/{{id}}
+        parameters:
+          - name: id
+            in: path
+            required: true
+            schema: &a35
+              description: ID of the [Action](#description/actions).
+              type: integer
+              format: int64
+              minimum: 1
+              maximum: 9007199254740991
+              example: 42
+        securityRequirements:
+          - schemeId: APIToken
+            scopes: []
+    annotations:
+      openapi.method: get
+      openapi.path: /floating_ips/actions/{id}
+      openapi.operationId: openapi.hetzner.api.get.floating.ips.action
+      openapi.server: https://api.hetzner.cloud/v1
+      openapi.credentialId: hetzner-api-token
+    provenance:
+      sourceSection: GET /floating_ips/actions/{id}
+      generatedFrom: /tmp/hetzner-openapi-1775405772901.json
+      derivedBy: openapi
+    certification:
+      status: untested
+    enabled: true
+    visibility: scoped
+    tool:
+      inputSchema:
+        type: object
+        properties:
+          path:
+            type: object
+            properties:
+              id: *a35
+            required:
+              - id
+            additionalProperties: false
+        required:
+          - path
+      outputSchema:
+        type: object
+      sideEffectLevel: read
+      timeoutMs: 30000
+  - id: openapi.hetzner.api.get.floating.ip
+    packageId: openapi.hetzner.api
+    version: 1.0.0
+    kind: tool
+    title: Get a Floating IP
+    description: |
+      Returns a single [Floating IP](#tag/floating-ips).
+    tags:
+      - Floating IPs
+    riskLevel: low
+    subjectScopes:
+      - openapi.hetzner.api.read
+    executorRef:
+      executorType: http_api
+      timeoutMs: 30000
+      credentialId: hetzner-api-token
+      httpBinding:
+        method: get
+        baseUrl: https://api.hetzner.cloud/v1
+        pathTemplate: /floating_ips/{{id}}
+        parameters:
+          - name: id
+            in: path
+            required: true
+            schema: &a36
+              description: ID of the [Floating IP](#tag/floating-ips).
+              type: integer
+              format: int64
+              minimum: 1
+              maximum: 9007199254740991
+              example: 42
+        securityRequirements:
+          - schemeId: APIToken
+            scopes: []
+    annotations:
+      openapi.method: get
+      openapi.path: /floating_ips/{id}
+      openapi.operationId: openapi.hetzner.api.get.floating.ip
+      openapi.server: https://api.hetzner.cloud/v1
+      openapi.credentialId: hetzner-api-token
+    provenance:
+      sourceSection: GET /floating_ips/{id}
+      generatedFrom: /tmp/hetzner-openapi-1775405772901.json
+      derivedBy: openapi
+    certification:
+      status: untested
+    enabled: true
+    visibility: scoped
+    tool:
+      inputSchema:
+        type: object
+        properties:
+          path:
+            type: object
+            properties:
+              id: *a36
+            required:
+              - id
+            additionalProperties: false
+        required:
+          - path
+      outputSchema:
+        type: object
+      sideEffectLevel: read
+      timeoutMs: 30000
+  - id: openapi.hetzner.api.list.floating.ip.actions
+    packageId: openapi.hetzner.api
+    version: 1.0.0
+    kind: tool
+    title: List Actions for a Floating IP
+    description: |
+      Lists [Actions](#tag/actions) for a [Floating IP](#tag/floating-ips).
+
+      Use the provided URI parameters to modify the result.
+    tags:
+      - Floating IP Actions
+    riskLevel: low
+    subjectScopes:
+      - openapi.hetzner.api.read
+    executorRef:
+      executorType: http_api
+      timeoutMs: 30000
+      credentialId: hetzner-api-token
+      httpBinding:
+        method: get
+        baseUrl: https://api.hetzner.cloud/v1
+        pathTemplate: /floating_ips/{{id}}/actions
+        parameters:
+          - name: id
+            in: path
+            required: true
+            schema: &a37
+              description: ID of the [Floating IP](#tag/floating-ips).
+              type: integer
+              format: int64
+              minimum: 1
+              maximum: 9007199254740991
+              example: 42
+          - name: sort
+            in: query
+            required: false
+            schema: &a38
+              type: array
+              items:
+                type: string
+                enum:
+                  - id
+                  - id:asc
+                  - id:desc
+                  - command
+                  - command:asc
+                  - command:desc
+                  - status
+                  - status:asc
+                  - status:desc
+                  - started
+                  - started:asc
+                  - started:desc
+                  - finished
+                  - finished:asc
+                  - finished:desc
+          - name: status
+            in: query
+            required: false
+            schema: &a39
+              type: array
+              items:
+                description: Status of the Action.
+                type: string
+                enum:
+                  - running
+                  - success
+                  - error
+          - name: page
+            in: query
+            required: false
+            schema: &a40
+              type: integer
+              format: int64
+              default: 1
+              example: 1
+          - name: per_page
+            in: query
+            required: false
+            schema: &a41
+              type: integer
+              format: int64
+              default: 25
+              example: 25
+        securityRequirements:
+          - schemeId: APIToken
+            scopes: []
+    annotations:
+      openapi.method: get
+      openapi.path: /floating_ips/{id}/actions
+      openapi.operationId: openapi.hetzner.api.list.floating.ip.actions
+      openapi.server: https://api.hetzner.cloud/v1
+      openapi.credentialId: hetzner-api-token
+    provenance:
+      sourceSection: GET /floating_ips/{id}/actions
+      generatedFrom: /tmp/hetzner-openapi-1775405772901.json
+      derivedBy: openapi
+    certification:
+      status: untested
+    enabled: true
+    visibility: scoped
+    tool:
+      inputSchema:
+        type: object
+        properties:
+          path:
+            type: object
+            properties:
+              id: *a37
+            required:
+              - id
+            additionalProperties: false
+          query:
+            type: object
+            properties:
+              sort: *a38
+              status: *a39
+              page: *a40
+              per_page: *a41
+            additionalProperties: false
+        required:
+          - path
+          - query
+      outputSchema:
+        type: object
+      sideEffectLevel: read
+      timeoutMs: 30000
+  - id: openapi.hetzner.api.get.floating.ip.action
+    packageId: openapi.hetzner.api
+    version: 1.0.0
+    kind: tool
+    title: Get an Action for a Floating IP
+    description: >
+      Returns a specific [Action](#tag/actions) for a [Floating
+      IP](#tag/floating-ips).
+    tags:
+      - Floating IP Actions
+    riskLevel: low
+    subjectScopes:
+      - openapi.hetzner.api.read
+    executorRef:
+      executorType: http_api
+      timeoutMs: 30000
+      credentialId: hetzner-api-token
+      httpBinding:
+        method: get
+        baseUrl: https://api.hetzner.cloud/v1
+        pathTemplate: /floating_ips/{{id}}/actions/{{action_id}}
+        parameters:
+          - name: id
+            in: path
+            required: true
+            schema: &a42
+              description: ID of the [Floating IP](#tag/floating-ips).
+              type: integer
+              format: int64
+              minimum: 1
+              maximum: 9007199254740991
+              example: 42
+          - name: action_id
+            in: path
+            required: true
+            schema: &a43
+              description: ID of the [Action](#description/actions).
+              type: integer
+              format: int64
+              minimum: 1
+              maximum: 9007199254740991
+              example: 42
+        securityRequirements:
+          - schemeId: APIToken
+            scopes: []
+    annotations:
+      openapi.method: get
+      openapi.path: /floating_ips/{id}/actions/{action_id}
+      openapi.operationId: openapi.hetzner.api.get.floating.ip.action
+      openapi.server: https://api.hetzner.cloud/v1
+      openapi.credentialId: hetzner-api-token
+    provenance:
+      sourceSection: GET /floating_ips/{id}/actions/{action_id}
+      generatedFrom: /tmp/hetzner-openapi-1775405772901.json
+      derivedBy: openapi
+    certification:
+      status: untested
+    enabled: true
+    visibility: scoped
+    tool:
+      inputSchema:
+        type: object
+        properties:
+          path:
+            type: object
+            properties:
+              id: *a42
+              action_id: *a43
+            required:
+              - action_id
+              - id
+            additionalProperties: false
+        required:
+          - path
+      outputSchema:
+        type: object
+      sideEffectLevel: read
+      timeoutMs: 30000
+  - id: openapi.hetzner.api.list.images
+    packageId: openapi.hetzner.api
+    version: 1.0.0
+    kind: tool
+    title: List Images
+    description: >
+      Returns all Image objects. You can select specific Image types only and
+      sort the results by using URI parameters.
+    tags:
+      - Images
+    riskLevel: low
+    subjectScopes:
+      - openapi.hetzner.api.read
+    executorRef:
+      executorType: http_api
+      timeoutMs: 30000
+      credentialId: hetzner-api-token
+      httpBinding:
+        method: get
+        baseUrl: https://api.hetzner.cloud/v1
+        pathTemplate: /images
+        parameters:
+          - name: sort
+            in: query
+            required: false
+            schema: &a44
+              type: array
+              items:
+                type: string
+                enum:
+                  - id
+                  - id:asc
+                  - id:desc
+                  - name
+                  - name:asc
+                  - name:desc
+                  - created
+                  - created:asc
+                  - created:desc
+          - name: type
+            in: query
+            required: false
+            schema: &a45
+              type: array
+              items:
+                description: Type of the Image.
+                type: string
+                enum:
+                  - system
+                  - app
+                  - snapshot
+                  - backup
+                example: snapshot
+          - name: status
+            in: query
+            required: false
+            schema: &a46
+              type: array
+              items:
+                description: Status of the Image.
+                type: string
+                enum:
+                  - available
+                  - creating
+                  - unavailable
+                example: available
+          - name: bound_to
+            in: query
+            required: false
+            schema: &a47
+              type: array
+              items:
+                type: string
+          - name: include_deprecated
+            in: query
+            required: false
+            schema: &a48
+              type: boolean
+          - name: name
+            in: query
+            required: false
+            schema: &a49
+              type: string
+          - name: label_selector
+            in: query
+            required: false
+            schema: &a50
+              type: string
+          - name: architecture
+            in: query
+            required: false
+            schema: &a51
+              description: CPU architecture of the Resource.
+              type: string
+              enum:
+                - x86
+                - arm
+              example: x86
+          - name: page
+            in: query
+            required: false
+            schema: &a52
+              type: integer
+              format: int64
+              default: 1
+              example: 1
+          - name: per_page
+            in: query
+            required: false
+            schema: &a53
+              type: integer
+              format: int64
+              default: 25
+              example: 25
+        securityRequirements:
+          - schemeId: APIToken
+            scopes: []
+    annotations:
+      openapi.method: get
+      openapi.path: /images
+      openapi.operationId: openapi.hetzner.api.list.images
+      openapi.server: https://api.hetzner.cloud/v1
+      openapi.credentialId: hetzner-api-token
+    provenance:
+      sourceSection: GET /images
+      generatedFrom: /tmp/hetzner-openapi-1775405772901.json
+      derivedBy: openapi
+    certification:
+      status: untested
+    enabled: true
+    visibility: scoped
+    tool:
+      inputSchema:
+        type: object
+        properties:
+          query:
+            type: object
+            properties:
+              sort: *a44
+              type: *a45
+              status: *a46
+              bound_to: *a47
+              include_deprecated: *a48
+              name: *a49
+              label_selector: *a50
+              architecture: *a51
+              page: *a52
+              per_page: *a53
+            additionalProperties: false
+        required:
+          - query
+      outputSchema:
+        type: object
+      sideEffectLevel: read
+      timeoutMs: 30000
+  - id: openapi.hetzner.api.list.images.actions
+    packageId: openapi.hetzner.api
+    version: 1.0.0
+    kind: tool
+    title: List Actions
+    description: >
+      Returns all Action objects. You can `sort` the results by using the sort
+      URI parameter, and filter them with the `status` and `id` parameter.
+    tags:
+      - Image Actions
+    riskLevel: low
+    subjectScopes:
+      - openapi.hetzner.api.read
+    executorRef:
+      executorType: http_api
+      timeoutMs: 30000
+      credentialId: hetzner-api-token
+      httpBinding:
+        method: get
+        baseUrl: https://api.hetzner.cloud/v1
+        pathTemplate: /images/actions
+        parameters:
+          - name: id
+            in: query
+            required: false
+            schema: &a54
+              type: array
+              items:
+                description: ID of the [Action](#description/actions).
+                type: integer
+                format: int64
+                minimum: 1
+                maximum: 9007199254740991
+                example: 42
+          - name: sort
+            in: query
+            required: false
+            schema: &a55
+              type: array
+              items:
+                type: string
+                enum:
+                  - id
+                  - id:asc
+                  - id:desc
+                  - command
+                  - command:asc
+                  - command:desc
+                  - status
+                  - status:asc
+                  - status:desc
+                  - started
+                  - started:asc
+                  - started:desc
+                  - finished
+                  - finished:asc
+                  - finished:desc
+          - name: status
+            in: query
+            required: false
+            schema: &a56
+              type: array
+              items:
+                description: Status of the Action.
+                type: string
+                enum:
+                  - running
+                  - success
+                  - error
+          - name: page
+            in: query
+            required: false
+            schema: &a57
+              type: integer
+              format: int64
+              default: 1
+              example: 1
+          - name: per_page
+            in: query
+            required: false
+            schema: &a58
+              type: integer
+              format: int64
+              default: 25
+              example: 25
+        securityRequirements:
+          - schemeId: APIToken
+            scopes: []
+    annotations:
+      openapi.method: get
+      openapi.path: /images/actions
+      openapi.operationId: openapi.hetzner.api.list.images.actions
+      openapi.server: https://api.hetzner.cloud/v1
+      openapi.credentialId: hetzner-api-token
+    provenance:
+      sourceSection: GET /images/actions
+      generatedFrom: /tmp/hetzner-openapi-1775405772901.json
+      derivedBy: openapi
+    certification:
+      status: untested
+    enabled: true
+    visibility: scoped
+    tool:
+      inputSchema:
+        type: object
+        properties:
+          query:
+            type: object
+            properties:
+              id: *a54
+              sort: *a55
+              status: *a56
+              page: *a57
+              per_page: *a58
+            additionalProperties: false
+        required:
+          - query
+      outputSchema:
+        type: object
+      sideEffectLevel: read
+      timeoutMs: 30000
+  - id: openapi.hetzner.api.get.images.action
+    packageId: openapi.hetzner.api
+    version: 1.0.0
+    kind: tool
+    title: Get an Action
+    description: |
+      Returns a specific Action object.
+    tags:
+      - Image Actions
+    riskLevel: low
+    subjectScopes:
+      - openapi.hetzner.api.read
+    executorRef:
+      executorType: http_api
+      timeoutMs: 30000
+      credentialId: hetzner-api-token
+      httpBinding:
+        method: get
+        baseUrl: https://api.hetzner.cloud/v1
+        pathTemplate: /images/actions/{{id}}
+        parameters:
+          - name: id
+            in: path
+            required: true
+            schema: &a59
+              description: ID of the [Action](#description/actions).
+              type: integer
+              format: int64
+              minimum: 1
+              maximum: 9007199254740991
+              example: 42
+        securityRequirements:
+          - schemeId: APIToken
+            scopes: []
+    annotations:
+      openapi.method: get
+      openapi.path: /images/actions/{id}
+      openapi.operationId: openapi.hetzner.api.get.images.action
+      openapi.server: https://api.hetzner.cloud/v1
+      openapi.credentialId: hetzner-api-token
+    provenance:
+      sourceSection: GET /images/actions/{id}
+      generatedFrom: /tmp/hetzner-openapi-1775405772901.json
+      derivedBy: openapi
+    certification:
+      status: untested
+    enabled: true
+    visibility: scoped
+    tool:
+      inputSchema:
+        type: object
+        properties:
+          path:
+            type: object
+            properties:
+              id: *a59
+            required:
+              - id
+            additionalProperties: false
+        required:
+          - path
+      outputSchema:
+        type: object
+      sideEffectLevel: read
+      timeoutMs: 30000
+  - id: openapi.hetzner.api.get.image
+    packageId: openapi.hetzner.api
+    version: 1.0.0
+    kind: tool
+    title: Get an Image
+    description: |
+      Returns a specific Image object.
+    tags:
+      - Images
+    riskLevel: low
+    subjectScopes:
+      - openapi.hetzner.api.read
+    executorRef:
+      executorType: http_api
+      timeoutMs: 30000
+      credentialId: hetzner-api-token
+      httpBinding:
+        method: get
+        baseUrl: https://api.hetzner.cloud/v1
+        pathTemplate: /images/{{id}}
+        parameters:
+          - name: id
+            in: path
+            required: true
+            schema: &a60
+              description: ID of the [Image](#tag/images).
+              type: integer
+              format: int64
+              minimum: 1
+              maximum: 9007199254740991
+              example: 42
+        securityRequirements:
+          - schemeId: APIToken
+            scopes: []
+    annotations:
+      openapi.method: get
+      openapi.path: /images/{id}
+      openapi.operationId: openapi.hetzner.api.get.image
+      openapi.server: https://api.hetzner.cloud/v1
+      openapi.credentialId: hetzner-api-token
+    provenance:
+      sourceSection: GET /images/{id}
+      generatedFrom: /tmp/hetzner-openapi-1775405772901.json
+      derivedBy: openapi
+    certification:
+      status: untested
+    enabled: true
+    visibility: scoped
+    tool:
+      inputSchema:
+        type: object
+        properties:
+          path:
+            type: object
+            properties:
+              id: *a60
+            required:
+              - id
+            additionalProperties: false
+        required:
+          - path
+      outputSchema:
+        type: object
+      sideEffectLevel: read
+      timeoutMs: 30000
+  - id: openapi.hetzner.api.list.image.actions
+    packageId: openapi.hetzner.api
+    version: 1.0.0
+    kind: tool
+    title: List Actions for an Image
+    description: >
+      Returns all Action objects for an Image. You can sort the results by using
+      the `sort` URI parameter, and filter them with the `status` parameter.
+    tags:
+      - Image Actions
+    riskLevel: low
+    subjectScopes:
+      - openapi.hetzner.api.read
+    executorRef:
+      executorType: http_api
+      timeoutMs: 30000
+      credentialId: hetzner-api-token
+      httpBinding:
+        method: get
+        baseUrl: https://api.hetzner.cloud/v1
+        pathTemplate: /images/{{id}}/actions
+        parameters:
+          - name: id
+            in: path
+            required: true
+            schema: &a61
+              description: ID of the [Image](#tag/images).
+              type: integer
+              format: int64
+              minimum: 1
+              maximum: 9007199254740991
+              example: 42
+          - name: sort
+            in: query
+            required: false
+            schema: &a62
+              type: array
+              items:
+                type: string
+                enum:
+                  - id
+                  - id:asc
+                  - id:desc
+                  - command
+                  - command:asc
+                  - command:desc
+                  - status
+                  - status:asc
+                  - status:desc
+                  - started
+                  - started:asc
+                  - started:desc
+                  - finished
+                  - finished:asc
+                  - finished:desc
+          - name: status
+            in: query
+            required: false
+            schema: &a63
+              type: array
+              items:
+                description: Status of the Action.
+                type: string
+                enum:
+                  - running
+                  - success
+                  - error
+          - name: page
+            in: query
+            required: false
+            schema: &a64
+              type: integer
+              format: int64
+              default: 1
+              example: 1
+          - name: per_page
+            in: query
+            required: false
+            schema: &a65
+              type: integer
+              format: int64
+              default: 25
+              example: 25
+        securityRequirements:
+          - schemeId: APIToken
+            scopes: []
+    annotations:
+      openapi.method: get
+      openapi.path: /images/{id}/actions
+      openapi.operationId: openapi.hetzner.api.list.image.actions
+      openapi.server: https://api.hetzner.cloud/v1
+      openapi.credentialId: hetzner-api-token
+    provenance:
+      sourceSection: GET /images/{id}/actions
+      generatedFrom: /tmp/hetzner-openapi-1775405772901.json
+      derivedBy: openapi
+    certification:
+      status: untested
+    enabled: true
+    visibility: scoped
+    tool:
+      inputSchema:
+        type: object
+        properties:
+          path:
+            type: object
+            properties:
+              id: *a61
+            required:
+              - id
+            additionalProperties: false
+          query:
+            type: object
+            properties:
+              sort: *a62
+              status: *a63
+              page: *a64
+              per_page: *a65
+            additionalProperties: false
+        required:
+          - path
+          - query
+      outputSchema:
+        type: object
+      sideEffectLevel: read
+      timeoutMs: 30000
+  - id: openapi.hetzner.api.get.image.action
+    packageId: openapi.hetzner.api
+    version: 1.0.0
+    kind: tool
+    title: Get an Action for an Image
+    description: |
+      Returns a specific Action for an Image.
+    tags:
+      - Image Actions
+    riskLevel: low
+    subjectScopes:
+      - openapi.hetzner.api.read
+    executorRef:
+      executorType: http_api
+      timeoutMs: 30000
+      credentialId: hetzner-api-token
+      httpBinding:
+        method: get
+        baseUrl: https://api.hetzner.cloud/v1
+        pathTemplate: /images/{{id}}/actions/{{action_id}}
+        parameters:
+          - name: id
+            in: path
+            required: true
+            schema: &a66
+              description: ID of the [Image](#tag/images).
+              type: integer
+              format: int64
+              minimum: 1
+              maximum: 9007199254740991
+              example: 42
+          - name: action_id
+            in: path
+            required: true
+            schema: &a67
+              description: ID of the [Action](#description/actions).
+              type: integer
+              format: int64
+              minimum: 1
+              maximum: 9007199254740991
+              example: 42
+        securityRequirements:
+          - schemeId: APIToken
+            scopes: []
+    annotations:
+      openapi.method: get
+      openapi.path: /images/{id}/actions/{action_id}
+      openapi.operationId: openapi.hetzner.api.get.image.action
+      openapi.server: https://api.hetzner.cloud/v1
+      openapi.credentialId: hetzner-api-token
+    provenance:
+      sourceSection: GET /images/{id}/actions/{action_id}
+      generatedFrom: /tmp/hetzner-openapi-1775405772901.json
+      derivedBy: openapi
+    certification:
+      status: untested
+    enabled: true
+    visibility: scoped
+    tool:
+      inputSchema:
+        type: object
+        properties:
+          path:
+            type: object
+            properties:
+              id: *a66
+              action_id: *a67
+            required:
+              - action_id
+              - id
+            additionalProperties: false
+        required:
+          - path
+      outputSchema:
+        type: object
+      sideEffectLevel: read
+      timeoutMs: 30000
+  - id: openapi.hetzner.api.list.locations
+    packageId: openapi.hetzner.api
+    version: 1.0.0
+    kind: tool
+    title: List Locations
+    description: |
+      Returns all [Locations](#tag/locations).
+    tags:
+      - Locations
+    riskLevel: low
+    subjectScopes:
+      - openapi.hetzner.api.read
+    executorRef:
+      executorType: http_api
+      timeoutMs: 30000
+      credentialId: hetzner-api-token
+      httpBinding:
+        method: get
+        baseUrl: https://api.hetzner.cloud/v1
+        pathTemplate: /locations
+        parameters:
+          - name: name
+            in: query
+            required: false
+            schema: &a68
+              type: string
+          - name: sort
+            in: query
+            required: false
+            schema: &a69
+              type: array
+              items:
+                type: string
+                enum:
+                  - id
+                  - id:asc
+                  - id:desc
+                  - name
+                  - name:asc
+                  - name:desc
+          - name: page
+            in: query
+            required: false
+            schema: &a70
+              type: integer
+              format: int64
+              default: 1
+              example: 1
+          - name: per_page
+            in: query
+            required: false
+            schema: &a71
+              type: integer
+              format: int64
+              default: 25
+              example: 25
+        securityRequirements:
+          - schemeId: APIToken
+            scopes: []
+    annotations:
+      openapi.method: get
+      openapi.path: /locations
+      openapi.operationId: openapi.hetzner.api.list.locations
+      openapi.server: https://api.hetzner.cloud/v1
+      openapi.credentialId: hetzner-api-token
+    provenance:
+      sourceSection: GET /locations
+      generatedFrom: /tmp/hetzner-openapi-1775405772901.json
+      derivedBy: openapi
+    certification:
+      status: untested
+    enabled: true
+    visibility: scoped
+    tool:
+      inputSchema:
+        type: object
+        properties:
+          query:
+            type: object
+            properties:
+              name: *a68
+              sort: *a69
+              page: *a70
+              per_page: *a71
+            additionalProperties: false
+        required:
+          - query
+      outputSchema:
+        type: object
+      sideEffectLevel: read
+      timeoutMs: 30000
+  - id: openapi.hetzner.api.get.location
+    packageId: openapi.hetzner.api
+    version: 1.0.0
+    kind: tool
+    title: Get a Location
+    description: |
+      Returns a [Location](#tag/locations).
+    tags:
+      - Locations
+    riskLevel: low
+    subjectScopes:
+      - openapi.hetzner.api.read
+    executorRef:
+      executorType: http_api
+      timeoutMs: 30000
+      credentialId: hetzner-api-token
+      httpBinding:
+        method: get
+        baseUrl: https://api.hetzner.cloud/v1
+        pathTemplate: /locations/{{id}}
+        parameters:
+          - name: id
+            in: path
+            required: true
+            schema: &a72
+              description: ID of the [Location](#tag/locations).
+              type: integer
+              format: int64
+              minimum: 1
+              maximum: 9007199254740991
+              example: 42
+        securityRequirements:
+          - schemeId: APIToken
+            scopes: []
+    annotations:
+      openapi.method: get
+      openapi.path: /locations/{id}
+      openapi.operationId: openapi.hetzner.api.get.location
+      openapi.server: https://api.hetzner.cloud/v1
+      openapi.credentialId: hetzner-api-token
+    provenance:
+      sourceSection: GET /locations/{id}
+      generatedFrom: /tmp/hetzner-openapi-1775405772901.json
+      derivedBy: openapi
+    certification:
+      status: untested
+    enabled: true
+    visibility: scoped
+    tool:
+      inputSchema:
+        type: object
+        properties:
+          path:
+            type: object
+            properties:
+              id: *a72
+            required:
+              - id
+            additionalProperties: false
+        required:
+          - path
+      outputSchema:
+        type: object
+      sideEffectLevel: read
+      timeoutMs: 30000
+  - id: openapi.hetzner.api.list.networks
+    packageId: openapi.hetzner.api
+    version: 1.0.0
+    kind: tool
+    title: List Networks
+    description: |
+      List multiple [Networks](#tag/networks).
+
+      Use the provided URI parameters to modify the result.
+    tags:
+      - Networks
+    riskLevel: low
+    subjectScopes:
+      - openapi.hetzner.api.read
+    executorRef:
+      executorType: http_api
+      timeoutMs: 30000
+      credentialId: hetzner-api-token
+      httpBinding:
+        method: get
+        baseUrl: https://api.hetzner.cloud/v1
+        pathTemplate: /networks
+        parameters:
+          - name: sort
+            in: query
+            required: false
+            schema: &a73
+              type: array
+              items:
+                type: string
+                enum:
+                  - id
+                  - id:asc
+                  - id:desc
+                  - name
+                  - name:asc
+                  - name:desc
+                  - created
+                  - created:asc
+                  - created:desc
+          - name: name
+            in: query
+            required: false
+            schema: &a74
+              type: string
+          - name: label_selector
+            in: query
+            required: false
+            schema: &a75
+              type: string
+          - name: page
+            in: query
+            required: false
+            schema: &a76
+              type: integer
+              format: int64
+              default: 1
+              example: 1
+          - name: per_page
+            in: query
+            required: false
+            schema: &a77
+              type: integer
+              format: int64
+              default: 25
+              example: 25
+        securityRequirements:
+          - schemeId: APIToken
+            scopes: []
+    annotations:
+      openapi.method: get
+      openapi.path: /networks
+      openapi.operationId: openapi.hetzner.api.list.networks
+      openapi.server: https://api.hetzner.cloud/v1
+      openapi.credentialId: hetzner-api-token
+    provenance:
+      sourceSection: GET /networks
+      generatedFrom: /tmp/hetzner-openapi-1775405772901.json
+      derivedBy: openapi
+    certification:
+      status: untested
+    enabled: true
+    visibility: scoped
+    tool:
+      inputSchema:
+        type: object
+        properties:
+          query:
+            type: object
+            properties:
+              sort: *a73
+              name: *a74
+              label_selector: *a75
+              page: *a76
+              per_page: *a77
+            additionalProperties: false
+        required:
+          - query
+      outputSchema:
+        type: object
+      sideEffectLevel: read
+      timeoutMs: 30000
+  - id: openapi.hetzner.api.list.networks.actions
+    packageId: openapi.hetzner.api
+    version: 1.0.0
+    kind: tool
+    title: List Actions
+    description: |
+      Lists multiple [Actions](#tag/actions).
+
+      Use the provided URI parameters to modify the result.
+    tags:
+      - Network Actions
+    riskLevel: low
+    subjectScopes:
+      - openapi.hetzner.api.read
+    executorRef:
+      executorType: http_api
+      timeoutMs: 30000
+      credentialId: hetzner-api-token
+      httpBinding:
+        method: get
+        baseUrl: https://api.hetzner.cloud/v1
+        pathTemplate: /networks/actions
+        parameters:
+          - name: id
+            in: query
+            required: false
+            schema: &a78
+              type: array
+              items:
+                description: ID of the [Action](#description/actions).
+                type: integer
+                format: int64
+                minimum: 1
+                maximum: 9007199254740991
+                example: 42
+          - name: sort
+            in: query
+            required: false
+            schema: &a79
+              type: array
+              items:
+                type: string
+                enum:
+                  - id
+                  - id:asc
+                  - id:desc
+                  - command
+                  - command:asc
+                  - command:desc
+                  - status
+                  - status:asc
+                  - status:desc
+                  - started
+                  - started:asc
+                  - started:desc
+                  - finished
+                  - finished:asc
+                  - finished:desc
+          - name: status
+            in: query
+            required: false
+            schema: &a80
+              type: array
+              items:
+                description: Status of the Action.
+                type: string
+                enum:
+                  - running
+                  - success
+                  - error
+          - name: page
+            in: query
+            required: false
+            schema: &a81
+              type: integer
+              format: int64
+              default: 1
+              example: 1
+          - name: per_page
+            in: query
+            required: false
+            schema: &a82
+              type: integer
+              format: int64
+              default: 25
+              example: 25
+        securityRequirements:
+          - schemeId: APIToken
+            scopes: []
+    annotations:
+      openapi.method: get
+      openapi.path: /networks/actions
+      openapi.operationId: openapi.hetzner.api.list.networks.actions
+      openapi.server: https://api.hetzner.cloud/v1
+      openapi.credentialId: hetzner-api-token
+    provenance:
+      sourceSection: GET /networks/actions
+      generatedFrom: /tmp/hetzner-openapi-1775405772901.json
+      derivedBy: openapi
+    certification:
+      status: untested
+    enabled: true
+    visibility: scoped
+    tool:
+      inputSchema:
+        type: object
+        properties:
+          query:
+            type: object
+            properties:
+              id: *a78
+              sort: *a79
+              status: *a80
+              page: *a81
+              per_page: *a82
+            additionalProperties: false
+        required:
+          - query
+      outputSchema:
+        type: object
+      sideEffectLevel: read
+      timeoutMs: 30000
+  - id: openapi.hetzner.api.get.networks.action
+    packageId: openapi.hetzner.api
+    version: 1.0.0
+    kind: tool
+    title: Get an Action
+    description: |
+      Returns a single [Action](#tag/actions).
+    tags:
+      - Network Actions
+    riskLevel: low
+    subjectScopes:
+      - openapi.hetzner.api.read
+    executorRef:
+      executorType: http_api
+      timeoutMs: 30000
+      credentialId: hetzner-api-token
+      httpBinding:
+        method: get
+        baseUrl: https://api.hetzner.cloud/v1
+        pathTemplate: /networks/actions/{{id}}
+        parameters:
+          - name: id
+            in: path
+            required: true
+            schema: &a83
+              description: ID of the [Action](#description/actions).
+              type: integer
+              format: int64
+              minimum: 1
+              maximum: 9007199254740991
+              example: 42
+        securityRequirements:
+          - schemeId: APIToken
+            scopes: []
+    annotations:
+      openapi.method: get
+      openapi.path: /networks/actions/{id}
+      openapi.operationId: openapi.hetzner.api.get.networks.action
+      openapi.server: https://api.hetzner.cloud/v1
+      openapi.credentialId: hetzner-api-token
+    provenance:
+      sourceSection: GET /networks/actions/{id}
+      generatedFrom: /tmp/hetzner-openapi-1775405772901.json
+      derivedBy: openapi
+    certification:
+      status: untested
+    enabled: true
+    visibility: scoped
+    tool:
+      inputSchema:
+        type: object
+        properties:
+          path:
+            type: object
+            properties:
+              id: *a83
+            required:
+              - id
+            additionalProperties: false
+        required:
+          - path
+      outputSchema:
+        type: object
+      sideEffectLevel: read
+      timeoutMs: 30000
+  - id: openapi.hetzner.api.get.network
+    packageId: openapi.hetzner.api
+    version: 1.0.0
+    kind: tool
+    title: Get a Network
+    description: |
+      Get a specific [Network](#tag/networks).
+    tags:
+      - Networks
+    riskLevel: low
+    subjectScopes:
+      - openapi.hetzner.api.read
+    executorRef:
+      executorType: http_api
+      timeoutMs: 30000
+      credentialId: hetzner-api-token
+      httpBinding:
+        method: get
+        baseUrl: https://api.hetzner.cloud/v1
+        pathTemplate: /networks/{{id}}
+        parameters:
+          - name: id
+            in: path
+            required: true
+            schema: &a84
+              description: ID of the [Network](#tag/networks).
+              type: integer
+              format: int64
+              minimum: 1
+              maximum: 9007199254740991
+              example: 42
+        securityRequirements:
+          - schemeId: APIToken
+            scopes: []
+    annotations:
+      openapi.method: get
+      openapi.path: /networks/{id}
+      openapi.operationId: openapi.hetzner.api.get.network
+      openapi.server: https://api.hetzner.cloud/v1
+      openapi.credentialId: hetzner-api-token
+    provenance:
+      sourceSection: GET /networks/{id}
+      generatedFrom: /tmp/hetzner-openapi-1775405772901.json
+      derivedBy: openapi
+    certification:
+      status: untested
+    enabled: true
+    visibility: scoped
+    tool:
+      inputSchema:
+        type: object
+        properties:
+          path:
+            type: object
+            properties:
+              id: *a84
+            required:
+              - id
+            additionalProperties: false
+        required:
+          - path
+      outputSchema:
+        type: object
+      sideEffectLevel: read
+      timeoutMs: 30000
+  - id: openapi.hetzner.api.list.network.actions
+    packageId: openapi.hetzner.api
+    version: 1.0.0
+    kind: tool
+    title: List Actions for a Network
+    description: |
+      Lists [Actions](#tag/actions) for a [Network](#tag/networks).
+
+      Use the provided URI parameters to modify the result.
+    tags:
+      - Network Actions
+    riskLevel: low
+    subjectScopes:
+      - openapi.hetzner.api.read
+    executorRef:
+      executorType: http_api
+      timeoutMs: 30000
+      credentialId: hetzner-api-token
+      httpBinding:
+        method: get
+        baseUrl: https://api.hetzner.cloud/v1
+        pathTemplate: /networks/{{id}}/actions
+        parameters:
+          - name: id
+            in: path
+            required: true
+            schema: &a85
+              description: ID of the [Network](#tag/networks).
+              type: integer
+              format: int64
+              minimum: 1
+              maximum: 9007199254740991
+              example: 42
+          - name: sort
+            in: query
+            required: false
+            schema: &a86
+              type: array
+              items:
+                type: string
+                enum:
+                  - id
+                  - id:asc
+                  - id:desc
+                  - command
+                  - command:asc
+                  - command:desc
+                  - status
+                  - status:asc
+                  - status:desc
+                  - started
+                  - started:asc
+                  - started:desc
+                  - finished
+                  - finished:asc
+                  - finished:desc
+          - name: status
+            in: query
+            required: false
+            schema: &a87
+              type: array
+              items:
+                description: Status of the Action.
+                type: string
+                enum:
+                  - running
+                  - success
+                  - error
+          - name: page
+            in: query
+            required: false
+            schema: &a88
+              type: integer
+              format: int64
+              default: 1
+              example: 1
+          - name: per_page
+            in: query
+            required: false
+            schema: &a89
+              type: integer
+              format: int64
+              default: 25
+              example: 25
+        securityRequirements:
+          - schemeId: APIToken
+            scopes: []
+    annotations:
+      openapi.method: get
+      openapi.path: /networks/{id}/actions
+      openapi.operationId: openapi.hetzner.api.list.network.actions
+      openapi.server: https://api.hetzner.cloud/v1
+      openapi.credentialId: hetzner-api-token
+    provenance:
+      sourceSection: GET /networks/{id}/actions
+      generatedFrom: /tmp/hetzner-openapi-1775405772901.json
+      derivedBy: openapi
+    certification:
+      status: untested
+    enabled: true
+    visibility: scoped
+    tool:
+      inputSchema:
+        type: object
+        properties:
+          path:
+            type: object
+            properties:
+              id: *a85
+            required:
+              - id
+            additionalProperties: false
+          query:
+            type: object
+            properties:
+              sort: *a86
+              status: *a87
+              page: *a88
+              per_page: *a89
+            additionalProperties: false
+        required:
+          - path
+          - query
+      outputSchema:
+        type: object
+      sideEffectLevel: read
+      timeoutMs: 30000
+  - id: openapi.hetzner.api.get.network.action
+    packageId: openapi.hetzner.api
+    version: 1.0.0
+    kind: tool
+    title: Get an Action for a Network
+    description: |
+      Returns a specific [Action](#tag/actions) for a [Network](#tag/networks).
+    tags:
+      - Network Actions
+    riskLevel: low
+    subjectScopes:
+      - openapi.hetzner.api.read
+    executorRef:
+      executorType: http_api
+      timeoutMs: 30000
+      credentialId: hetzner-api-token
+      httpBinding:
+        method: get
+        baseUrl: https://api.hetzner.cloud/v1
+        pathTemplate: /networks/{{id}}/actions/{{action_id}}
+        parameters:
+          - name: id
+            in: path
+            required: true
+            schema: &a90
+              description: ID of the [Network](#tag/networks).
+              type: integer
+              format: int64
+              minimum: 1
+              maximum: 9007199254740991
+              example: 42
+          - name: action_id
+            in: path
+            required: true
+            schema: &a91
+              description: ID of the [Action](#description/actions).
+              type: integer
+              format: int64
+              minimum: 1
+              maximum: 9007199254740991
+              example: 42
+        securityRequirements:
+          - schemeId: APIToken
+            scopes: []
+    annotations:
+      openapi.method: get
+      openapi.path: /networks/{id}/actions/{action_id}
+      openapi.operationId: openapi.hetzner.api.get.network.action
+      openapi.server: https://api.hetzner.cloud/v1
+      openapi.credentialId: hetzner-api-token
+    provenance:
+      sourceSection: GET /networks/{id}/actions/{action_id}
+      generatedFrom: /tmp/hetzner-openapi-1775405772901.json
+      derivedBy: openapi
+    certification:
+      status: untested
+    enabled: true
+    visibility: scoped
+    tool:
+      inputSchema:
+        type: object
+        properties:
+          path:
+            type: object
+            properties:
+              id: *a90
+              action_id: *a91
+            required:
+              - action_id
+              - id
+            additionalProperties: false
+        required:
+          - path
+      outputSchema:
+        type: object
+      sideEffectLevel: read
+      timeoutMs: 30000
+  - id: openapi.hetzner.api.list.servers
+    packageId: openapi.hetzner.api
+    version: 1.0.0
+    kind: tool
+    title: List Servers
+    description: |
+      Returns all existing Server objects.
+    tags:
+      - Servers
+    riskLevel: low
+    subjectScopes:
+      - openapi.hetzner.api.read
+    executorRef:
+      executorType: http_api
+      timeoutMs: 30000
+      credentialId: hetzner-api-token
+      httpBinding:
+        method: get
+        baseUrl: https://api.hetzner.cloud/v1
+        pathTemplate: /servers
+        parameters:
+          - name: name
+            in: query
+            required: false
+            schema: &a92
+              type: string
+          - name: label_selector
+            in: query
+            required: false
+            schema: &a93
+              type: string
+          - name: sort
+            in: query
+            required: false
+            schema: &a94
+              type: array
+              items:
+                type: string
+                enum:
+                  - id
+                  - id:asc
+                  - id:desc
+                  - name
+                  - name:asc
+                  - name:desc
+                  - created
+                  - created:asc
+                  - created:desc
+          - name: status
+            in: query
+            required: false
+            schema: &a95
+              type: array
+              items:
+                description: Status of the Server.
+                type: string
+                enum:
+                  - running
+                  - initializing
+                  - starting
+                  - stopping
+                  - off
+                  - deleting
+                  - migrating
+                  - rebuilding
+                  - unknown
+          - name: page
+            in: query
+            required: false
+            schema: &a96
+              type: integer
+              format: int64
+              default: 1
+              example: 1
+          - name: per_page
+            in: query
+            required: false
+            schema: &a97
+              type: integer
+              format: int64
+              default: 25
+              example: 25
+        securityRequirements:
+          - schemeId: APIToken
+            scopes: []
+    annotations:
+      openapi.method: get
+      openapi.path: /servers
+      openapi.operationId: openapi.hetzner.api.list.servers
+      openapi.server: https://api.hetzner.cloud/v1
+      openapi.credentialId: hetzner-api-token
+    provenance:
+      sourceSection: GET /servers
+      generatedFrom: /tmp/hetzner-openapi-1775405772901.json
+      derivedBy: openapi
+    certification:
+      status: untested
+    enabled: true
+    visibility: scoped
+    tool:
+      inputSchema:
+        type: object
+        properties:
+          query:
+            type: object
+            properties:
+              name: *a92
+              label_selector: *a93
+              sort: *a94
+              status: *a95
+              page: *a96
+              per_page: *a97
+            additionalProperties: false
+        required:
+          - query
+      outputSchema:
+        type: object
+      sideEffectLevel: read
+      timeoutMs: 30000
+  - id: openapi.hetzner.api.list.servers.actions
+    packageId: openapi.hetzner.api
+    version: 1.0.0
+    kind: tool
+    title: List Actions
+    description: >
+      Returns all Action objects. You can `sort` the results by using the sort
+      URI parameter, and filter them with the `status` and `id` parameter.
+    tags:
+      - Server Actions
+    riskLevel: low
+    subjectScopes:
+      - openapi.hetzner.api.read
+    executorRef:
+      executorType: http_api
+      timeoutMs: 30000
+      credentialId: hetzner-api-token
+      httpBinding:
+        method: get
+        baseUrl: https://api.hetzner.cloud/v1
+        pathTemplate: /servers/actions
+        parameters:
+          - name: id
+            in: query
+            required: false
+            schema: &a98
+              type: array
+              items:
+                description: ID of the [Action](#description/actions).
+                type: integer
+                format: int64
+                minimum: 1
+                maximum: 9007199254740991
+                example: 42
+          - name: sort
+            in: query
+            required: false
+            schema: &a99
+              type: array
+              items:
+                type: string
+                enum:
+                  - id
+                  - id:asc
+                  - id:desc
+                  - command
+                  - command:asc
+                  - command:desc
+                  - status
+                  - status:asc
+                  - status:desc
+                  - started
+                  - started:asc
+                  - started:desc
+                  - finished
+                  - finished:asc
+                  - finished:desc
+          - name: status
+            in: query
+            required: false
+            schema: &a100
+              type: array
+              items:
+                description: Status of the Action.
+                type: string
+                enum:
+                  - running
+                  - success
+                  - error
+          - name: page
+            in: query
+            required: false
+            schema: &a101
+              type: integer
+              format: int64
+              default: 1
+              example: 1
+          - name: per_page
+            in: query
+            required: false
+            schema: &a102
+              type: integer
+              format: int64
+              default: 25
+              example: 25
+        securityRequirements:
+          - schemeId: APIToken
+            scopes: []
+    annotations:
+      openapi.method: get
+      openapi.path: /servers/actions
+      openapi.operationId: openapi.hetzner.api.list.servers.actions
+      openapi.server: https://api.hetzner.cloud/v1
+      openapi.credentialId: hetzner-api-token
+    provenance:
+      sourceSection: GET /servers/actions
+      generatedFrom: /tmp/hetzner-openapi-1775405772901.json
+      derivedBy: openapi
+    certification:
+      status: untested
+    enabled: true
+    visibility: scoped
+    tool:
+      inputSchema:
+        type: object
+        properties:
+          query:
+            type: object
+            properties:
+              id: *a98
+              sort: *a99
+              status: *a100
+              page: *a101
+              per_page: *a102
+            additionalProperties: false
+        required:
+          - query
+      outputSchema:
+        type: object
+      sideEffectLevel: read
+      timeoutMs: 30000
+  - id: openapi.hetzner.api.get.servers.action
+    packageId: openapi.hetzner.api
+    version: 1.0.0
+    kind: tool
+    title: Get an Action
+    description: |
+      Returns a specific Action object.
+    tags:
+      - Server Actions
+    riskLevel: low
+    subjectScopes:
+      - openapi.hetzner.api.read
+    executorRef:
+      executorType: http_api
+      timeoutMs: 30000
+      credentialId: hetzner-api-token
+      httpBinding:
+        method: get
+        baseUrl: https://api.hetzner.cloud/v1
+        pathTemplate: /servers/actions/{{id}}
+        parameters:
+          - name: id
+            in: path
+            required: true
+            schema: &a103
+              description: ID of the [Action](#description/actions).
+              type: integer
+              format: int64
+              minimum: 1
+              maximum: 9007199254740991
+              example: 42
+        securityRequirements:
+          - schemeId: APIToken
+            scopes: []
+    annotations:
+      openapi.method: get
+      openapi.path: /servers/actions/{id}
+      openapi.operationId: openapi.hetzner.api.get.servers.action
+      openapi.server: https://api.hetzner.cloud/v1
+      openapi.credentialId: hetzner-api-token
+    provenance:
+      sourceSection: GET /servers/actions/{id}
+      generatedFrom: /tmp/hetzner-openapi-1775405772901.json
+      derivedBy: openapi
+    certification:
+      status: untested
+    enabled: true
+    visibility: scoped
+    tool:
+      inputSchema:
+        type: object
+        properties:
+          path:
+            type: object
+            properties:
+              id: *a103
+            required:
+              - id
+            additionalProperties: false
+        required:
+          - path
+      outputSchema:
+        type: object
+      sideEffectLevel: read
+      timeoutMs: 30000
+  - id: openapi.hetzner.api.get.server
+    packageId: openapi.hetzner.api
+    version: 1.0.0
+    kind: tool
+    title: Get a Server
+    description: >
+      Returns a specific Server object. The Server must exist inside the Project.
+    tags:
+      - Servers
+    riskLevel: low
+    subjectScopes:
+      - openapi.hetzner.api.read
+    executorRef:
+      executorType: http_api
+      timeoutMs: 30000
+      credentialId: hetzner-api-token
+      httpBinding:
+        method: get
+        baseUrl: https://api.hetzner.cloud/v1
+        pathTemplate: /servers/{{id}}
+        parameters:
+          - name: id
+            in: path
+            required: true
+            schema: &a104
+              description: ID of the [Server](#tag/servers).
+              type: integer
+              format: int64
+              minimum: 1
+              maximum: 9007199254740991
+              example: 42
+        securityRequirements:
+          - schemeId: APIToken
+            scopes: []
+    annotations:
+      openapi.method: get
+      openapi.path: /servers/{id}
+      openapi.operationId: openapi.hetzner.api.get.server
+      openapi.server: https://api.hetzner.cloud/v1
+      openapi.credentialId: hetzner-api-token
+    provenance:
+      sourceSection: GET /servers/{id}
+      generatedFrom: /tmp/hetzner-openapi-1775405772901.json
+      derivedBy: openapi
+    certification:
+      status: untested
+    enabled: true
+    visibility: scoped
+    tool:
+      inputSchema:
+        type: object
+        properties:
+          path:
+            type: object
+            properties:
+              id: *a104
+            required:
+              - id
+            additionalProperties: false
+        required:
+          - path
+      outputSchema:
+        type: object
+      sideEffectLevel: read
+      timeoutMs: 30000
+  - id: openapi.hetzner.api.list.server.actions
+    packageId: openapi.hetzner.api
+    version: 1.0.0
+    kind: tool
+    title: List Actions for a Server
+    description: >
+      Returns all Action objects for a Server. You can `sort` the results by
+      using the sort URI parameter, and filter them with the `status` parameter.
+    tags:
+      - Server Actions
+    riskLevel: low
+    subjectScopes:
+      - openapi.hetzner.api.read
+    executorRef:
+      executorType: http_api
+      timeoutMs: 30000
+      credentialId: hetzner-api-token
+      httpBinding:
+        method: get
+        baseUrl: https://api.hetzner.cloud/v1
+        pathTemplate: /servers/{{id}}/actions
+        parameters:
+          - name: id
+            in: path
+            required: true
+            schema: &a105
+              description: ID of the [Server](#tag/servers).
+              type: integer
+              format: int64
+              minimum: 1
+              maximum: 9007199254740991
+              example: 42
+          - name: sort
+            in: query
+            required: false
+            schema: &a106
+              type: array
+              items:
+                type: string
+                enum:
+                  - id
+                  - id:asc
+                  - id:desc
+                  - command
+                  - command:asc
+                  - command:desc
+                  - status
+                  - status:asc
+                  - status:desc
+                  - started
+                  - started:asc
+                  - started:desc
+                  - finished
+                  - finished:asc
+                  - finished:desc
+          - name: status
+            in: query
+            required: false
+            schema: &a107
+              type: array
+              items:
+                description: Status of the Action.
+                type: string
+                enum:
+                  - running
+                  - success
+                  - error
+          - name: page
+            in: query
+            required: false
+            schema: &a108
+              type: integer
+              format: int64
+              default: 1
+              example: 1
+          - name: per_page
+            in: query
+            required: false
+            schema: &a109
+              type: integer
+              format: int64
+              default: 25
+              example: 25
+        securityRequirements:
+          - schemeId: APIToken
+            scopes: []
+    annotations:
+      openapi.method: get
+      openapi.path: /servers/{id}/actions
+      openapi.operationId: openapi.hetzner.api.list.server.actions
+      openapi.server: https://api.hetzner.cloud/v1
+      openapi.credentialId: hetzner-api-token
+    provenance:
+      sourceSection: GET /servers/{id}/actions
+      generatedFrom: /tmp/hetzner-openapi-1775405772901.json
+      derivedBy: openapi
+    certification:
+      status: untested
+    enabled: true
+    visibility: scoped
+    tool:
+      inputSchema:
+        type: object
+        properties:
+          path:
+            type: object
+            properties:
+              id: *a105
+            required:
+              - id
+            additionalProperties: false
+          query:
+            type: object
+            properties:
+              sort: *a106
+              status: *a107
+              page: *a108
+              per_page: *a109
+            additionalProperties: false
+        required:
+          - path
+          - query
+      outputSchema:
+        type: object
+      sideEffectLevel: read
+      timeoutMs: 30000
+  - id: openapi.hetzner.api.get.server.action
+    packageId: openapi.hetzner.api
+    version: 1.0.0
+    kind: tool
+    title: Get an Action for a Server
+    description: |
+      Returns a specific Action object for a Server.
+    tags:
+      - Server Actions
+    riskLevel: low
+    subjectScopes:
+      - openapi.hetzner.api.read
+    executorRef:
+      executorType: http_api
+      timeoutMs: 30000
+      credentialId: hetzner-api-token
+      httpBinding:
+        method: get
+        baseUrl: https://api.hetzner.cloud/v1
+        pathTemplate: /servers/{{id}}/actions/{{action_id}}
+        parameters:
+          - name: id
+            in: path
+            required: true
+            schema: &a110
+              description: ID of the [Server](#tag/servers).
+              type: integer
+              format: int64
+              minimum: 1
+              maximum: 9007199254740991
+              example: 42
+          - name: action_id
+            in: path
+            required: true
+            schema: &a111
+              description: ID of the [Action](#description/actions).
+              type: integer
+              format: int64
+              minimum: 1
+              maximum: 9007199254740991
+              example: 42
+        securityRequirements:
+          - schemeId: APIToken
+            scopes: []
+    annotations:
+      openapi.method: get
+      openapi.path: /servers/{id}/actions/{action_id}
+      openapi.operationId: openapi.hetzner.api.get.server.action
+      openapi.server: https://api.hetzner.cloud/v1
+      openapi.credentialId: hetzner-api-token
+    provenance:
+      sourceSection: GET /servers/{id}/actions/{action_id}
+      generatedFrom: /tmp/hetzner-openapi-1775405772901.json
+      derivedBy: openapi
+    certification:
+      status: untested
+    enabled: true
+    visibility: scoped
+    tool:
+      inputSchema:
+        type: object
+        properties:
+          path:
+            type: object
+            properties:
+              id: *a110
+              action_id: *a111
+            required:
+              - action_id
+              - id
+            additionalProperties: false
+        required:
+          - path
+      outputSchema:
+        type: object
+      sideEffectLevel: read
+      timeoutMs: 30000
+  - id: openapi.hetzner.api.get.server.metrics
+    packageId: openapi.hetzner.api
+    version: 1.0.0
+    kind: tool
+    title: Get Metrics for a Server
+    description: |
+      Get Metrics for specified Server.
+
+      You must specify the type of metric to get: cpu, disk or network. You can also specify more than one type by comma separation, e.g. cpu,disk.
+
+      Depending on the type you will get different time series data
+
+      | Type    | Timeseries              | Unit      | Description                                          |
+      |---------|-------------------------|-----------|------------------------------------------------------|
+      | cpu     | cpu                     | percent   | Percent CPU usage                                    |
+      | disk    | disk.0.iops.read        | iop/s     | Number of read IO operations per second              |
+      |         | disk.0.iops.write       | iop/s     | Number of write IO operations per second             |
+      |         | disk.0.bandwidth.read   | bytes/s   | Bytes read per second                                |
+      |         | disk.0.bandwidth.write  | bytes/s   | Bytes written per second                             |
+      | network | network.0.pps.in        | packets/s | Public Network interface packets per second received |
+      |         | network.0.pps.out       | packets/s | Public Network interface packets per second sent     |
+      |         | network.0.bandwidth.in  | bytes/s   | Public Network interface bytes/s received            |
+      |         | network.0.bandwidth.out | bytes/s   | Public Network interface bytes/s sent                |
+
+      Metrics are available for the last 30 days only.
+
+      If you do not provide the step argument we will automatically adjust it so that a maximum of 200 samples are returned.
+
+      We limit the number of samples returned to a maximum of 500 and will adjust the step parameter accordingly.
+    tags:
+      - Servers
+    riskLevel: low
+    subjectScopes:
+      - openapi.hetzner.api.read
+    executorRef:
+      executorType: http_api
+      timeoutMs: 30000
+      credentialId: hetzner-api-token
+      httpBinding:
+        method: get
+        baseUrl: https://api.hetzner.cloud/v1
+        pathTemplate: /servers/{{id}}/metrics
+        parameters:
+          - name: id
+            in: path
+            required: true
+            schema: &a112
+              description: ID of the [Server](#tag/servers).
+              type: integer
+              format: int64
+              minimum: 1
+              maximum: 9007199254740991
+              example: 42
+          - name: type
+            in: query
+            required: true
+            schema: &a113
+              type: array
+              items:
+                type: string
+                enum:
+                  - cpu
+                  - disk
+                  - network
+          - name: start
+            in: query
+            required: true
+            schema: &a114
+              type: string
+          - name: end
+            in: query
+            required: true
+            schema: &a115
+              type: string
+          - name: step
+            in: query
+            required: false
+            schema: &a116
+              type: string
+        securityRequirements:
+          - schemeId: APIToken
+            scopes: []
+    annotations:
+      openapi.method: get
+      openapi.path: /servers/{id}/metrics
+      openapi.operationId: openapi.hetzner.api.get.server.metrics
+      openapi.server: https://api.hetzner.cloud/v1
+      openapi.credentialId: hetzner-api-token
+    provenance:
+      sourceSection: GET /servers/{id}/metrics
+      generatedFrom: /tmp/hetzner-openapi-1775405772901.json
+      derivedBy: openapi
+    certification:
+      status: untested
+    enabled: true
+    visibility: scoped
+    tool:
+      inputSchema:
+        type: object
+        properties:
+          path:
+            type: object
+            properties:
+              id: *a112
+            required:
+              - id
+            additionalProperties: false
+          query:
+            type: object
+            properties:
+              type: *a113
+              start: *a114
+              end: *a115
+              step: *a116
+            required:
+              - end
+              - start
+              - type
+            additionalProperties: false
+        required:
+          - path
+          - query
+      outputSchema:
+        type: object
+      sideEffectLevel: read
+      timeoutMs: 30000
+  - id: openapi.hetzner.api.list.ssh.keys
+    packageId: openapi.hetzner.api
+    version: 1.0.0
+    kind: tool
+    title: List SSH keys
+    description: |
+      Returns all SSH key objects.
+    tags:
+      - SSH Keys
+    riskLevel: low
+    subjectScopes:
+      - openapi.hetzner.api.read
+    executorRef:
+      executorType: http_api
+      timeoutMs: 30000
+      credentialId: hetzner-api-token
+      httpBinding:
+        method: get
+        baseUrl: https://api.hetzner.cloud/v1
+        pathTemplate: /ssh_keys
+        parameters:
+          - name: sort
+            in: query
+            required: false
+            schema: &a117
+              type: array
+              items:
+                type: string
+                enum:
+                  - id
+                  - id:asc
+                  - id:desc
+                  - name
+                  - name:asc
+                  - name:desc
+          - name: name
+            in: query
+            required: false
+            schema: &a118
+              type: string
+          - name: fingerprint
+            in: query
+            required: false
+            schema: &a119
+              type: string
+          - name: label_selector
+            in: query
+            required: false
+            schema: &a120
+              type: string
+          - name: page
+            in: query
+            required: false
+            schema: &a121
+              type: integer
+              format: int64
+              default: 1
+              example: 1
+          - name: per_page
+            in: query
+            required: false
+            schema: &a122
+              type: integer
+              format: int64
+              default: 25
+              example: 25
+        securityRequirements:
+          - schemeId: APIToken
+            scopes: []
+    annotations:
+      openapi.method: get
+      openapi.path: /ssh_keys
+      openapi.operationId: openapi.hetzner.api.list.ssh.keys
+      openapi.server: https://api.hetzner.cloud/v1
+      openapi.credentialId: hetzner-api-token
+    provenance:
+      sourceSection: GET /ssh_keys
+      generatedFrom: /tmp/hetzner-openapi-1775405772901.json
+      derivedBy: openapi
+    certification:
+      status: untested
+    enabled: true
+    visibility: scoped
+    tool:
+      inputSchema:
+        type: object
+        properties:
+          query:
+            type: object
+            properties:
+              sort: *a117
+              name: *a118
+              fingerprint: *a119
+              label_selector: *a120
+              page: *a121
+              per_page: *a122
+            additionalProperties: false
+        required:
+          - query
+      outputSchema:
+        type: object
+      sideEffectLevel: read
+      timeoutMs: 30000
+  - id: openapi.hetzner.api.get.ssh.key
+    packageId: openapi.hetzner.api
+    version: 1.0.0
+    kind: tool
+    title: Get a SSH key
+    description: |
+      Returns a specific SSH key object.
+    tags:
+      - SSH Keys
+    riskLevel: low
+    subjectScopes:
+      - openapi.hetzner.api.read
+    executorRef:
+      executorType: http_api
+      timeoutMs: 30000
+      credentialId: hetzner-api-token
+      httpBinding:
+        method: get
+        baseUrl: https://api.hetzner.cloud/v1
+        pathTemplate: /ssh_keys/{{id}}
+        parameters:
+          - name: id
+            in: path
+            required: true
+            schema: &a123
+              description: ID of the [SSH Key](#tag/ssh-keys).
+              type: integer
+              format: int64
+              minimum: 1
+              maximum: 9007199254740991
+              example: 42
+        securityRequirements:
+          - schemeId: APIToken
+            scopes: []
+    annotations:
+      openapi.method: get
+      openapi.path: /ssh_keys/{id}
+      openapi.operationId: openapi.hetzner.api.get.ssh.key
+      openapi.server: https://api.hetzner.cloud/v1
+      openapi.credentialId: hetzner-api-token
+    provenance:
+      sourceSection: GET /ssh_keys/{id}
+      generatedFrom: /tmp/hetzner-openapi-1775405772901.json
+      derivedBy: openapi
+    certification:
+      status: untested
+    enabled: true
+    visibility: scoped
+    tool:
+      inputSchema:
+        type: object
+        properties:
+          path:
+            type: object
+            properties:
+              id: *a123
+            required:
+              - id
+            additionalProperties: false
+        required:
+          - path
+      outputSchema:
+        type: object
+      sideEffectLevel: read
+      timeoutMs: 30000
+  - id: openapi.hetzner.api.list.volumes
+    packageId: openapi.hetzner.api
+    version: 1.0.0
+    kind: tool
+    title: List Volumes
+    description: |
+      Gets all existing Volumes that you have available.
+    tags:
+      - Volumes
+    riskLevel: low
+    subjectScopes:
+      - openapi.hetzner.api.read
+    executorRef:
+      executorType: http_api
+      timeoutMs: 30000
+      credentialId: hetzner-api-token
+      httpBinding:
+        method: get
+        baseUrl: https://api.hetzner.cloud/v1
+        pathTemplate: /volumes
+        parameters:
+          - name: status
+            in: query
+            required: false
+            schema: &a124
+              type: array
+              items:
+                description: Status of the Volume.
+                type: string
+                enum:
+                  - available
+                  - creating
+                example: available
+          - name: sort
+            in: query
+            required: false
+            schema: &a125
+              type: array
+              items:
+                type: string
+                enum:
+                  - id
+                  - id:asc
+                  - id:desc
+                  - name
+                  - name:asc
+                  - name:desc
+                  - created
+                  - created:asc
+                  - created:desc
+          - name: name
+            in: query
+            required: false
+            schema: &a126
+              type: string
+          - name: label_selector
+            in: query
+            required: false
+            schema: &a127
+              type: string
+          - name: page
+            in: query
+            required: false
+            schema: &a128
+              type: integer
+              format: int64
+              default: 1
+              example: 1
+          - name: per_page
+            in: query
+            required: false
+            schema: &a129
+              type: integer
+              format: int64
+              default: 25
+              example: 25
+        securityRequirements:
+          - schemeId: APIToken
+            scopes: []
+    annotations:
+      openapi.method: get
+      openapi.path: /volumes
+      openapi.operationId: openapi.hetzner.api.list.volumes
+      openapi.server: https://api.hetzner.cloud/v1
+      openapi.credentialId: hetzner-api-token
+    provenance:
+      sourceSection: GET /volumes
+      generatedFrom: /tmp/hetzner-openapi-1775405772901.json
+      derivedBy: openapi
+    certification:
+      status: untested
+    enabled: true
+    visibility: scoped
+    tool:
+      inputSchema:
+        type: object
+        properties:
+          query:
+            type: object
+            properties:
+              status: *a124
+              sort: *a125
+              name: *a126
+              label_selector: *a127
+              page: *a128
+              per_page: *a129
+            additionalProperties: false
+        required:
+          - query
+      outputSchema:
+        type: object
+      sideEffectLevel: read
+      timeoutMs: 30000
+  - id: openapi.hetzner.api.list.volumes.actions
+    packageId: openapi.hetzner.api
+    version: 1.0.0
+    kind: tool
+    title: List Actions
+    description: >
+      Returns all Action objects. You can `sort` the results by using the sort
+      URI parameter, and filter them with the `status` and `id` parameter.
+    tags:
+      - Volume Actions
+    riskLevel: low
+    subjectScopes:
+      - openapi.hetzner.api.read
+    executorRef:
+      executorType: http_api
+      timeoutMs: 30000
+      credentialId: hetzner-api-token
+      httpBinding:
+        method: get
+        baseUrl: https://api.hetzner.cloud/v1
+        pathTemplate: /volumes/actions
+        parameters:
+          - name: id
+            in: query
+            required: false
+            schema: &a130
+              type: array
+              items:
+                description: ID of the [Action](#description/actions).
+                type: integer
+                format: int64
+                minimum: 1
+                maximum: 9007199254740991
+                example: 42
+          - name: sort
+            in: query
+            required: false
+            schema: &a131
+              type: array
+              items:
+                type: string
+                enum:
+                  - id
+                  - id:asc
+                  - id:desc
+                  - command
+                  - command:asc
+                  - command:desc
+                  - status
+                  - status:asc
+                  - status:desc
+                  - started
+                  - started:asc
+                  - started:desc
+                  - finished
+                  - finished:asc
+                  - finished:desc
+          - name: status
+            in: query
+            required: false
+            schema: &a132
+              type: array
+              items:
+                description: Status of the Action.
+                type: string
+                enum:
+                  - running
+                  - success
+                  - error
+          - name: page
+            in: query
+            required: false
+            schema: &a133
+              type: integer
+              format: int64
+              default: 1
+              example: 1
+          - name: per_page
+            in: query
+            required: false
+            schema: &a134
+              type: integer
+              format: int64
+              default: 25
+              example: 25
+        securityRequirements:
+          - schemeId: APIToken
+            scopes: []
+    annotations:
+      openapi.method: get
+      openapi.path: /volumes/actions
+      openapi.operationId: openapi.hetzner.api.list.volumes.actions
+      openapi.server: https://api.hetzner.cloud/v1
+      openapi.credentialId: hetzner-api-token
+    provenance:
+      sourceSection: GET /volumes/actions
+      generatedFrom: /tmp/hetzner-openapi-1775405772901.json
+      derivedBy: openapi
+    certification:
+      status: untested
+    enabled: true
+    visibility: scoped
+    tool:
+      inputSchema:
+        type: object
+        properties:
+          query:
+            type: object
+            properties:
+              id: *a130
+              sort: *a131
+              status: *a132
+              page: *a133
+              per_page: *a134
+            additionalProperties: false
+        required:
+          - query
+      outputSchema:
+        type: object
+      sideEffectLevel: read
+      timeoutMs: 30000
+  - id: openapi.hetzner.api.get.volumes.action
+    packageId: openapi.hetzner.api
+    version: 1.0.0
+    kind: tool
+    title: Get an Action
+    description: |
+      Returns a specific Action object.
+    tags:
+      - Volume Actions
+    riskLevel: low
+    subjectScopes:
+      - openapi.hetzner.api.read
+    executorRef:
+      executorType: http_api
+      timeoutMs: 30000
+      credentialId: hetzner-api-token
+      httpBinding:
+        method: get
+        baseUrl: https://api.hetzner.cloud/v1
+        pathTemplate: /volumes/actions/{{id}}
+        parameters:
+          - name: id
+            in: path
+            required: true
+            schema: &a135
+              description: ID of the [Action](#description/actions).
+              type: integer
+              format: int64
+              minimum: 1
+              maximum: 9007199254740991
+              example: 42
+        securityRequirements:
+          - schemeId: APIToken
+            scopes: []
+    annotations:
+      openapi.method: get
+      openapi.path: /volumes/actions/{id}
+      openapi.operationId: openapi.hetzner.api.get.volumes.action
+      openapi.server: https://api.hetzner.cloud/v1
+      openapi.credentialId: hetzner-api-token
+    provenance:
+      sourceSection: GET /volumes/actions/{id}
+      generatedFrom: /tmp/hetzner-openapi-1775405772901.json
+      derivedBy: openapi
+    certification:
+      status: untested
+    enabled: true
+    visibility: scoped
+    tool:
+      inputSchema:
+        type: object
+        properties:
+          path:
+            type: object
+            properties:
+              id: *a135
+            required:
+              - id
+            additionalProperties: false
+        required:
+          - path
+      outputSchema:
+        type: object
+      sideEffectLevel: read
+      timeoutMs: 30000
+  - id: openapi.hetzner.api.get.volume
+    packageId: openapi.hetzner.api
+    version: 1.0.0
+    kind: tool
+    title: Get a Volume
+    description: |
+      Gets a specific Volume object.
+    tags:
+      - Volumes
+    riskLevel: low
+    subjectScopes:
+      - openapi.hetzner.api.read
+    executorRef:
+      executorType: http_api
+      timeoutMs: 30000
+      credentialId: hetzner-api-token
+      httpBinding:
+        method: get
+        baseUrl: https://api.hetzner.cloud/v1
+        pathTemplate: /volumes/{{id}}
+        parameters:
+          - name: id
+            in: path
+            required: true
+            schema: &a136
+              description: ID of the [Volume](#tag/volumes).
+              type: integer
+              format: int64
+              minimum: 1
+              maximum: 9007199254740991
+              example: 42
+        securityRequirements:
+          - schemeId: APIToken
+            scopes: []
+    annotations:
+      openapi.method: get
+      openapi.path: /volumes/{id}
+      openapi.operationId: openapi.hetzner.api.get.volume
+      openapi.server: https://api.hetzner.cloud/v1
+      openapi.credentialId: hetzner-api-token
+    provenance:
+      sourceSection: GET /volumes/{id}
+      generatedFrom: /tmp/hetzner-openapi-1775405772901.json
+      derivedBy: openapi
+    certification:
+      status: untested
+    enabled: true
+    visibility: scoped
+    tool:
+      inputSchema:
+        type: object
+        properties:
+          path:
+            type: object
+            properties:
+              id: *a136
+            required:
+              - id
+            additionalProperties: false
+        required:
+          - path
+      outputSchema:
+        type: object
+      sideEffectLevel: read
+      timeoutMs: 30000
+  - id: openapi.hetzner.api.list.volume.actions
+    packageId: openapi.hetzner.api
+    version: 1.0.0
+    kind: tool
+    title: List Actions for a Volume
+    description: >
+      Returns all Action objects for a Volume. You can `sort` the results by
+      using the sort URI parameter, and filter them with the `status` parameter.
+    tags:
+      - Volume Actions
+    riskLevel: low
+    subjectScopes:
+      - openapi.hetzner.api.read
+    executorRef:
+      executorType: http_api
+      timeoutMs: 30000
+      credentialId: hetzner-api-token
+      httpBinding:
+        method: get
+        baseUrl: https://api.hetzner.cloud/v1
+        pathTemplate: /volumes/{{id}}/actions
+        parameters:
+          - name: id
+            in: path
+            required: true
+            schema: &a137
+              description: ID of the [Volume](#tag/volumes).
+              type: integer
+              format: int64
+              minimum: 1
+              maximum: 9007199254740991
+              example: 42
+          - name: sort
+            in: query
+            required: false
+            schema: &a138
+              type: array
+              items:
+                type: string
+                enum:
+                  - id
+                  - id:asc
+                  - id:desc
+                  - command
+                  - command:asc
+                  - command:desc
+                  - status
+                  - status:asc
+                  - status:desc
+                  - started
+                  - started:asc
+                  - started:desc
+                  - finished
+                  - finished:asc
+                  - finished:desc
+          - name: status
+            in: query
+            required: false
+            schema: &a139
+              type: array
+              items:
+                description: Status of the Action.
+                type: string
+                enum:
+                  - running
+                  - success
+                  - error
+          - name: page
+            in: query
+            required: false
+            schema: &a140
+              type: integer
+              format: int64
+              default: 1
+              example: 1
+          - name: per_page
+            in: query
+            required: false
+            schema: &a141
+              type: integer
+              format: int64
+              default: 25
+              example: 25
+        securityRequirements:
+          - schemeId: APIToken
+            scopes: []
+    annotations:
+      openapi.method: get
+      openapi.path: /volumes/{id}/actions
+      openapi.operationId: openapi.hetzner.api.list.volume.actions
+      openapi.server: https://api.hetzner.cloud/v1
+      openapi.credentialId: hetzner-api-token
+    provenance:
+      sourceSection: GET /volumes/{id}/actions
+      generatedFrom: /tmp/hetzner-openapi-1775405772901.json
+      derivedBy: openapi
+    certification:
+      status: untested
+    enabled: true
+    visibility: scoped
+    tool:
+      inputSchema:
+        type: object
+        properties:
+          path:
+            type: object
+            properties:
+              id: *a137
+            required:
+              - id
+            additionalProperties: false
+          query:
+            type: object
+            properties:
+              sort: *a138
+              status: *a139
+              page: *a140
+              per_page: *a141
+            additionalProperties: false
+        required:
+          - path
+          - query
+      outputSchema:
+        type: object
+      sideEffectLevel: read
+      timeoutMs: 30000
+  - id: openapi.hetzner.api.get.volume.action
+    packageId: openapi.hetzner.api
+    version: 1.0.0
+    kind: tool
+    title: Get an Action for a Volume
+    description: |
+      Returns a specific Action for a Volume.
+    tags:
+      - Volume Actions
+    riskLevel: low
+    subjectScopes:
+      - openapi.hetzner.api.read
+    executorRef:
+      executorType: http_api
+      timeoutMs: 30000
+      credentialId: hetzner-api-token
+      httpBinding:
+        method: get
+        baseUrl: https://api.hetzner.cloud/v1
+        pathTemplate: /volumes/{{id}}/actions/{{action_id}}
+        parameters:
+          - name: id
+            in: path
+            required: true
+            schema: &a142
+              description: ID of the [Volume](#tag/volumes).
+              type: integer
+              format: int64
+              minimum: 1
+              maximum: 9007199254740991
+              example: 42
+          - name: action_id
+            in: path
+            required: true
+            schema: &a143
+              description: ID of the [Action](#description/actions).
+              type: integer
+              format: int64
+              minimum: 1
+              maximum: 9007199254740991
+              example: 42
+        securityRequirements:
+          - schemeId: APIToken
+            scopes: []
+    annotations:
+      openapi.method: get
+      openapi.path: /volumes/{id}/actions/{action_id}
+      openapi.operationId: openapi.hetzner.api.get.volume.action
+      openapi.server: https://api.hetzner.cloud/v1
+      openapi.credentialId: hetzner-api-token
+    provenance:
+      sourceSection: GET /volumes/{id}/actions/{action_id}
+      generatedFrom: /tmp/hetzner-openapi-1775405772901.json
+      derivedBy: openapi
+    certification:
+      status: untested
+    enabled: true
+    visibility: scoped
+    tool:
+      inputSchema:
+        type: object
+        properties:
+          path:
+            type: object
+            properties:
+              id: *a142
+              action_id: *a143
+            required:
+              - action_id
+              - id
+            additionalProperties: false
+        required:
+          - path
+      outputSchema:
+        type: object
+      sideEffectLevel: read
+      timeoutMs: 30000
+createdAt: 2026-04-05T16:16:14.086Z
+updatedAt: 2026-04-05T16:16:14.086Z

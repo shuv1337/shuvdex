@@ -15,8 +15,23 @@ import { SkillIndexerLive } from "@shuvdex/skill-indexer";
 import { packagesRouter } from "../../../apps/api/src/routes/packages.js";
 import { createServer } from "../src/server.js";
 import { makeExecutionProvidersLive, ExecutionProviders } from "../../../packages/execution-providers/src/index.js";
+import { McpProxy } from "@shuvdex/mcp-proxy";
 
 const SKILL_SOURCE = "/home/shuv/repos/shuvbot-skills/youtube-transcript";
+
+const McpProxyStub = Layer.succeed(McpProxy, {
+  registerUpstream: () => Effect.fail(new Error("stub")),
+  listUpstreams: () => Effect.succeed([]),
+  getUpstream: () => Effect.fail(new Error("stub")),
+  updateUpstream: () => Effect.fail(new Error("stub")),
+  deleteUpstream: () => Effect.succeed(undefined),
+  syncUpstream: () => Effect.fail(new Error("stub")),
+  checkHealth: () => Effect.succeed("unknown" as const),
+  callUpstreamTool: () => Effect.fail(new Error("stub")),
+  getCachedTools: () => Effect.succeed(null),
+  pinToolDescriptions: () => Effect.succeed(undefined),
+  checkMutations: () => Effect.succeed({ mutated: [], clean: [] }),
+});
 
 function makeApp(localRepoPath: string, packagesDir: string, importsDir: string) {
   const registryLayer = makeCapabilityRegistryLive(packagesDir);
@@ -62,8 +77,8 @@ describe("imported module_runtime tools", () => {
       const registryLayer = makeCapabilityRegistryLive(packagesDir);
       const credentialLayer = makeCredentialStoreLive({ rootDir: path.join(packagesDir, "..", "credentials"), keyPath: path.join(packagesDir, "..", ".credential-key") });
       const httpLayer = Layer.provide(makeHttpExecutorLive(), credentialLayer);
-      const providersLayer = Layer.provide(makeExecutionProvidersLive(), httpLayer);
-      executionRuntime = ManagedRuntime.make(Layer.mergeAll(registryLayer, credentialLayer, httpLayer, providersLayer));
+      const providersLayer = Layer.provide(makeExecutionProvidersLive(), Layer.merge(httpLayer, McpProxyStub));
+      executionRuntime = ManagedRuntime.make(Layer.mergeAll(registryLayer, credentialLayer, httpLayer, providersLayer, McpProxyStub));
       const runtime = await executionRuntime.runtime();
       const executors = await Effect.runPromise(
         Effect.gen(function* () {

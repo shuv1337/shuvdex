@@ -81,9 +81,15 @@ target_settings() {
       CRAWL_URL="${CRAWL_URL:-https://example.com}"
       EXPECTED_TOOL_NAMES=("skill.crawl.start" "skill.crawl.status")
       ;;
+    hetzner)
+      TARGET_KIND="http_api"
+      TARGET_LABEL="hetzner-cloud"
+      EXPECTED_TOOL_NAMES=("openapi.hetzner.api.list.servers")
+      POSITIVE_CALL_ARGS='{"name":"openapi.hetzner.api.list.servers","arguments":{}}'
+      ;;
     *)
       echo "Unsupported TARGET: $TARGET" >&2
-      echo "Supported targets: echo, youtube-transcript, gitea-version, dnsfilter-current-user, crawl" >&2
+      echo "Supported targets: echo, youtube-transcript, gitea-version, dnsfilter-current-user, crawl, hetzner" >&2
       exit 1
       ;;
   esac
@@ -117,6 +123,9 @@ seed_target() {
       ;;
     crawl)
       node "$REPO_ROOT/scripts/stage-module-runtime-skill.mjs" "$REPO_ROOT" "/home/shuv/repos/shuvbot-skills/crawl" "$CAPABILITIES_ROOT/imports" "$CAPABILITIES_DIR" | tee "$SEED_JSON"
+      ;;
+    hetzner)
+      node "$REPO_ROOT/scripts/seed-hetzner-openapi.mjs" "$REPO_ROOT" "$CAPABILITIES_ROOT" | tee "$SEED_JSON"
       ;;
   esac
 }
@@ -233,6 +242,9 @@ run_positive_call() {
       ;;
     dnsfilter-current-user)
       jq -e '.result.content[0].text | fromjson | .data.data.attributes.email | strings | contains("@")' "$CALL_JSON" >/dev/null
+      ;;
+    hetzner)
+      jq -e '.result.content[0].text | fromjson | .servers | arrays | length >= 0' "$CALL_JSON" >/dev/null
       ;;
   esac
 }

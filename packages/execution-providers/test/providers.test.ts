@@ -5,9 +5,24 @@ import * as os from "node:os";
 import * as path from "node:path";
 import { createServer } from "node:http";
 import { makeExecutionProvidersLive, ExecutionProviders } from "../src/index.js";
+import { McpProxy } from "@shuvdex/mcp-proxy";
 import { CollectedSpans, TelemetryTest } from "@shuvdex/telemetry";
 import { makeHttpExecutorLive } from "@shuvdex/http-executor";
 import { makeCredentialStoreLive } from "@shuvdex/credential-store";
+
+const McpProxyStub = Layer.succeed(McpProxy, {
+  registerUpstream: () => Effect.fail(new Error("stub")),
+  listUpstreams: () => Effect.succeed([]),
+  getUpstream: () => Effect.fail(new Error("stub")),
+  updateUpstream: () => Effect.fail(new Error("stub")),
+  deleteUpstream: () => Effect.succeed(undefined),
+  syncUpstream: () => Effect.fail(new Error("stub")),
+  checkHealth: () => Effect.succeed("unknown" as const),
+  callUpstreamTool: () => Effect.fail(new Error("stub")),
+  getCachedTools: () => Effect.succeed(null),
+  pinToolDescriptions: () => Effect.succeed(undefined),
+  checkMutations: () => Effect.succeed({ mutated: [], clean: [] }),
+});
 
 describe("ExecutionProviders", () => {
   it("executes module_runtime targets and records telemetry", async () => {
@@ -60,7 +75,7 @@ describe("ExecutionProviders", () => {
       keyPath: path.join(credsDir, ".key"),
     });
     const httpLayer = Layer.provide(makeHttpExecutorLive(), credentialLayer);
-    const providersLayer = Layer.provide(makeExecutionProvidersLive(), httpLayer);
+    const providersLayer = Layer.provide(makeExecutionProvidersLive(), Layer.merge(httpLayer, McpProxyStub));
     const layer = Layer.mergeAll(credentialLayer, httpLayer, providersLayer, TelemetryTest);
     const result = await Effect.runPromise(
       Effect.gen(function* () {
@@ -123,7 +138,7 @@ describe("ExecutionProviders", () => {
       keyPath: path.join(credsDir, ".key"),
     });
     const httpLayer = Layer.provide(makeHttpExecutorLive(), credentialLayer);
-    const providersLayer = Layer.provide(makeExecutionProvidersLive(), httpLayer);
+    const providersLayer = Layer.provide(makeExecutionProvidersLive(), Layer.merge(httpLayer, McpProxyStub));
     const layer = Layer.mergeAll(credentialLayer, httpLayer, providersLayer);
     const result = await Effect.runPromise(
       Effect.gen(function* () {

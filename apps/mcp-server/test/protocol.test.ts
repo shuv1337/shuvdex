@@ -14,6 +14,7 @@ import { createServer } from "../src/server.js";
 import { makeExecutionProvidersLive, ExecutionProviders } from "../../../packages/execution-providers/src/index.js";
 import { makeHttpExecutorLive } from "../../../packages/http-executor/src/index.js";
 import { makeCredentialStoreLive } from "../../../packages/credential-store/src/index.js";
+import { McpProxy } from "@shuvdex/mcp-proxy";
 import { Effect, Layer, ManagedRuntime } from "effect";
 
 const samplePackage = {
@@ -57,11 +58,25 @@ const samplePackage = {
   ],
 };
 
+const McpProxyStub = Layer.succeed(McpProxy, {
+  registerUpstream: () => Effect.fail(new Error("stub")),
+  listUpstreams: () => Effect.succeed([]),
+  getUpstream: () => Effect.fail(new Error("stub")),
+  updateUpstream: () => Effect.fail(new Error("stub")),
+  deleteUpstream: () => Effect.succeed(undefined),
+  syncUpstream: () => Effect.fail(new Error("stub")),
+  checkHealth: () => Effect.succeed("unknown" as const),
+  callUpstreamTool: () => Effect.fail(new Error("stub")),
+  getCachedTools: () => Effect.succeed(null),
+  pinToolDescriptions: () => Effect.succeed(undefined),
+  checkMutations: () => Effect.succeed({ mutated: [], clean: [] }),
+});
+
 async function makeExecutors() {
   const credsDir = fs.mkdtempSync(path.join(os.tmpdir(), "mcp-creds-"));
   const credentialLayer = makeCredentialStoreLive({ rootDir: credsDir, keyPath: path.join(credsDir, ".key") });
   const httpLayer = Layer.provide(makeHttpExecutorLive(), credentialLayer);
-  const providersLayer = Layer.provide(makeExecutionProvidersLive(), httpLayer);
+  const providersLayer = Layer.provide(makeExecutionProvidersLive(), Layer.merge(httpLayer, McpProxyStub));
   const managedRuntime = ManagedRuntime.make(
     Layer.mergeAll(
       credentialLayer,

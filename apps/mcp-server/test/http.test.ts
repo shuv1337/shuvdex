@@ -12,8 +12,23 @@ import { makeHttpExecutorLive } from "@shuvdex/http-executor";
 import { makeExecutionProvidersLive, ExecutionProviders } from "@shuvdex/execution-providers";
 import { makePolicyEngineLive, PolicyEngine } from "@shuvdex/policy-engine";
 import { SkillIndexer, SkillIndexerLive } from "@shuvdex/skill-indexer";
+import { McpProxy } from "@shuvdex/mcp-proxy";
 import { createServer } from "../src/server.js";
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
+
+const McpProxyStub = Layer.succeed(McpProxy, {
+  registerUpstream: () => Effect.fail(new Error("stub")),
+  listUpstreams: () => Effect.succeed([]),
+  getUpstream: () => Effect.fail(new Error("stub")),
+  updateUpstream: () => Effect.fail(new Error("stub")),
+  deleteUpstream: () => Effect.succeed(undefined),
+  syncUpstream: () => Effect.fail(new Error("stub")),
+  checkHealth: () => Effect.succeed("unknown" as const),
+  callUpstreamTool: () => Effect.fail(new Error("stub")),
+  getCachedTools: () => Effect.succeed(null),
+  pinToolDescriptions: () => Effect.succeed(undefined),
+  checkMutations: () => Effect.succeed({ mutated: [], clean: [] }),
+});
 
 const tempDirs: string[] = [];
 
@@ -88,7 +103,7 @@ async function buildRuntime() {
   const registryLayer = makeCapabilityRegistryLive(capabilitiesDir);
   const credentialLayer = makeCredentialStoreLive({ rootDir: credentialDir, keyPath: join(root, ".credential-key") });
   const httpLayer = Layer.provide(makeHttpExecutorLive(), credentialLayer);
-  const executionLayer = Layer.provide(makeExecutionProvidersLive(), httpLayer);
+  const executionLayer = Layer.provide(makeExecutionProvidersLive(), Layer.merge(httpLayer, McpProxyStub));
   const liveLayer = Layer.mergeAll(
     registryLayer,
     credentialLayer,
@@ -96,6 +111,7 @@ async function buildRuntime() {
     executionLayer,
     makePolicyEngineLive({ policyDir }),
     SkillIndexerLive,
+    McpProxyStub,
   );
 
   const managedRuntime = ManagedRuntime.make(liveLayer);
