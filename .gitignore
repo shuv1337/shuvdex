@@ -18,6 +18,9 @@ PLAN*.md
 .capabilities/packages/skill.crawl.yaml
 .capabilities/packages/openapi.gitea.api.yaml
 .capabilities/packages/openapi.dnsfilter.api.yaml
+.capabilities/packages/skill.upload.yaml
+.capabilities/packages/skill.model_usage.yaml
+.capabilities/packages/skill.ccusage.yaml
 .capabilities/imports/
 .capabilities/credentials/
 .capabilities/sources/
