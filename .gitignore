@@ -22,4 +22,4 @@ PLAN*.md
 .capabilities/credentials/
 .capabilities/sources/
 .capabilities/upstreams/
-.capabilities/.credential-key
+**/.capabilities/.credential-key
