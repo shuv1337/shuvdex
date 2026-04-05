@@ -4,39 +4,39 @@
 Continue developing shuvdex — a centralized MCP capability gateway that proxies AI tool calls through a governed, policy-controlled server.
 
 ## Current status
-- **MCP server**: running on shuvdev:3848, healthy, 5 capability packages indexed
-- **API server**: running on shuvdev:3847, healthy
-- **Governance dashboard**: served at `/dashboard` on both API and web
-- **Security tests**: 52 tests, all passing (`npx vitest run tests/src/security`)
-- **Certified capabilities**: echo, youtube-transcript, gitea-version, dnsfilter-current-user, crawl
-- **Docs complete**: deployment guides, operations runbooks, onboarding playbooks, connector catalog, pilot framework (phases 3E–5E)
-- **No tasks started** in `PLAN-debt-and-next-steps.md` — all checkboxes unchecked
+- **Phases 1–3 complete** — dead code removed, CONTEXT.md + CHANGELOG.md written, JSDoc added to server.ts and compiler.ts
+- **Phase 4 complete** — 3 new capability packages: upload, model-usage, ccusage (all seeded and live)
+- **Phase 6 complete** — 7 new admin UI pages (Dashboard, Packages, Policies, Credentials, Tokens, Sources, Audit)
+- **E2E tests written** — 25 tests hitting the live MCP server, all passing
+- **MCP server**: 8 packages indexed, running on shuvdev:3848
+- **API server**: running on shuvdev:3847, DEV_MODE=true for local dev
+- **Web UI**: running on shuvdev:5173, all 7 pages validated via shuvgeist
+- **OpenCode config**: `~/.config/opencode/config.json` has shuvdex MCP server (clean config, only shuvdex)
+- **opencode run** confirmed all tools callable end-to-end
 
 ## Key context
 - Architecture: Turborepo monorepo, Effect-TS + Hono + MCP SDK + Zod v4
-- Apps: `api`, `mcp-server`, `web`, `cli` (cli is dead code, removal planned)
-- Dead packages exist: `git-ops`, `skill-ops`, `tool-registry` — plan phase 1 covers removal
-- `CONTEXT.md` is missing/stale — plan phase 2 covers rewriting it
-- Reporting endpoints live at `/api/reports/*` (usage, billing, governance, compliance-export)
-- Dashboard endpoints at `/api/dashboard/*` (summary, audit-timeline, health-overview)
-- `.factory/` directory has 100+ stale validation artifacts from retired fleet era
+- Web UI had two bugs found during E2E: Credentials page crashed (API returns `schemeType` string, not `scheme` object), Audit page crashed (API returns structured objects, not flat fields). Both fixed with normalizer functions in `apps/web/src/api/client.ts`.
+- `DEV_MODE=true` added to `systemd/shuvdex-api.service` — required for web UI to talk to API without auth tokens
+- `model_usage.query` returns structured error on shuvdev (codexbar not installed) — this is expected behavior, not a bug
+- Vite preview mode doesn't support SPA history fallback — direct URL navigation to sub-routes fails, but client-side nav works fine
 
 ## Important files
-- `PLAN-debt-and-next-steps.md` — active plan, 6 phases (debt cleanup → capability expansion)
-- `AGENTS.md` — comprehensive project-level agent notes with restart procedures
-- `scripts/run-mcp-certification.sh` — lightweight MCP certification harness
-- `systemd/shuvdex-mcp.service` — versioned systemd unit
-- `apps/api/src/routes/reporting.ts` — reporting endpoints
-- `apps/api/public/dashboard.html` — governance dashboard (copy also at `apps/web/public/`)
+- `PLAN-debt-and-next-steps.md` — active plan (gitignored), phases 1–4+6 done, 5+7 remaining
+- `CONTEXT.md` — current-state architecture reference for agents
+- `tests/src/e2e/mcp-server.test.ts` — 25 E2E tests against live MCP server
+- `apps/web/src/api/client.ts` — API client with normalizers for audit/credential shape mismatches
+- `systemd/shuvdex-api.service` — includes DEV_MODE=true
+- `examples/{upload,model-usage,ccusage}-skill/` — phase 4 capability packages
+- `scripts/seed-{upload,model-usage,ccusage}.mjs` — seed scripts for new capabilities
 
 ## Next steps
-1. **Start Phase 1** of the plan: dead code removal (`apps/cli`, `packages/git-ops`, `packages/skill-ops`, `packages/tool-registry`)
-2. **Phase 2**: rewrite `CONTEXT.md`, archive completed plans, create `CHANGELOG.md`
-3. **Phase 3**: add JSDoc comments to complex modules, telemetry annotations
-4. **Phases 4–6**: new capability onboarding (upload, model-usage, ccusage), OpenAPI source expansion, web admin UI
+1. **Phase 5** — Add more OpenAPI capability sources (Cloudflare, Make.com, Datto, internal APIs)
+2. **Phase 7** — Parking lot items: builtin executor, mcp_proxy executor, capability change notifications, multi-tenant isolation
+3. **Vite SPA fallback** — Consider adding historyApiFallback to vite preview config or switching to nginx for static serving
+4. **Install codexbar on shuvdev** — Would make model_usage.query functional instead of returning "command not found"
 
 ## Risks / open questions
-- `.factory/` — delete entirely or archive? Decision deferred to phase 1.2
-- `CONTEXT.md` doesn't exist yet — agents may waste time without current-state docs
-- No tasks in the plan have been validated; build/test should be run before any changes to confirm clean baseline
-- Rebuild + restart required after any MCP server changes (see `AGENTS.md` for exact commands)
+- Web UI runs in Vite preview mode — no SPA history fallback means bookmarking sub-routes or refreshing on them shows blank page
+- `DEV_MODE=true` on API bypasses all auth — fine for dev, needs to be removed before any real multi-tenant deployment
+- Pre-existing test failures in skill-indexer (stale fixture refs to renamed `browser` skill) and skill-importer (Node 25.x compat) are unrelated to current work
