@@ -4,20 +4,26 @@ import { SlideOver } from "@/components/SlideOver";
 import { Badge } from "@/components/Badge";
 import { EmptyState } from "@/components/EmptyState";
 import { cn } from "@/lib/cn";
-import type { CredentialRecord, CredentialBinding, CredentialScheme } from "@/api/client";
+import type { CredentialRecord, CredentialBinding } from "@/api/client";
 
 // ============================================================================
 // Scheme Badge
 // ============================================================================
 
-function SchemeBadge({ scheme }: { scheme: CredentialScheme }) {
+/** Resolve the scheme type string from either `scheme.type` or `schemeType`. */
+function getSchemeType(credential: CredentialRecord): string {
+  return credential.scheme?.type ?? credential.schemeType ?? "unknown";
+}
+
+function SchemeBadge({ credential }: { credential: CredentialRecord }) {
+  const type = getSchemeType(credential);
   const variant =
-    scheme.type === "api_key" ? "cyan" :
-    scheme.type === "bearer" ? "green" :
-    scheme.type === "oauth_client_credentials" ? "amber" :
-    scheme.type === "oauth_authorization_code" ? "amber" :
-    scheme.type === "service_account" ? "purple" : "slate";
-  return <Badge variant={variant} size="sm">{scheme.type}</Badge>;
+    type === "api_key" ? "cyan" :
+    type === "bearer" ? "green" :
+    type === "oauth_client_credentials" ? "amber" :
+    type === "oauth_authorization_code" ? "amber" :
+    type === "service_account" ? "purple" : "slate";
+  return <Badge variant={variant} size="sm">{type}</Badge>;
 }
 
 // ============================================================================
@@ -41,7 +47,7 @@ function CredentialCard({ credential, onClick }: CredentialCardProps) {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-sm font-semibold text-slate-100 truncate">{credential.credentialId}</span>
-            <SchemeBadge scheme={credential.scheme} />
+            <SchemeBadge credential={credential} />
           </div>
           {credential.description && (
             <p className="text-xs text-slate-400 leading-relaxed mt-1">{credential.description}</p>
@@ -301,7 +307,7 @@ function CredentialDetail({
       {/* Meta */}
       <div className="space-y-2">
         <div className="flex items-center gap-2 flex-wrap">
-          <SchemeBadge scheme={credential.scheme} />
+          <SchemeBadge credential={credential} />
         </div>
         {credential.description && (
           <p className="text-xs text-slate-400 leading-relaxed">{credential.description}</p>
@@ -517,7 +523,7 @@ export function Credentials() {
         open={selectedCredential !== null}
         onClose={() => setSelectedCredential(null)}
         title={selectedCredential?.credentialId ?? ""}
-        subtitle={selectedCredential?.scheme.type}
+        subtitle={selectedCredential ? getSchemeType(selectedCredential) : undefined}
         width="md"
       >
         {selectedCredential && (

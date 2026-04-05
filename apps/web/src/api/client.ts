@@ -223,7 +223,10 @@ export type CredentialScheme =
 
 export interface CredentialRecord {
   credentialId: string;
-  scheme: CredentialScheme;
+  /** Full scheme object — present when creating, may be absent in list responses. */
+  scheme?: CredentialScheme;
+  /** Scheme type string — always returned by the API list endpoint. */
+  schemeType?: CredentialScheme["type"];
   description?: string;
   sourceId?: string;
   packageId?: string;
@@ -255,6 +258,7 @@ export interface CredentialBinding {
 export type AuditDecision = "allow" | "deny" | "approval_required";
 export type ActionClass = "read" | "write" | "admin" | "governance";
 
+/** Normalized audit event for UI consumption. */
 export interface AuditEvent {
   id: string;
   timestamp: string;
@@ -268,6 +272,27 @@ export interface AuditEvent {
   policyId?: string;
   reason?: string;
   metadata?: Record<string, unknown>;
+}
+
+/** Normalize raw API audit events to the flat UI shape. */
+function normalizeAuditEvent(raw: Record<string, unknown>): AuditEvent {
+  const actor = raw.actor as Record<string, unknown> | undefined;
+  const target = raw.target as Record<string, unknown> | undefined;
+  const outcome = raw.outcome as Record<string, unknown> | undefined;
+  return {
+    id: (raw.eventId ?? raw.id ?? "") as string,
+    timestamp: (raw.timestamp ?? "") as string,
+    tenantId: raw.tenantId as string | undefined,
+    actorId: (actor?.subjectId ?? raw.actorId ?? "") as string,
+    action: (raw.action ?? "") as string,
+    actionClass: (raw.actionClass ?? "read") as ActionClass,
+    targetId: (target?.id ?? raw.targetId) as string | undefined,
+    targetType: (target?.type ?? raw.targetType) as string | undefined,
+    decision: (raw.decision ?? raw.decisionReason ?? "allow") as AuditDecision,
+    policyId: raw.policyId as string | undefined,
+    reason: (raw.decisionReason ?? raw.reason) as string | undefined,
+    metadata: outcome as Record<string, unknown> | undefined,
+  };
 }
 
 export interface AuditQueryResult {
@@ -286,6 +311,21 @@ export interface AuditMetrics {
   uniqueActors: number;
   uniqueActions: number;
   timeWindowHours: number;
+}
+
+/** Normalize raw API audit metrics to the flat UI shape. */
+function normalizeAuditMetrics(raw: Record<string, unknown>): AuditMetrics {
+  const byDecision = (raw.eventsByDecision ?? {}) as Record<string, number>;
+  const byAction = (raw.eventsByAction ?? {}) as Record<string, number>;
+  return {
+    totalEvents: (raw.totalEvents ?? 0) as number,
+    allowCount: byDecision.allow ?? 0,
+    denyCount: byDecision.deny ?? 0,
+    approvalRequiredCount: byDecision.approval_required ?? 0,
+    uniqueActors: Object.keys(byAction).length,
+    uniqueActions: Object.keys(byAction).length,
+    timeWindowHours: (raw.timeWindowHours ?? 24) as number,
+  };
 }
 
 // ============================================================================
@@ -584,11 +624,13 @@ export async function queryAudit(params?: {
   if (params?.to) query.set("to", params.to);
   if (params?.limit) query.set("limit", String(params.limit));
   if (params?.offset) query.set("offset", String(params.offset));
-  return api<AuditQueryResult>(`/api/audit?${query.toString()}`);
+  const raw = await api<{ events: Record<string, unknown>[]; total: number; hasMore: boolean; limit: number; offset: number }>(`/api/audit?${query.toString()}`);
+  return { ...raw, events: raw.events.map(normalizeAuditEvent) };
 }
 
 export async function fetchAuditMetrics(): Promise<AuditMetrics> {
-  return api<AuditMetrics>("/api/audit/metrics");
+  const raw = await api<Record<string, unknown>>("/api/audit/metrics");
+  return normalizeAuditMetrics(raw);
 }
 
 export async function exportAudit(params?: { tenantId?: string; from?: string; to?: string }): Promise<string> {
