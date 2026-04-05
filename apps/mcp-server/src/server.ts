@@ -1,3 +1,34 @@
+/**
+ * @module server
+ *
+ * MCP server factory that turns CapabilityPackages into MCP primitives.
+ *
+ * ## Registration flow
+ * CapabilityPackages (compiled from skills, OpenAPI specs, or upstream MCP servers)
+ * are flattened into individual capabilities, then each enabled, non-private capability
+ * is registered as an MCP tool, resource, or prompt based on its `kind`.
+ *
+ * ## Policy integration
+ * Every MCP operation (tool call, resource read, prompt get) passes through
+ * `authorize()` before execution. Decisions and outcomes are recorded via
+ * `auditRuntime()` for observability and compliance.
+ *
+ * ## Execution dispatch
+ * Tool calls are dispatched through `executeTool()` →
+ * `ExecutionProvidersService.executeTool()`, which routes to the correct executor
+ * (module_runtime, http_api, or mcp_proxy) based on the capability's executorRef.
+ *
+ * ## Schema conversion
+ * Capabilities define input schemas as JSON Schema (the portable format).
+ * The MCP SDK requires Zod schemas for tool registration.
+ * `jsonSchemaToZodShape()` bridges this gap at registration time.
+ *
+ * ## Source ref security
+ * Resource capabilities may reference local files via `sourceRef`.
+ * `allowedSourceRoots()` and `isSourceRefAllowed()` restrict file reads
+ * to directories within registered capability package roots, preventing
+ * path traversal outside skill/package boundaries.
+ */
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { Effect } from "effect";
@@ -60,6 +91,13 @@ function isSourceRefAllowed(config: ServerConfig | undefined, sourceRef: string)
   });
 }
 
+/**
+ * Resolve the payload for a resource capability using three strategies (in order):
+ * 1. **Inline contents** — if `capability.resource.contents` is set, use it directly
+ * 2. **sourceRef file** — read the file from disk (text or base64 blob), guarded by
+ *    `isSourceRefAllowed()` to prevent path traversal
+ * 3. **Summary fallback** — return the resource summary or capability description
+ */
 function resourcePayload(
   capability: CapabilityDefinitionType,
   config: ServerConfig | undefined,
@@ -85,6 +123,14 @@ function interpolate(template: string, args: Record<string, unknown>): string {
   );
 }
 
+/**
+ * Convert a JSON Schema `properties` object into a Zod shape for MCP SDK registration.
+ *
+ * This bridge exists because capabilities define their input as JSON Schema
+ * (portable, language-agnostic) but the MCP SDK's `registerTool()` requires
+ * Zod schemas. Supports string, number/integer, boolean, and array types;
+ * everything else falls back to `z.any()`.
+ */
 function jsonSchemaToZodShape(
   schema: Record<string, unknown> | undefined,
 ): Record<string, z.ZodTypeAny> {
@@ -194,6 +240,25 @@ function capabilityPackages(config?: ServerConfig): CapabilityPackageType[] {
   return config?.capabilities ? [...config.capabilities] : [];
 }
 
+/**
+ * Create an MCP server instance from the given configuration.
+ *
+ * Iterates all capabilities from all packages and registers each enabled,
+ * non-private capability as one of three MCP primitive types:
+ *
+ * - **Tools** — registered with a Zod schema (converted from JSON Schema),
+ *   authorized and audited on each call, dispatched via executeTool()
+ * - **Resources** — registered with URI and mime type, authorized on read,
+ *   payload resolved via resourcePayload()
+ * - **Prompts** — registered with argument schema, authorized on get,
+ *   message templates interpolated with caller arguments
+ *
+ * Each handler follows the same pattern:
+ * 1. Generate correlation ID
+ * 2. Authorize via policy engine
+ * 3. Execute / resolve payload
+ * 4. Audit the outcome (success or failure)
+ */
 export function createServer(config?: ServerConfig): McpServer {
   const server = new McpServer(
     {

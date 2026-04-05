@@ -1,3 +1,42 @@
+/**
+ * @module compiler
+ *
+ * Compiles a skill directory into a CapabilityPackage — the universal unit
+ * that the capability registry, MCP server, and policy engine operate on.
+ *
+ * ## Compilation pipeline stages
+ *
+ * 1. **Parse** — Read SKILL.md (required), optional capability.yaml manifest,
+ *    and optional package.json for metadata enrichment.
+ *
+ * 2. **Extract** — Derive title, summary, packageId, version, and tags from
+ *    the parsed sources. Manifest values override markdown-derived defaults;
+ *    package.json provides fallback metadata (name, version, description).
+ *
+ * 3. **Generate core capabilities** — Create three default capabilities for
+ *    every skill: a summary resource, a full-instructions resource, and an
+ *    "apply" prompt that references both resources.
+ *
+ * 4. **Collect files** — Walk the skill directory for recognized subdirectories
+ *    (references/, templates/, examples/, prompts/, assets/) and standalone
+ *    files (LICENSE, package.json). SKILL.md itself is excluded.
+ *
+ * 5. **Generate file capabilities** — Each recognized file becomes a resource
+ *    or prompt capability. Markdown files with a `description` frontmatter key
+ *    inside prompt directories become prompt capabilities; all others become
+ *    resource capabilities with inline contents for text-like files.
+ *
+ * 6. **Resolve cross-references** — Link prompt `attachedResourceIds` to
+ *    discovered file resources by matching relative path references in prompt
+ *    message content against the resourceIdByPath map.
+ *
+ * 7. **Merge manifest capabilities** — Append any explicit capabilities from
+ *    capability.yaml, resolving relative `sourceRef` and `executorRef.target`
+ *    paths against the skill directory.
+ *
+ * 8. **Package** — Assemble the final CapabilityPackageType with all
+ *    capabilities, annotations, metadata, source info, and asset list.
+ */
 import { createHash } from "node:crypto";
 import * as fs from "node:fs";
 import * as path from "node:path";
@@ -95,6 +134,11 @@ function asStringArray(value: unknown): string[] | undefined {
   return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : undefined;
 }
 
+/**
+ * Recursively walk a directory and return all file paths (sorted).
+ * Used to discover recognized subdirectories (references/, templates/, etc.).
+ * SKILL.md is filtered out by the caller, not here.
+ */
 function collectFiles(root: string): string[] {
   const results: string[] = [];
 
@@ -195,6 +239,11 @@ function normalizeAnnotationValue(value: unknown): unknown {
   return String(value);
 }
 
+/**
+ * Build the annotations map from SKILL.md frontmatter and package.json metadata.
+ * Frontmatter keys (except name/description) are prefixed with `frontmatter.`;
+ * package.json contributes `package.license` and `package.keywords`.
+ */
 function toAnnotations(
   frontmatter: Record<string, unknown>,
   packageJson: PackageJsonShape | undefined,
@@ -215,6 +264,11 @@ function toAnnotations(
     : undefined;
 }
 
+/**
+ * Scan prompt message content for relative path references (e.g., `../references/api.md`)
+ * and resolve them to capability resource IDs using the resourceIdByPath map.
+ * This enables prompts to declare which resources they depend on.
+ */
 function findRelativeResourceIds(
   content: string,
   fileDir: string,
@@ -235,6 +289,11 @@ function findRelativeResourceIds(
   return [...ids];
 }
 
+/**
+ * Resolve relative `sourceRef` and `executorRef.target` paths in manifest-defined
+ * capabilities against the skill directory, so they become absolute paths
+ * regardless of the working directory at runtime.
+ */
 function resolveCapabilityPaths(
   capability: CapabilityDefinitionType,
   skillPath: string,
