@@ -65,28 +65,6 @@ async function uploadApi<T>(
 
 export type ToolParamType = "string" | "number" | "boolean" | "array" | "object";
 
-export interface ToolParam {
-  name: string;
-  type: ToolParamType;
-  description: string;
-  optional: boolean;
-}
-
-export interface ToolSchema {
-  params: ToolParam[];
-}
-
-export interface Tool {
-  id: string;
-  name: string;
-  description: string;
-  category: string;
-  enabled: boolean;
-  builtIn: boolean;
-  provenance?: "local" | "imported_archive";
-  schema: ToolSchema;
-}
-
 export interface ImportConflict {
   packageId: string;
   existingSourceType: string;
@@ -442,44 +420,6 @@ export interface HealthOverview {
   checkedAt: string;
 }
 
-// ============================================================================
-// Tool API
-// ============================================================================
-
-export async function fetchTools(): Promise<Tool[]> {
-  return api<Tool[]>("/api/tools");
-}
-
-export async function createTool(tool: Omit<Tool, "id" | "builtIn">): Promise<Tool> {
-  return api<Tool>("/api/tools", {
-    method: "POST",
-    body: JSON.stringify(tool),
-  });
-}
-
-export async function updateTool(
-  id: string,
-  tool: Partial<Omit<Tool, "id" | "builtIn">>,
-): Promise<Tool> {
-  return api<Tool>(`/api/tools/${encodeURIComponent(id)}`, {
-    method: "PATCH",
-    body: JSON.stringify(tool),
-  });
-}
-
-export async function deleteTool(id: string): Promise<void> {
-  await api<void>(`/api/tools/${encodeURIComponent(id)}`, {
-    method: "DELETE",
-  });
-}
-
-export async function setToolEnabled(id: string, enabled: boolean): Promise<Tool> {
-  return api<Tool>(`/api/tools/${encodeURIComponent(id)}/enabled`, {
-    method: "PUT",
-    body: JSON.stringify({ enabled }),
-  });
-}
-
 export async function inspectSkillFile(file: File): Promise<ArchiveInspection> {
   return uploadApi<ArchiveInspection>("/api/packages/import/inspect", file);
 }
@@ -513,6 +453,27 @@ export async function deletePackage(packageId: string): Promise<{ deleted: boole
   return api<{ deleted: boolean }>(`/api/packages/${encodeURIComponent(packageId)}`, {
     method: "DELETE",
   });
+}
+
+export async function setPackageEnabled(packageId: string, enabled: boolean): Promise<CapabilityPackage> {
+  return api<CapabilityPackage>(`/api/packages/${encodeURIComponent(packageId)}/enabled`, {
+    method: "PUT",
+    body: JSON.stringify({ enabled }),
+  });
+}
+
+export async function setCapabilityEnabled(
+  packageId: string,
+  capabilityId: string,
+  enabled: boolean,
+): Promise<CapabilityPackage> {
+  return api<CapabilityPackage>(
+    `/api/packages/${encodeURIComponent(packageId)}/capabilities/${encodeURIComponent(capabilityId)}/enabled`,
+    {
+      method: "PUT",
+      body: JSON.stringify({ enabled }),
+    },
+  );
 }
 
 // ============================================================================

@@ -1,6 +1,10 @@
 import { Hono } from "hono";
 import { Effect, Runtime } from "effect";
-import { CapabilityRegistry } from "@shuvdex/capability-registry";
+import {
+  CapabilityRegistry,
+  CapabilityPackage,
+  CapabilityNotFound,
+} from "@shuvdex/capability-registry";
 import { SkillImporter } from "@shuvdex/skill-importer";
 import { SkillIndexer } from "@shuvdex/skill-indexer";
 import { handleError } from "../middleware/error-handler.js";
@@ -207,6 +211,55 @@ export function packagesRouter(
         }),
       );
       return c.json({ deleted: true });
+    } catch (e) {
+      return handleError(c, e);
+    }
+  });
+
+  app.put("/:packageId/enabled", async (c) => {
+    const packageId = c.req.param("packageId");
+    try {
+      const body = (await c.req.json()) as { enabled?: boolean };
+      const result = await run(
+        Effect.gen(function* () {
+          const registry = yield* CapabilityRegistry;
+          const pkg = yield* registry.getPackage(packageId);
+          const updatedPackage: CapabilityPackage = { ...pkg, enabled: body.enabled ?? true };
+          return yield* registry.upsertPackage(updatedPackage);
+        }),
+      );
+      return c.json(result);
+    } catch (e) {
+      return handleError(c, e);
+    }
+  });
+
+  app.put("/:packageId/capabilities/:capabilityId/enabled", async (c) => {
+    const packageId = c.req.param("packageId");
+    const capabilityId = c.req.param("capabilityId");
+    try {
+      const body = (await c.req.json()) as { enabled?: boolean };
+      const result = await run(
+        Effect.gen(function* () {
+          const registry = yield* CapabilityRegistry;
+          // Verify the capability exists and belongs to the requested package
+          const capability = yield* registry.getCapability(capabilityId);
+          if (capability.packageId !== packageId) {
+            return yield* Effect.fail(
+              new CapabilityNotFound({ capabilityId }),
+            );
+          }
+          // Enable or disable based on request body
+          if (body.enabled ?? true) {
+            yield* registry.enableCapability(capabilityId);
+          } else {
+            yield* registry.disableCapability(capabilityId);
+          }
+          // Return the updated full package
+          return yield* registry.getPackage(packageId);
+        }),
+      );
+      return c.json(result);
     } catch (e) {
       return handleError(c, e);
     }

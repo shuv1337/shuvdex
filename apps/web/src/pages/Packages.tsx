@@ -1,10 +1,17 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { usePackages } from "@/hooks/usePackages";
 import { SlideOver } from "@/components/SlideOver";
 import { Badge } from "@/components/Badge";
+import { Toggle } from "@/components/Toggle";
 import { EmptyState } from "@/components/EmptyState";
 import { cn } from "@/lib/cn";
-import type { CapabilityPackage, CapabilityDefinition } from "@/api/client";
+import {
+  importSkillFile,
+  inspectSkillFile,
+  type CapabilityPackage,
+  type CapabilityDefinition,
+  type ArchiveInspection,
+} from "@/api/client";
 
 // ============================================================================
 // Capability Kind Badge
@@ -24,13 +31,13 @@ function KindBadge({ kind }: { kind: string }) {
 
 function SourceBadge({ source }: { source?: { type: string } }) {
   if (!source) return <Badge variant="slate" size="sm">unknown</Badge>;
-  
+
   const variant =
     source.type === "builtin" ? "purple" :
     source.type === "openapi" ? "amber" :
     source.type === "imported_archive" ? "green" :
     source.type === "skill_index" ? "cyan" : "slate";
-  
+
   return <Badge variant={variant} size="sm">{source.type}</Badge>;
 }
 
@@ -45,7 +52,7 @@ interface PackageCardProps {
 
 function PackageCard({ pkg, onClick }: PackageCardProps) {
   const enabledCount = pkg.capabilities.filter((c) => c.enabled).length;
-  
+
   return (
     <div
       className={cn(
@@ -65,7 +72,7 @@ function PackageCard({ pkg, onClick }: PackageCardProps) {
         </div>
         <SourceBadge source={pkg.source} />
       </div>
-      
+
       <div className="flex items-center justify-between mt-3 pt-2 border-t border-slate-700/30">
         <div className="flex items-center gap-2">
           <Badge variant={pkg.enabled ? "green" : "slate"} size="sm">
@@ -79,7 +86,7 @@ function PackageCard({ pkg, onClick }: PackageCardProps) {
           {enabledCount}/{pkg.capabilities.length} capabilities
         </span>
       </div>
-      
+
       {pkg.tags && pkg.tags.length > 0 && (
         <div className="flex items-center gap-1 mt-2 flex-wrap">
           {pkg.tags.slice(0, 3).map((tag) => (
@@ -107,22 +114,22 @@ function CapabilityDetail({ capability }: { capability: CapabilityDefinition }) 
         <KindBadge kind={capability.kind} />
         <span className="text-xs mono text-slate-500">{capability.id}</span>
       </div>
-      
+
       <p className="text-sm text-slate-200">{capability.title}</p>
       <p className="text-xs text-slate-400 leading-relaxed">{capability.description}</p>
-      
+
       <div className="flex items-center justify-between py-2 border-t border-slate-700/30">
         <span className="text-xs text-slate-400">Enabled</span>
         <Badge variant={capability.enabled ? "green" : "slate"} size="sm">
           {capability.enabled ? "yes" : "no"}
         </Badge>
       </div>
-      
+
       <div className="space-y-1">
         <span className="text-[10px] mono uppercase tracking-wider text-slate-500">Executor</span>
         <p className="text-xs mono text-slate-400">{String(capability.executor?.type ?? "unknown")}</p>
       </div>
-      
+
       {Boolean(capability.inputSchema) && (
         <div className="space-y-1">
           <span className="text-[10px] mono uppercase tracking-wider text-slate-500">Input Schema</span>
@@ -139,20 +146,36 @@ function CapabilityDetail({ capability }: { capability: CapabilityDefinition }) 
 // Package Detail Panel
 // ============================================================================
 
+interface PackageDetailProps {
+  pkg: CapabilityPackage;
+  onClose: () => void;
+  onDelete: () => Promise<void>;
+  onTogglePackage: (packageId: string, enabled: boolean) => Promise<CapabilityPackage>;
+  onToggleCapability: (packageId: string, capabilityId: string, enabled: boolean) => Promise<CapabilityPackage>;
+  togglingPackage: boolean;
+  togglingCapabilityId: string | null;
+}
+
 function PackageDetail({
   pkg,
   onClose,
   onDelete,
-}: {
-  pkg: CapabilityPackage;
-  onClose: () => void;
-  onDelete: () => Promise<void>;
-}) {
+  onTogglePackage,
+  onToggleCapability,
+  togglingPackage,
+  togglingCapabilityId,
+}: PackageDetailProps) {
   const [selectedCapability, setSelectedCapability] = useState<CapabilityDefinition | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [localPkg, setLocalPkg] = useState<CapabilityPackage>(pkg);
+
+  // Update local state when prop changes (e.g., after toggle)
+  useState(() => {
+    setLocalPkg(pkg);
+  });
 
   const handleDelete = async () => {
-    if (!confirm(`Delete package "${pkg.title}"? This cannot be undone.`)) return;
+    if (!confirm(`Delete package "${localPkg.title}"? This cannot be undone.`)) return;
     setDeleting(true);
     try {
       await onDelete();
@@ -162,51 +185,64 @@ function PackageDetail({
     }
   };
 
+  const handleTogglePackage = async (enabled: boolean) => {
+    const updated = await onTogglePackage(localPkg.id, enabled);
+    setLocalPkg(updated);
+  };
+
+  const handleToggleCapability = async (capabilityId: string, enabled: boolean) => {
+    const updated = await onToggleCapability(localPkg.id, capabilityId, enabled);
+    setLocalPkg(updated);
+  };
+
   return (
     <>
       <div className="space-y-5">
         {/* Header */}
         <div className="space-y-2">
           <div className="flex items-center gap-2 flex-wrap">
-            <SourceBadge source={pkg.source} />
-            {pkg.builtIn && <Badge variant="purple" size="sm">built-in</Badge>}
+            <SourceBadge source={localPkg.source} />
+            {localPkg.builtIn && <Badge variant="purple" size="sm">built-in</Badge>}
           </div>
-          <p className="text-xs text-slate-400 leading-relaxed">{pkg.description}</p>
+          <p className="text-xs text-slate-400 leading-relaxed">{localPkg.description}</p>
         </div>
 
         {/* Metadata */}
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1">
             <span className="text-[10px] mono uppercase tracking-wider text-slate-500">Version</span>
-            <p className="text-xs mono text-slate-400">{pkg.version}</p>
+            <p className="text-xs mono text-slate-400">{localPkg.version}</p>
           </div>
           <div className="space-y-1">
             <span className="text-[10px] mono uppercase tracking-wider text-slate-500">Package ID</span>
-            <p className="text-xs mono text-slate-400 truncate">{pkg.id}</p>
+            <p className="text-xs mono text-slate-400 truncate">{localPkg.id}</p>
           </div>
-          {pkg.source?.path && (
+          {localPkg.source?.path && (
             <div className="space-y-1 col-span-2">
               <span className="text-[10px] mono uppercase tracking-wider text-slate-500">Source Path</span>
-              <p className="text-xs mono text-slate-400 truncate">{pkg.source.path}</p>
+              <p className="text-xs mono text-slate-400 truncate">{localPkg.source.path}</p>
             </div>
           )}
         </div>
 
-        {/* Status */}
+        {/* Status with Toggle */}
         <div className="flex items-center justify-between py-2 border-t border-b border-slate-700/30">
           <span className="text-xs text-slate-400">Package Status</span>
-          <Badge variant={pkg.enabled ? "green" : "slate"} size="sm">
-            {pkg.enabled ? "enabled" : "disabled"}
-          </Badge>
+          <Toggle
+            checked={localPkg.enabled}
+            onChange={(v) => void handleTogglePackage(v)}
+            disabled={togglingPackage}
+            size="sm"
+          />
         </div>
 
         {/* Capabilities List */}
         <div className="space-y-2">
           <h3 className="text-[10px] mono uppercase tracking-wider text-slate-500">
-            Capabilities ({pkg.capabilities.length})
+            Capabilities ({localPkg.capabilities.length})
           </h3>
           <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
-            {pkg.capabilities.map((capability) => (
+            {localPkg.capabilities.map((capability) => (
               <div
                 key={capability.id}
                 onClick={() => setSelectedCapability(capability)}
@@ -217,9 +253,19 @@ function PackageDetail({
                   <p className="text-[10px] mono text-slate-500 truncate">{capability.id}</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Badge variant={capability.enabled ? "green" : "slate"} size="sm">
-                    {capability.enabled ? "on" : "off"}
-                  </Badge>
+                  <div
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      void handleToggleCapability(capability.id, !capability.enabled);
+                    }}
+                  >
+                    <Toggle
+                      checked={capability.enabled}
+                      onChange={() => {}}
+                      disabled={togglingCapabilityId === capability.id}
+                      size="sm"
+                    />
+                  </div>
                   <KindBadge kind={capability.kind} />
                 </div>
               </div>
@@ -228,7 +274,7 @@ function PackageDetail({
         </div>
 
         {/* Actions */}
-        {!pkg.builtIn && (
+        {!localPkg.builtIn && (
           <div className="flex items-center gap-2 pt-2 border-t border-slate-700/30">
             <button
               type="button"
@@ -247,7 +293,7 @@ function PackageDetail({
             </button>
           </div>
         )}
-        {pkg.builtIn && (
+        {localPkg.builtIn && (
           <p className="text-xs text-slate-600 mono italic">Built-in packages cannot be deleted.</p>
         )}
       </div>
@@ -267,14 +313,28 @@ function PackageDetail({
 }
 
 // ============================================================================
+// Panel State Types
+// ============================================================================
+
+type Panel =
+  | { type: "detail"; pkg: CapabilityPackage }
+  | { type: "import"; file: File; inspection: ArchiveInspection }
+  | null;
+
+// ============================================================================
 // Packages Page
 // ============================================================================
 
 export function Packages() {
-  const { packages, loading, error, refresh, removePackage } = usePackages();
+  const { packages, loading, error, refresh, removePackage, togglePackage, toggleCapability } = usePackages();
   const [search, setSearch] = useState("");
   const [sourceFilter, setSourceFilter] = useState<string>("all");
-  const [selectedPackage, setSelectedPackage] = useState<CapabilityPackage | null>(null);
+  const [panel, setPanel] = useState<Panel>(null);
+  const [importBusy, setImportBusy] = useState(false);
+  const [importError, setImportError] = useState<string | null>(null);
+  const [togglingPackageId, setTogglingPackageId] = useState<string | null>(null);
+  const [togglingCapabilityId, setTogglingCapabilityId] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const sources = useMemo(
     () => ["all", ...Array.from(new Set(packages.map((p) => p.source?.type ?? "unknown"))).sort()],
@@ -294,6 +354,77 @@ export function Packages() {
     [packages, sourceFilter, search],
   );
 
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+
+    setImportBusy(true);
+    setImportError(null);
+    try {
+      const inspection = await inspectSkillFile(file);
+      setPanel({ type: "import", file, inspection });
+    } catch (err) {
+      setImportError(err instanceof Error ? err.message : "Failed to inspect skill file");
+    } finally {
+      setImportBusy(false);
+    }
+  };
+
+  const handleImportConfirm = async (preview: Extract<Panel, { type: "import" }>) => {
+    setImportBusy(true);
+    setImportError(null);
+    try {
+      const replaceableConflict = preview.inspection.conflicts.some(
+        (conflict) => conflict.resolution === "replaceable",
+      );
+      await importSkillFile(preview.file, replaceableConflict);
+      await refresh();
+      setPanel(null);
+    } catch (err) {
+      setImportError(err instanceof Error ? err.message : "Failed to import skill");
+    } finally {
+      setImportBusy(false);
+    }
+  };
+
+  const handleTogglePackage = async (packageId: string, enabled: boolean) => {
+    setTogglingPackageId(packageId);
+    try {
+      return await togglePackage(packageId, enabled);
+    } finally {
+      setTogglingPackageId(null);
+    }
+  };
+
+  const handleToggleCapability = async (packageId: string, capabilityId: string, enabled: boolean) => {
+    setTogglingCapabilityId(capabilityId);
+    try {
+      return await toggleCapability(packageId, capabilityId, enabled);
+    } finally {
+      setTogglingCapabilityId(null);
+    }
+  };
+
+  // Panel title / subtitle
+  const panelTitle =
+    panel?.type === "detail"
+      ? panel.pkg.title
+      : panel?.type === "import"
+      ? "Import Skill File"
+      : "";
+
+  const panelSubtitle =
+    panel?.type === "detail"
+      ? panel.pkg.id
+      : panel?.type === "import"
+      ? `${panel.inspection.packageId} • ${panel.inspection.version}`
+      : undefined;
+
+  const importBlocked =
+    panel?.type === "import" &&
+    panel.inspection.conflicts.some((conflict) => conflict.resolution === "blocked");
+
   return (
     <div className="px-6 py-5 space-y-5 max-w-screen-xl">
       {/* Header */}
@@ -309,6 +440,29 @@ export function Packages() {
           )}
         </div>
         <div className="flex items-center gap-2">
+          <label className="btn-ghost text-xs px-3 py-1.5 inline-flex items-center gap-1.5 cursor-pointer border border-slate-700/40">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".zip"
+              className="hidden"
+              onChange={(e) => void handleFileSelect(e)}
+            />
+            <svg
+              className={cn("w-3.5 h-3.5", importBusy && "animate-spin")}
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M12 16.5V4.5m0 0L7.5 9m4.5-4.5L16.5 9M4.5 16.5v1.125A1.875 1.875 0 006.375 19.5h11.25A1.875 1.875 0 0019.5 17.625V16.5"
+              />
+            </svg>
+            Import Skill
+          </label>
           <button
             type="button"
             onClick={() => refresh()}
@@ -366,9 +520,9 @@ export function Packages() {
       </div>
 
       {/* Error */}
-      {error && (
+      {(error || importError) && (
         <div className="text-xs text-rose-400 mono bg-rose-500/10 border border-rose-500/20 px-3 py-2 rounded-sm">
-          {error}
+          {error ?? importError}
         </div>
       )}
 
@@ -394,26 +548,108 @@ export function Packages() {
             <PackageCard
               key={pkg.id}
               pkg={pkg}
-              onClick={() => setSelectedPackage(pkg)}
+              onClick={() => setPanel({ type: "detail", pkg })}
             />
           ))}
         </div>
       )}
 
-      {/* Detail Panel */}
+      {/* Detail / Import Panel */}
       <SlideOver
-        open={selectedPackage !== null}
-        onClose={() => setSelectedPackage(null)}
-        title={selectedPackage?.title ?? ""}
-        subtitle={selectedPackage?.id}
-        width="md"
+        open={panel !== null}
+        onClose={() => setPanel(null)}
+        title={panelTitle}
+        subtitle={panelSubtitle}
+        width={panel?.type === "import" ? "lg" : "md"}
       >
-        {selectedPackage && (
+        {panel?.type === "detail" && (
           <PackageDetail
-            pkg={selectedPackage}
-            onClose={() => setSelectedPackage(null)}
-            onDelete={() => removePackage(selectedPackage.id)}
+            pkg={panel.pkg}
+            onClose={() => setPanel(null)}
+            onDelete={() => removePackage(panel.pkg.id)}
+            onTogglePackage={handleTogglePackage}
+            onToggleCapability={handleToggleCapability}
+            togglingPackage={togglingPackageId === panel.pkg.id}
+            togglingCapabilityId={togglingCapabilityId}
           />
+        )}
+        {panel?.type === "import" && (
+          <div className="space-y-5">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                <Badge variant="green">{panel.inspection.packageId}</Badge>
+                <Badge variant="slate">{panel.inspection.version}</Badge>
+                <Badge variant="cyan">{panel.inspection.capabilities.length} capabilities</Badge>
+              </div>
+              <p className="text-sm text-slate-200">{panel.inspection.title}</p>
+              <p className="text-xs text-slate-400 leading-relaxed">{panel.inspection.summary}</p>
+            </div>
+
+            {panel.inspection.conflicts.length > 0 && (
+              <div className="space-y-2">
+                <h3 className="text-[10px] mono uppercase tracking-wider text-slate-500">Conflicts</h3>
+                <div className="space-y-2">
+                  {panel.inspection.conflicts.map((conflict) => (
+                    <div key={conflict.packageId} className="border border-slate-700/40 rounded-sm px-3 py-2">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Badge variant={conflict.resolution === "blocked" ? "red" : "amber"} size="sm">
+                          {conflict.resolution}
+                        </Badge>
+                        <span className="text-xs mono text-slate-400">{conflict.existingSourceType}</span>
+                      </div>
+                      <p className="text-xs text-slate-400 mt-1">{conflict.reason}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {panel.inspection.warnings.length > 0 && (
+              <div className="space-y-2">
+                <h3 className="text-[10px] mono uppercase tracking-wider text-slate-500">Warnings</h3>
+                <div className="space-y-2">
+                  {panel.inspection.warnings.map((warning, idx) => (
+                    <div key={idx} className="text-xs text-amber-300 bg-amber-500/10 border border-amber-500/20 rounded-sm px-3 py-2">
+                      {warning}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <h3 className="text-[10px] mono uppercase tracking-wider text-slate-500">Capabilities</h3>
+              <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+                {panel.inspection.capabilities.map((capability) => (
+                  <div key={capability.id} className="border border-slate-700/40 rounded-sm px-3 py-2 flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-xs text-slate-200 truncate">{capability.title}</p>
+                      <p className="text-[10px] mono text-slate-500 truncate">{capability.id}</p>
+                    </div>
+                    <Badge variant="slate" size="sm">{capability.kind}</Badge>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 border-t border-slate-700/30 pt-4">
+              <button type="button" onClick={() => setPanel(null)} className="btn-ghost text-xs px-3 py-1.5">
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={Boolean(importBlocked) || importBusy}
+                onClick={() => void handleImportConfirm(panel)}
+                className="btn-primary text-xs px-4 py-1.5 disabled:opacity-50"
+              >
+                {importBusy
+                  ? "Importing..."
+                  : panel.inspection.conflicts.some((conflict) => conflict.resolution === "replaceable")
+                    ? "Replace Imported Skill"
+                    : "Import Skill"}
+              </button>
+            </div>
+          </div>
         )}
       </SlideOver>
     </div>

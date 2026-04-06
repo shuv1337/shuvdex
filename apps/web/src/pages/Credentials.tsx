@@ -4,7 +4,7 @@ import { SlideOver } from "@/components/SlideOver";
 import { Badge } from "@/components/Badge";
 import { EmptyState } from "@/components/EmptyState";
 import { cn } from "@/lib/cn";
-import type { CredentialRecord, CredentialBinding } from "@/api/client";
+import type { CredentialRecord, CredentialBinding, CredentialScheme } from "@/api/client";
 
 // ============================================================================
 // Scheme Badge

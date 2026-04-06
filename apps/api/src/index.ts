@@ -21,7 +21,6 @@ import { makeHttpExecutorLive } from "@shuvdex/http-executor";
 import { makeOpenApiSourceLive } from "@shuvdex/openapi-source";
 import { makeTenantManagerLive } from "@shuvdex/tenant-manager";
 import { auditRouter } from "./routes/audit.js";
-import { toolsRouter } from "./routes/tools.js";
 import { packagesRouter } from "./routes/packages.js";
 import { policiesRouter } from "./routes/policies.js";
 import { skillsRouter } from "./routes/skills.js";
@@ -158,8 +157,6 @@ async function main(): Promise<void> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   app.use("/api/*", requireAuth(runtime as any));
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  app.route("/api/tools", toolsRouter(runtime as any));
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   app.route("/api/skills", skillsRouter(runtime as any, localRepoPath));
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

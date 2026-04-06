@@ -4,6 +4,8 @@ import {
   reindexPackages,
   cleanupPackages,
   deletePackage,
+  setPackageEnabled,
+  setCapabilityEnabled,
   type CapabilityPackage,
 } from "@/api/client";
 
@@ -15,6 +17,8 @@ export interface UsePackagesResult {
   reindex: () => Promise<unknown>;
   cleanup: (force?: boolean) => Promise<{ orphans: string[]; removed: string[] }>;
   removePackage: (packageId: string) => Promise<void>;
+  togglePackage: (packageId: string, enabled: boolean) => Promise<CapabilityPackage>;
+  toggleCapability: (packageId: string, capabilityId: string, enabled: boolean) => Promise<CapabilityPackage>;
 }
 
 export function usePackages(): UsePackagesResult {
@@ -56,6 +60,22 @@ export function usePackages(): UsePackagesResult {
     setPackages((prev) => prev.filter((p) => p.id !== packageId));
   }, []);
 
+  const togglePackage = useCallback(async (packageId: string, enabled: boolean) => {
+    const updated = await setPackageEnabled(packageId, enabled);
+    setPackages((prev) =>
+      prev.map((p) => (p.id === packageId ? updated : p))
+    );
+    return updated;
+  }, []);
+
+  const toggleCapability = useCallback(async (packageId: string, capabilityId: string, enabled: boolean) => {
+    const updated = await setCapabilityEnabled(packageId, capabilityId, enabled);
+    setPackages((prev) =>
+      prev.map((p) => (p.id === packageId ? updated : p))
+    );
+    return updated;
+  }, []);
+
   return {
     packages,
     loading,
@@ -64,5 +84,7 @@ export function usePackages(): UsePackagesResult {
     reindex,
     cleanup,
     removePackage,
+    togglePackage,
+    toggleCapability,
   };
 }
